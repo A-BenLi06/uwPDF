@@ -1,0 +1,22 @@
+# Visual Studio cache and user files
+.vs/
+*.user
+*.suo
+*.bak
+UpgradeLog.htm
+Backup/
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+artifacts/
+AppPackages/
+
+# Loose appx layout folders generated during development
+loose-*/
+
+# Built appx packages kept locally for manual installs
+manual-packages/
+
+# Scratch verification output
+verification-empty.png
