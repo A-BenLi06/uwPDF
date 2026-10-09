@@ -1,0 +1,7 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <!-- Standard UWP app policy: keep application metadata used by XAML and
+         WinRT interop when the Release .NET Native optimizer runs. -->
+    <Assembly Name="*Application*" Dynamic="Required All" />
+  </Application>
+</Directives>

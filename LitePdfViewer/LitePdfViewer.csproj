@@ -10,9 +10,10 @@
     <RootNamespace>LitePdfViewer</RootNamespace>
     <AssemblyName>LitePdfViewer</AssemblyName>
     <DefaultLanguage>zh-CN</DefaultLanguage>
+    <PdfRendererBridge Condition="'$(PdfRendererBridge)' == ''">CppWinRT</PdfRendererBridge>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion>10.0.10586.0</TargetPlatformVersion>
-    <TargetPlatformMinVersion>10.0.10240.0</TargetPlatformMinVersion>
+    <TargetPlatformVersion>10.0.14393.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.14393.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -91,25 +92,32 @@
     <Prefer32Bit>false</Prefer32Bit>
     <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="MainPage.xaml.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
+  <PropertyGroup Condition="'$(PdfRendererBridge)' == 'CppWinRT'">
+    <DefineConstants>$(DefineConstants);CPPWINRT_RENDERER</DefineConstants>
+    <CppWinRTRendererOutput>$(MSBuildProjectDirectory)\..\artifacts\cppwinrt\$(Platform)\$(Configuration)</CppWinRTRendererOutput>
+    <OutputPath>bin\$(Platform)\$(Configuration)-CppWinRT\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)-CppWinRT\</IntermediateOutputPath>
+    <AppxPackageDir>$(MSBuildProjectDirectory)\AppPackages\CppWinRT\</AppxPackageDir>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PdfRendererBridge)' == 'CppWinRT'">
+    <Reference Include="$(CppWinRTRendererOutput)\PdfNative.Rendering.winmd">
+      <HintPath>$(CppWinRTRendererOutput)\PdfNative.Rendering.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+      <Private>true</Private>
+    </Reference>
+    <Content Include="$(CppWinRTRendererOutput)\PdfNative.Rendering.dll">
+      <Link>PdfNative.Rendering.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </ApplicationDefinition>
-    <Page Include="MainPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
+    <ProjectReference Include="..\PdfNative\PdfNative.vcxproj" Condition="'$(PdfRendererBridge)' != 'CppWinRT'">
+      <Project>{39B850A1-53D1-434E-AF4B-77418C49AC1A}</Project>
+      <Name>PdfNative</Name>
+    </ProjectReference>
   </ItemGroup>
+  <Import Project="LitePdfViewer.Shared.projitems" />
+
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
@@ -117,16 +125,16 @@
     <None Include="LitePdfViewer_TemporaryKey.pfx" />
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Assets\SplashScreen.png" />
-    <Content Include="Assets\Square150x150Logo.png" />
-    <Content Include="Assets\Square44x44Logo.png" />
-    <Content Include="Assets\StoreLogo.png" />
-    <Content Include="Assets\Wide310x150Logo.png" />
-    <Content Include="TestAssets\SkimSample.pdf" />
-  </ItemGroup>
+
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <Target Name="ValidatePdfRendererBridge" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(PdfRendererBridge)' != 'CppWinRT' and '$(PdfRendererBridge)' != 'Legacy'" Text="PdfRendererBridge must be CppWinRT (default) or Legacy." />
+  </Target>
+  <Target Name="BuildCppWinRTRenderer" BeforeTargets="ResolveAssemblyReferences" Condition="'$(PdfRendererBridge)' == 'CppWinRT'"
+>
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\scripts\Build-CppWinRT.ps1&quot; -Platform &quot;$(Platform)&quot; -Configuration &quot;$(Configuration)&quot; -Incremental" />
+  </Target>
 </Project>

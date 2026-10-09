@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <Platform Condition="'$(Platform)'==''">ARM64</Platform>
+    <BaseIntermediateOutputPath>obj\ARM64\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)\obj\ARM64\</MSBuildProjectExtensionsPath>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <PropertyGroup>
+    <ProjectGuid>{D069951E-61D6-49E5-B221-9B88191C429D}</ProjectGuid>
+    <OutputType>AppContainerExe</OutputType>
+    <RootNamespace>LitePdfViewer</RootNamespace>
+    <AssemblyName>LitePdfViewer</AssemblyName>
+    <DefaultLanguage>zh-CN</DefaultLanguage>
+    <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
+    <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <MinimumVisualStudioVersion>15.9</MinimumVisualStudioVersion>
+    <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <PlatformTarget>ARM64</PlatformTarget>
+    <OutputPath>bin\ARM64\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\ARM64\$(Configuration)\</IntermediateOutputPath>
+    <AppxPackageDir>$(MSBuildProjectDirectory)\AppPackages\ARM64\</AppxPackageDir>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;CPPWINRT_RENDERER</DefineConstants>
+    <NoWarn>2008</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+    <PackageCertificateKeyFile>LitePdfViewer_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateThumbprint>1BCCCC2553CD7F2056DFF443D372221C2AD67DF9</PackageCertificateThumbprint>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <AppxBundle>Never</AppxBundle>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <CppWinRTRendererOutput>$(MSBuildProjectDirectory)\..\artifacts\cppwinrt\ARM64\$(Configuration)</CppWinRTRendererOutput>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="6.2.14" />
+    <Reference Include="$(CppWinRTRendererOutput)\PdfNative.Rendering.winmd">
+      <HintPath>$(CppWinRTRendererOutput)\PdfNative.Rendering.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+      <Private>true</Private>
+    </Reference>
+    <Content Include="$(CppWinRTRendererOutput)\PdfNative.Rendering.dll">
+      <Link>PdfNative.Rendering.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <AppxManifest Include="Package.ARM64.appxmanifest" />
+    <None Include="LitePdfViewer_TemporaryKey.pfx" />
+  </ItemGroup>
+  <Import Project="LitePdfViewer.Shared.projitems" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <Target Name="ValidateArm64Platform" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Platform)'!='ARM64'" Text="This project is the ARM64 UWP build. Use LitePdfViewer.csproj for x86/x64/ARM32." />
+  </Target>
+  <Target Name="BuildCppWinRTRenderer" BeforeTargets="ResolveAssemblyReferences"
+>
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\scripts\Build-CppWinRT.ps1&quot; -Platform ARM64 -Configuration &quot;$(Configuration)&quot; -Incremental" />
+  </Target>
+</Project>

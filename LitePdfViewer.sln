@@ -4,6 +4,10 @@ VisualStudioVersion = 14.0.25431.01
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LitePdfViewer", "LitePdfViewer\LitePdfViewer.csproj", "{75C6DFE7-0C80-4898-9B2D-0A65A3CFE5D4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PdfNative", "PdfNative\PdfNative.vcxproj", "{39B850A1-53D1-434E-AF4B-77418C49AC1A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MuPdfCore", "PdfNative\MuPdfCore.vcxproj", "{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -14,6 +18,30 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Debug|ARM.ActiveCfg = Debug|ARM
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Debug|ARM.Build.0 = Debug|ARM
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Debug|x64.ActiveCfg = Debug|x64
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Debug|x64.Build.0 = Debug|x64
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Debug|x86.ActiveCfg = Debug|Win32
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Debug|x86.Build.0 = Debug|Win32
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Release|ARM.ActiveCfg = Release|ARM
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Release|ARM.Build.0 = Release|ARM
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Release|x64.ActiveCfg = Release|x64
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Release|x64.Build.0 = Release|x64
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Release|x86.ActiveCfg = Release|Win32
+		{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}.Release|x86.Build.0 = Release|Win32
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Debug|ARM.ActiveCfg = Debug|ARM
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Debug|ARM.Build.0 = Debug|ARM
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Debug|x64.ActiveCfg = Debug|x64
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Debug|x64.Build.0 = Debug|x64
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Debug|x86.ActiveCfg = Debug|Win32
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Debug|x86.Build.0 = Debug|Win32
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Release|ARM.ActiveCfg = Release|ARM
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Release|ARM.Build.0 = Release|ARM
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Release|x64.ActiveCfg = Release|x64
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Release|x64.Build.0 = Release|x64
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Release|x86.ActiveCfg = Release|Win32
+		{39B850A1-53D1-434E-AF4B-77418C49AC1A}.Release|x86.Build.0 = Release|Win32
 		{75C6DFE7-0C80-4898-9B2D-0A65A3CFE5D4}.Debug|ARM.ActiveCfg = Debug|ARM
 		{75C6DFE7-0C80-4898-9B2D-0A65A3CFE5D4}.Debug|ARM.Build.0 = Debug|ARM
 		{75C6DFE7-0C80-4898-9B2D-0A65A3CFE5D4}.Debug|ARM.Deploy.0 = Debug|ARM

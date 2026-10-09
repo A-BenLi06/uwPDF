@@ -1,4 +1,5 @@
 {
+  "locked": false,
   "version": 2,
   "targets": {
     "UAP,Version=v10.0": {
@@ -15608,10 +15609,5 @@
       "Microsoft.NETCore.UniversalWindowsPlatform >= 5.1.0"
     ],
     "UAP,Version=v10.0": []
-  },
-  "tools": {},
-  "projectFileToolGroups": {},
-  "packageFolders": {
-    "C:\\Users\\ben_l\\.nuget\\packages\\": {}
   }
 }

@@ -2,6 +2,8 @@
 .vs/
 *.user
 *.suo
+*.VC.db
+*.VC.VC.opendb
 *.bak
 UpgradeLog.htm
 Backup/

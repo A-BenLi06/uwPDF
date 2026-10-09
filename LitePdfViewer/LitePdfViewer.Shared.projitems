@@ -1,0 +1,52 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="MainPage.xaml.cs">
+      <DependentUpon>MainPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="MainPage.Text.cs" />
+    <Compile Include="MainPage.Search.cs" />
+    <Compile Include="PdfRenderScheduler.cs" />
+    <Compile Include="PdfScrollActivity.cs" />
+    <Compile Include="PdfRasterRetirement.cs" />
+    <Compile Include="PdfMemoryBudget.cs" />
+    <Compile Include="MainPage.Memory.cs" />
+    <Compile Include="PdfViewportAnchor.cs" />
+    <Compile Include="MainPage.PageGeometry.cs" />
+    <Compile Include="MainPage.Export.cs" />
+    <Compile Include="MainPage.Window.cs" />
+    <Compile Include="MainPage.Rendering.cs" />
+    <Compile Include="MainPage.Thumbnails.cs" />
+    <Compile Include="PreviewSizing.cs" />
+    <Compile Include="PdfTextSource.cs" />
+    <Compile Include="PdfTextSearch.cs" />
+    <Compile Include="PdfPageRaster.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="MainPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Properties\Default.rd.xml" />
+    <Content Include="Assets\SplashScreen.png" />
+    <Content Include="Assets\Square150x150Logo.png" />
+    <Content Include="Assets\Square44x44Logo.png" />
+    <Content Include="Assets\StoreLogo.png" />
+    <Content Include="Assets\Wide310x150Logo.png" />
+    <Content Include="TestAssets\SkimSample.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\artifacts\native-dependencies\licenses\*">
+      <Link>ThirdPartyLicenses\%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+</Project>

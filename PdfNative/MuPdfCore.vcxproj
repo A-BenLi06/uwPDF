@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM"><Configuration>Debug</Configuration><Platform>ARM</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM"><Configuration>Release</Configuration><Platform>ARM</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64"><Configuration>Debug</Configuration><Platform>ARM64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64"><Configuration>Release</Configuration><Platform>ARM64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{97D207E6-0281-413F-B6D8-3B4BD5DBA8E1}</ProjectGuid>
+    <RootNamespace>MuPdfCore</RootNamespace>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Windows Store</ApplicationType>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion Condition="'$(Platform)'=='ARM64'">10.0.26100.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion Condition="'$(Platform)'=='ARM64'">10.0.17763.0</WindowsTargetPlatformMinVersion>
+    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType><PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset Condition="'$(Platform)'=='ARM64'">v145</PlatformToolset>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Release'">false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(ProjectDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)obj\MuPdfCore\$(Platform)\$(Configuration)\</IntDir>
+    <MuPdfRoot>$(ProjectDir)..\artifacts\mupdf-source\</MuPdfRoot>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader><CompileAs>CompileAsC</CompileAs><CompileAsWinRT>false</CompileAsWinRT>
+      <AdditionalIncludeDirectories>$(MuPdfRoot)include;$(MuPdfRoot)scripts\freetype;$(MuPdfRoot)scripts\libjpeg;$(MuPdfRoot)thirdparty\freetype\include;$(MuPdfRoot)thirdparty\jbig2dec;$(MuPdfRoot)thirdparty\libjpeg;$(MuPdfRoot)thirdparty\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NO_GETENV;_WINRT;WINAPI_FAMILY=WINAPI_FAMILY_APP;_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;FT_CONFIG_MODULES_H="slimftmodules.h";FT_CONFIG_OPTIONS_H="slimftoptions.h";JBIG_EXTERNAL_MEMENTO_H="memento.h";verbose=-1;TOFU;TOFU_CJK_EXT;FZ_ENABLE_XPS=0;FZ_ENABLE_SVG=0;FZ_ENABLE_CBZ=0;FZ_ENABLE_IMG=0;FZ_ENABLE_HTML=0;FZ_ENABLE_MD=0;FZ_ENABLE_FB2=0;FZ_ENABLE_MOBI=0;FZ_ENABLE_EPUB=0;FZ_ENABLE_OFFICE=0;FZ_ENABLE_TXT=0;FZ_ENABLE_HTML_ENGINE=0;FZ_ENABLE_OCR_OUTPUT=0;FZ_ENABLE_DOCX_OUTPUT=0;FZ_ENABLE_ODT_OUTPUT=0;FZ_ENABLE_JS=0;FZ_ENABLE_BARCODE=0;FZ_ENABLE_BROTLI=0;FZ_ENABLE_ICC=0;FZ_ENABLE_JPX=0;FZ_ENABLE_HYPHEN=0;FZ_ENABLE_HYPHEN_ALL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <WarningLevel>Level1</WarningLevel><MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="..\artifacts\native-dependencies\MuPdfSources.props" Condition="Exists('..\artifacts\native-dependencies\MuPdfSources.props')" />
+  <Target Name="CheckNativeDependencies" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('..\artifacts\native-dependencies\MuPdfSources.props')" Text="Run scripts\Prepare-NativeDependencies.ps1 to restore the pinned MuPDF sources and fonts." />
+  </Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

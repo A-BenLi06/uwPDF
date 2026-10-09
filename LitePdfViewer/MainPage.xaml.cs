@@ -28,21 +28,20 @@ namespace LitePdfViewer
 {
     public sealed partial class MainPage : Page
     {
-        private const double MaxColumnWidth = 4000;
-        private const double MinColumnWidth = 200;
-        private const int RenderWindow = 4;
-        private const int EvictWindow = 6;
+        private const int RenderWindow = 2;
+        private const int EvictWindow = 3;
+        private const long BitmapCacheBudget = PdfMemoryBudget.MaximumBytes;
         // Only pages this close to the current one get zoom-scaled resolution; the
         // rest of the prefetch window stays at fit-width so zooming never multiplies
         // memory across the whole window.
         private const int HighResWindow = 1;
         private const double MaxRenderWidth = 2560;
-        // Hard cap per page bitmap (BGRA): ~24 MB. Keeps tall pages from exploding.
-        private const double MaxRenderPixels = 6000000;
+        // Up to 16 MB of BGRA pixels plus a XAML surface, within the shared budget.
+        private const double MaxRenderPixels = 4000000;
         private static readonly TimeSpan ZoomSettleDelay = TimeSpan.FromMilliseconds(300);
-        private const double ThumbWidth = 92.0;
+        private const double ThumbWidth = 80.0;
         // Pages measured per background chunk before yielding to the UI thread.
-        private const int AspectProbeChunk = 32;
+        private const int AspectProbeChunk = 8;
 
         private static readonly string[] WindowsInkPalette = new string[]
         {
@@ -73,15 +72,21 @@ namespace LitePdfViewer
         private static readonly SolidColorBrush ThumbSelectedTextBrush = new SolidColorBrush(Color.FromArgb(255, 10, 122, 255));
 
         private readonly SemaphoreSlim renderGate = new SemaphoreSlim(1, 1);
+        private readonly PdfRasterBackend rasterBackend = new PdfRasterBackend();
+        private readonly PdfRasterRetirement retiredRasters = new PdfRasterRetirement(BitmapCacheBudget / 2, 4);
+        private bool retirementRenderingSubscribed;
+        private Func<PageView, bool> needsVisibleRefinement;
+        private readonly PdfScrollActivity scrollActivity = new PdfScrollActivity();
         private readonly Thickness pageGap = new Thickness(0, 0, 0, 10);
         private readonly List<PageView> pageViews = new List<PageView>();
-        private readonly List<ThumbnailItem> thumbnailItems = new List<ThumbnailItem>();
+        private readonly Dictionary<int, ThumbnailItem> thumbnailItems = new Dictionary<int, ThumbnailItem>();
         private readonly List<SwatchItem> penSwatches = new List<SwatchItem>();
         private readonly List<SwatchItem> highlighterSwatches = new List<SwatchItem>();
 
         // Indices whose Image/InkCanvas subtree currently exists. Page turns scan
         // this instead of the whole document.
         private readonly List<int> realizedPages = new List<int>();
+        private readonly HashSet<int> cachedPages = new HashSet<int>();
 
         // Cumulative page tops in unzoomed content space. Lets page hit-testing and
         // scroll targeting be pure arithmetic instead of visual-tree transforms.
@@ -124,10 +129,25 @@ namespace LitePdfViewer
         private bool thumbsRequested;
         private Storyboard sidebarStoryboard;
         private bool isPromptingSave;
+        private long cachedBitmapBytes;
+        private DateTime thumbnailSettledAt = DateTime.MinValue;
+        private TaskCompletionSource<bool> renderWake = new TaskCompletionSource<bool>();
+        private bool textWorkerBusy;
+        private bool renderWakeQueued;
 
         public MainPage()
         {
             InitializeComponent();
+            rasterBackend.DeviceLost += ClearLostRenderSurfaces;
+            Window.Current.VisibilityChanged += (sender, args) =>
+            {
+                if (!args.Visible) ReleaseRetiredRenderSurfaces();
+                QueueMemoryUpdate();
+                WakeRenderer();
+            };
+            Loaded += (sender, args) => StartMemoryMonitoring();
+            Unloaded += (sender, args) => { StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
+            InitializePreviewWindow();
             try
             {
                 dpiScale = DisplayInformation.GetForCurrentView().RawPixelsPerViewPixel;
@@ -217,14 +237,15 @@ namespace LitePdfViewer
                 return;
             }
 
-            for (var i = 0; i < pageViews.Count; i++)
+            var token = activeRenderToken;
+            var pending = new List<PageView>();
+            foreach (var view in pageViews) if (view.Dirty) pending.Add(view);
+            foreach (var view in pending)
             {
-                var view = pageViews[i];
-                if (view.Dirty)
-                {
-                    await SaveInkAsync(view);
-                    ClearPageDirty(view);
-                }
+                // An export/save may overlap opening another file. Never walk
+                // the new document's page list after an asynchronous disk write.
+                if (token != activeRenderToken) return;
+                await SavePageAnnotationsAsync(view);
             }
 
             UpdateDirtyState();
@@ -276,7 +297,9 @@ namespace LitePdfViewer
 
         private async Task LoadDocumentAsync(StorageFile file)
         {
+            ResetSearch();
             var renderToken = ++activeRenderToken;
+            document = null;
             ResetPageViews();
             ResetThumbnails();
 
@@ -287,14 +310,40 @@ namespace LitePdfViewer
 
             try
             {
-                document = await PdfDocument.LoadFromFileAsync(file);
+                var loadedDocument = await PdfDocument.LoadFromFileAsync(file);
+                if (renderToken != activeRenderToken) return;
+                document = loadedDocument;
                 pageIndex = 0;
+                var hasIntrinsicSize = false;
+                if (document.PageCount > 0)
+                {
+                    using (var firstPage = document.GetPage(0))
+                    {
+                        // PdfPage.Size already applies CropBox/MediaBox and Rotation,
+                        // but Windows reports it at 96 DPI. Recover PDF points (72 DPI).
+                        var size = firstPage.Size;
+                        hasIntrinsicSize = size.Width > 0 && size.Height > 0;
+                        firstPageSize = hasIntrinsicSize ? new Size(size.Width * 72 / 96, size.Height * 72 / 96) : new Size(600, 800);
+                    }
+                }
+                thumbsRequested = thumbnailPreference ?? document.PageCount > 1;
+                ThumbsToggle.IsChecked = thumbsRequested;
                 CreatePagePlaceholders(document);
+                textSource = new PdfTextSource(file);
                 // No forced UpdateLayout() here: page positions come from the cached
                 // offset table, so nothing downstream needs a synchronous layout pass
                 // over every page before the first paint.
                 SetThumbsVisible(thumbsRequested, false);
+                // Set the initial reading position before any asynchronous work
+                // gives the user a chance to scroll or select a different page.
+                FitToWindow(false);
+                ScheduleRelayout();
+                Focus(FocusState.Programmatic);
                 UpdateUi();
+
+                // Work-area probing and automatic window sizing must not hold
+                // the first page or the visible-page render loop behind them.
+                var previewSizing = ApplyPreviewWindowSizeAsync(renderToken, hasIntrinsicSize);
 
                 // First page paints immediately at viewport resolution; the rest streams in.
                 if (pageViews.Count > 0)
@@ -302,15 +351,18 @@ namespace LitePdfViewer
                     await RenderPageCoreAsync(0, renderToken);
                 }
 
-                FitToWindow(false);
-                Focus(FocusState.Programmatic);
+                if (renderToken != activeRenderToken) return;
+                ScheduleRelayout();
                 UpdateUi();
 
                 var ignoredLoop = RunRenderLoopAsync(renderToken);
                 var ignoredProbe = ProbeAspectsAsync(renderToken);
+                await previewSizing;
+                if (renderToken != activeRenderToken) return;
             }
             catch (Exception ex)
             {
+                if (renderToken != activeRenderToken) return;
                 ++activeRenderToken;
                 document = null;
                 ResetPageViews();
@@ -327,7 +379,9 @@ namespace LitePdfViewer
             // Click fires before IsChecked flips, so the toggle's own state lags by one
             // press; track the request here and keep the visual in sync explicitly.
             thumbsRequested = !thumbsRequested;
+            thumbnailPreference = thumbsRequested;
             ThumbsToggle.IsChecked = thumbsRequested;
+            UpdateThumbnailWindow();
             AnimateThumbnailPane(thumbsRequested);
         }
 
@@ -349,8 +403,9 @@ namespace LitePdfViewer
                 {
                     sidebarStoryboard.Stop();
                 }
-                ThumbnailPane.Width = show ? 150 : 0;
+                ThumbnailPane.Width = show ? PreviewSizing.ThumbnailRail : 0;
                 ThumbnailPane.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                UpdateThumbnailWindow();
                 UpdatePageCentering();
             }
         }
@@ -373,7 +428,7 @@ namespace LitePdfViewer
             {
                 currentWidth = 0;
             }
-            var targetWidth = canShow ? 150.0 : 0.0;
+            var targetWidth = canShow ? PreviewSizing.ThumbnailRail : 0.0;
 
             sidebarStoryboard = new Storyboard();
             var animation = new DoubleAnimation
@@ -410,21 +465,9 @@ namespace LitePdfViewer
 
         private double ComputeColumnWidth()
         {
-            // Fill the viewport edge to edge: the window is the page. The 4px inset
-            // absorbs the page chrome's 2px border plus rounding so 100% never
-            // spills into a horizontal scrollbar.
-            var viewportWidth = DocumentScroller.ViewportWidth;
-            if (viewportWidth < 1)
-            {
-                viewportWidth = DocumentScroller.ActualWidth;
-            }
-
-            if (viewportWidth < 1)
-            {
-                viewportWidth = 800;
-            }
-
-            return Math.Max(MinColumnWidth, Math.Min(MaxColumnWidth, viewportWidth - 4));
+            // Keep page/ink geometry stable across window resizes. The ScrollViewer
+            // fits that natural point size rather than rebuilding at viewport width.
+            return Math.Max(1, firstPageSize.Width);
         }
 
         private void UpdatePageCentering()
@@ -450,7 +493,7 @@ namespace LitePdfViewer
                 zoom = 1.0f;
             }
 
-            var requiredFrameWidth = Math.Max(lastColumnWidth, viewportWidth / zoom);
+            var requiredFrameWidth = Math.Max(lastColumnWidth + 2 * PageBorderThickness, viewportWidth / zoom);
             if (Math.Abs(PageFrame.Width - requiredFrameWidth) > 0.5)
             {
                 PageFrame.Width = requiredFrameWidth;
@@ -480,12 +523,13 @@ namespace LitePdfViewer
             for (uint i = 0; i < pdfDocument.PageCount; i++)
             {
                 var view = CreatePageView(i, columnWidth, columnWidth * aspect);
+                view.AspectKnown = i == 0;
                 pageViews.Add(view);
-                PageStack.Children.Add(view.Chrome);
             }
 
             aspectProbedCount = pageViews.Count > 0 ? 1 : 0;
             RebuildPageOffsets();
+            UpdateThumbnailWindow();
             UpdatePageCentering();
         }
 
@@ -524,6 +568,7 @@ namespace LitePdfViewer
             {
                 while (token == activeRenderToken && document != null && aspectProbedCount < pageViews.Count)
                 {
+                    if (!IsScrollSettled() || !IsZoomSettled()) { await Task.Delay(120); continue; }
                     var start = aspectProbedCount;
                     var end = Math.Min(pageViews.Count, start + AspectProbeChunk);
                     var firstChanged = int.MaxValue;
@@ -538,19 +583,23 @@ namespace LitePdfViewer
                             return;
                         }
 
+                        // Input may have restarted while this probe waited on a
+                        // raster draw. Yield again instead of measuring mid-fling.
+                        if (!IsScrollSettled() || !IsZoomSettled()) continue;
+
+                        var slice = System.Diagnostics.Stopwatch.StartNew();
                         for (var i = start; i < end; i++)
                         {
                             var view = pageViews[i];
-                            var aspect = ProbePageAspect(document, view.Index, view.Aspect);
-                            if (Math.Abs(aspect - view.Aspect) > 0.0005)
+                            var aspect = view.AspectKnown ? view.Aspect : ProbePageAspect(document, view.Index, double.NaN);
+                            if (ConfirmPageAspect(view, aspect))
                             {
-                                view.Aspect = aspect;
-                                view.LayoutHeight = view.LayoutWidth * aspect;
                                 if (i < firstChanged)
                                 {
                                     firstChanged = i;
                                 }
                             }
+                            if (slice.ElapsedMilliseconds >= 4) { end = i + 1; break; }
                         }
 
                         aspectProbedCount = end;
@@ -568,13 +617,10 @@ namespace LitePdfViewer
                         }
 
                         RebuildPageOffsets();
-                        if (firstChanged <= (int)pageIndex)
-                        {
-                            ScrollToPage(pageIndex, false);
-                        }
+                        WakeRenderer();
                     }
 
-                    await Task.Delay(1);
+                    await Task.Delay(16);
                 }
             }
             catch (Exception)
@@ -594,6 +640,7 @@ namespace LitePdfViewer
             if (Math.Abs(columnWidth - lastColumnWidth) < 1.5)
             {
                 UpdatePageCentering();
+                if (fitPageToViewport) RefitPreservingPosition();
                 return;
             }
 
@@ -606,42 +653,27 @@ namespace LitePdfViewer
                 // A new layout size is a natural retry point for a page that failed
                 // to render at the previous one.
                 view.RenderFailed = false;
+                view.DetailFailed = false;
                 UpdatePageSize(view);
             }
 
             RebuildPageOffsets();
             UpdatePageCentering();
 
-            if (Math.Abs(DocumentScroller.ZoomFactor - 1f) < 0.02f)
+            if (fitPageToViewport)
             {
-                FitToWindow();
+                RefitPreservingPosition();
             }
         }
 
-        // A placeholder page is just a sized, bordered Border with no child. The
-        // Image/InkCanvas subtree is the expensive part (an InkCanvas spins up its
-        // own presenter and input pipeline), so it is built only for pages near the
-        // viewport and torn down again on eviction. Ink itself lives in the
-        // PageView's InkStrokeContainer, which outlives the visual tree, so
-        // virtualizing a page never loses strokes.
+        // Unseen pages are metadata only. An absolute Canvas maintains the full
+        // scroll extent; page controls exist only around the viewport. Strokes
+        // outlive those controls, so eviction never discards unsaved annotations.
         private PageView CreatePageView(uint index, double layoutWidth, double layoutHeight)
         {
-            var chrome = new Border
-            {
-                Width = layoutWidth + 2 * PageBorderThickness,
-                Height = layoutHeight + 2 * PageBorderThickness,
-                Background = PageFillBrush,
-                BorderBrush = PageBorderBrush,
-                BorderThickness = new Thickness(PageBorderThickness),
-                Margin = pageGap,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            AutomationProperties.SetName(chrome, "PDF page " + (index + 1).ToString(CultureInfo.InvariantCulture));
-
             return new PageView
             {
                 Index = index,
-                Chrome = chrome,
                 LayoutWidth = layoutWidth,
                 LayoutHeight = layoutHeight,
                 Aspect = layoutHeight / layoutWidth
@@ -654,6 +686,17 @@ namespace LitePdfViewer
             {
                 return;
             }
+
+            view.Chrome = new Border
+            {
+                Width = view.LayoutWidth + 2 * PageBorderThickness,
+                Height = view.LayoutHeight + 2 * PageBorderThickness,
+                Background = PageFillBrush, BorderBrush = PageBorderBrush,
+                BorderThickness = new Thickness(PageBorderThickness)
+            };
+            AutomationProperties.SetName(view.Chrome, "PDF page " + (view.Index + 1).ToString(CultureInfo.InvariantCulture));
+            Canvas.SetTop(view.Chrome, pageTops[(int)view.Index]);
+            PageStack.Children.Add(view.Chrome);
 
             var image = new Image
             {
@@ -674,12 +717,13 @@ namespace LitePdfViewer
             // Reattach the surviving stroke container before wiring events so the
             // restore itself cannot be mistaken for a user edit.
             inkLayer.InkPresenter.StrokeContainer = view.EnsureStrokes();
-            ConfigureInkCanvas(inkLayer);
+            ConfigureInkCanvas(inkLayer, CreateInkAttributes(), view.InkLoaded && !view.IsLoadingInk);
 
             inkLayer.InkPresenter.StrokesCollected += (sender, args) =>
             {
                 if (args.Strokes.Count > 0)
                 {
+                    for (var i = 0; i < args.Strokes.Count; i++) view.UndoKinds.Add(false);
                     MarkPageDirty(view);
                 }
             };
@@ -705,6 +749,8 @@ namespace LitePdfViewer
             view.Image = image;
             view.InkLayer = inkLayer;
             view.Chrome.Child = host;
+            AttachTextLayers(view);
+            AttachDetailLayer(view);
 
             if (view.Source != null)
             {
@@ -721,21 +767,47 @@ namespace LitePdfViewer
                 return;
             }
 
-            ReleasePageBitmap(view);
+            // Control virtualization must not discard a useful bitmap. Retain it
+            // under the cache budget so reversing a scroll reuses the surface.
+            view.Image.Source = null;
+            ReleasePageDetail(view);
+            view.DetailImage = null;
+            view.DetailLayer = null;
+            if (selectedTextPage == view) ClearTextSelection();
+            view.Glyphs = null;
+            view.HighlightLayer = null;
+            view.SelectionLayer = null;
 
             // Detach the container so the discarded presenter keeps no claim on the
             // strokes we are about to carry forward.
             view.InkLayer.InkPresenter.StrokeContainer = new InkStrokeContainer();
             view.Chrome.Child = null;
+            PageStack.Children.Remove(view.Chrome);
+            view.Chrome = null;
             view.Host = null;
             view.Image = null;
             view.InkLayer = null;
 
             realizedPages.Remove((int)view.Index);
+            ReleaseCleanAnnotations(view);
+            if (memoryConstrained) ReleasePageBitmap(view);
+        }
+
+        private static void ReleaseCleanAnnotations(PageView view)
+        {
+            if (view.IsRealized || view.Dirty || view.IsLoadingInk) return;
+            // Saved data can be restored from the sidecar. Dirty pages keep their
+            // containers so scrolling never discards an unsaved stroke/highlight.
+            if (view.Strokes != null) view.Strokes.Clear();
+            view.Strokes = null;
+            view.Highlights.Clear();
+            view.InkLoaded = false;
+            view.HighlightsLoaded = false;
         }
 
         private void MarkPageDirty(PageView view)
         {
+            view.Revision++;
             if (view.Dirty)
             {
                 return;
@@ -755,10 +827,12 @@ namespace LitePdfViewer
 
             view.Dirty = false;
             dirtyCount--;
+            ReleaseCleanAnnotations(view);
         }
 
         private void UpdatePageSize(PageView view)
         {
+            if (!view.IsRealized) return;
             view.Chrome.Width = view.LayoutWidth + 2 * PageBorderThickness;
             view.Chrome.Height = view.LayoutHeight + 2 * PageBorderThickness;
 
@@ -773,10 +847,18 @@ namespace LitePdfViewer
             view.Image.Height = view.LayoutHeight;
             view.InkLayer.Width = view.LayoutWidth;
             view.InkLayer.Height = view.LayoutHeight;
+            RedrawTextLayers(view);
+            UpdateDetailLayer(view);
         }
 
         private void ResetPageViews()
         {
+            ReleaseRetiredRenderSurfaces();
+            pendingLayoutAnchor = null;
+            fitReferencePage = 0;
+            ClearTextSelection();
+            if (textSource != null) { textSource.Dispose(); textSource = null; }
+            for (var i = realizedPages.Count - 1; i >= 0; i--) VirtualizePage(pageViews[realizedPages[i]]);
             foreach (var view in pageViews)
             {
                 ReleasePageBitmap(view);
@@ -785,12 +867,17 @@ namespace LitePdfViewer
 
             pageViews.Clear();
             realizedPages.Clear();
+            cachedPages.Clear();
             PageStack.Children.Clear();
             pageTops = new double[0];
             aspectProbedCount = 0;
             dirtyCount = 0;
             lastDirtyShown = false;
             lastZoomPercent = -1;
+            cachedBitmapBytes = 0;
+            textWorkerBusy = false;
+            scrollActivity.Reset();
+            WakeRenderer();
         }
 
         // Page tops in unzoomed content space. Rebuilt whenever a layout width
@@ -809,6 +896,9 @@ namespace LitePdfViewer
                 pageTops[i] = top;
                 top += pageViews[i].LayoutHeight + 2 * PageBorderThickness + pageGap.Bottom;
             }
+            PageStack.Width = lastColumnWidth + 2 * PageBorderThickness;
+            PageStack.Height = Math.Max(0, top - pageGap.Bottom);
+            foreach (var index in realizedPages) Canvas.SetTop(pageViews[index].Chrome, pageTops[index]);
         }
 
         // ============================== Render scheduler ==============================
@@ -817,12 +907,16 @@ namespace LitePdfViewer
 
         private async Task RunRenderLoopAsync(ulong token)
         {
-            uint thumbIndex = 0;
             while (token == activeRenderToken)
             {
                 if (document == null)
                 {
                     return;
+                }
+                if (!Window.Current.Visible)
+                {
+                    await WaitForRenderWorkAsync();
+                    continue;
                 }
 
                 // Failures are isolated per item. This catch used to sit outside the
@@ -837,11 +931,12 @@ namespace LitePdfViewer
                         {
                             await RenderPageCoreAsync((uint)next, token);
                         }
+                        catch (OperationCanceledException) { }
                         catch (Exception)
                         {
                             // Stop retrying this page; RebuildLayout clears the flag
                             // so a resize or zoom gives it another chance.
-                            if (next < pageViews.Count)
+                            if (token == activeRenderToken && next < pageViews.Count)
                             {
                                 pageViews[next].RenderFailed = true;
                             }
@@ -850,24 +945,50 @@ namespace LitePdfViewer
                         continue;
                     }
 
+                    var detail = FindNextDetailPage();
+                    if (detail != null)
+                    {
+                        try { await RenderPageDetailAsync(detail, token); }
+                        catch (OperationCanceledException) { }
+                        catch (Exception ex)
+                        {
+                            if (token == activeRenderToken) detail.DetailFailed = true;
+                            System.Diagnostics.Debug.WriteLine("PDF detail failed: " + ex.Message);
+                        }
+                        continue;
+                    }
+
                     // Thumbnails are only worth rendering once the pane has actually
                     // been asked for. Rendering every page of the document into a
                     // bitmap for a sidebar most sessions never open was the largest
                     // block of pure waste in the background loop.
-                    if (thumbsRequested && thumbIndex < document.PageCount)
+                    // Match the execution guard. Selecting a thumbnail while
+                    // zooming only to reject it synchronously would spin this
+                    // UI-thread loop and prevent the gesture from completing.
+                    var inputSettled = IsScrollSettled() && IsZoomSettled();
+                    var thumb = inputSettled ? FindNextThumbnailIndex() : -1;
+                    if (thumb >= 0)
                     {
-                        var thumb = thumbIndex;
-                        thumbIndex++;
-                        await RenderThumbnailCoreAsync(thumb, token);
+                        await RenderThumbnailCoreAsync((uint)thumb, token);
                         continue;
                     }
 
-                    await Task.Delay(150);
+                    // Text is useful only for pages actually visible. Extract one
+                    // at a time, after raster work, so flicks do not queue glyphs.
+                    var textPage = inputSettled ? FindNextTextPage() : null;
+                    if (textPage != null)
+                    {
+                        var ignoredText = RunTextWorkAsync(textPage, token);
+                    }
+                    if (!inputSettled || DateTime.UtcNow < thumbnailSettledAt)
+                        await WaitForRenderWorkAsync(120);
+                    else
+                        await WaitForRenderWorkAsync();
                 }
                 catch (Exception)
                 {
                     // Keep the loop alive; the next pass re-evaluates what needs work.
-                    await Task.Delay(150);
+                    await WaitForRenderWorkAsync(150);
                 }
             }
         }
@@ -882,18 +1003,30 @@ namespace LitePdfViewer
             // While the zoom is still moving (slider drag, pinch, animation) only fill
             // blank pages; resolution upgrades wait until the zoom settles, otherwise
             // every intermediate zoom step would render a fresh set of huge bitmaps.
-            var zoomSettled = IsZoomSettled();
-            var current = (int)Math.Min(pageIndex, (uint)(pageViews.Count - 1));
-            for (var offset = 0; offset <= RenderWindow; offset++)
+            var zoomSettled = IsZoomSettled() && IsScrollSettled();
+            int first, last;
+            GetVisiblePageRange(out first, out last);
+            // Reuse the delegate; scrolling must not allocate one per wake.
+            if (needsVisibleRefinement == null) needsVisibleRefinement = VisiblePageNeedsRefinement;
+            var visible = PdfRenderScheduler.FindVisible(pageViews, first, last,
+                zoomSettled, needsVisibleRefinement);
+            if (visible >= 0) return visible;
+            if (memoryConstrained) return -1;
+            // Once visible pages are filled, prepare only the adjacent page in
+            // the movement direction. Waiting for a complete fling to stop
+            // makes every newly exposed image page pay its full cold render.
+            if (!IsScrollSettled())
+                return PdfRenderScheduler.FindAheadMissing(pageViews, first, last, scrollActivity.Direction);
+            for (var offset = 1; offset <= RenderWindow; offset++)
             {
-                var before = current - offset;
+                var before = first - offset;
                 if (before >= 0 && PageNeedsWork(pageViews[before], zoomSettled))
                 {
                     return before;
                 }
 
-                var after = current + offset;
-                if (offset > 0 && after < pageViews.Count && PageNeedsWork(pageViews[after], zoomSettled))
+                var after = last + offset;
+                if (after < pageViews.Count && PageNeedsWork(pageViews[after], zoomSettled))
                 {
                     return after;
                 }
@@ -916,7 +1049,21 @@ namespace LitePdfViewer
                 return true;
             }
 
-            return zoomSettled && view.NeedsRender(ComputeRenderTargetWidth(view));
+            return zoomSettled && PageResolutionNeedsWork(view, ComputeRenderTargetWidth(view));
+        }
+
+        private bool VisiblePageNeedsRefinement(PageView view)
+        {
+            return PageResolutionNeedsWork(view, ComputeRenderTargetWidth(view));
+        }
+
+        private bool PageResolutionNeedsWork(PageView view, double target)
+        {
+            if (view.NeedsRender(target)) return true;
+            // Keep a sharper cached surface when a page leaves the viewport. Only
+            // shrink it if protected visible surfaces exceed the total budget.
+            return cachedBitmapBytes > activeBitmapCacheBudget &&
+                view.RenderedWidth - target > Math.Max(96, target * 0.3);
         }
 
         private bool IsZoomSettled()
@@ -928,16 +1075,20 @@ namespace LitePdfViewer
         {
             // 1:1 device pixels at the current zoom; re-renders automatically when the
             // user zooms in beyond the cached resolution.
-            var zoom = 1.0;
+            var zoom = Math.Min(1.0, DocumentScroller.ZoomFactor);
             if (Math.Abs((int)view.Index - (int)pageIndex) <= HighResWindow)
             {
-                zoom = Math.Max(1.0, DocumentScroller.ZoomFactor);
+                zoom = DocumentScroller.ZoomFactor;
             }
 
             var target = view.LayoutWidth * dpiScale * zoom;
             var aspect = view.Aspect > 0 ? view.Aspect : 1.4142;
-            var pixelCap = Math.Sqrt(MaxRenderPixels / aspect);
-            return Math.Max(360, Math.Min(Math.Min(MaxRenderWidth, pixelCap), target));
+            var pixelBudget = RenderPixelBudget(view);
+            var pixelCap = Math.Sqrt(pixelBudget / aspect);
+            // A cheap first surface keeps a newly exposed page readable while
+            // scrolling; the existing surface remains until its upgrade arrives.
+            if ((!IsScrollSettled() || !IsZoomSettled()) && !view.IsRendered) target = Math.Min(768, target);
+            return Math.Max(1, Math.Min(Math.Min(MaxRenderWidth, pixelCap), Math.Max(120, target)));
         }
 
         private async Task RenderPageCoreAsync(uint index, ulong token)
@@ -947,8 +1098,8 @@ namespace LitePdfViewer
                 return;
             }
 
-            var everRendered = pageViews[(int)index].EverRendered;
             PageView view = null;
+            PdfPageRaster pending = null;
 
             await renderGate.WaitAsync();
             try
@@ -958,83 +1109,113 @@ namespace LitePdfViewer
                     return;
                 }
 
+                if (!PageStillWanted(index, token)) return;
                 view = pageViews[(int)index];
+                if (memoryConstrained && !IsPageVisible(index)) return;
+                // A refinement may have waited behind geometry work while input
+                // restarted. Missing pages still render during the gesture.
+                if (view.IsRendered && (!IsScrollSettled() || !IsZoomSettled())) return;
                 var target = ComputeRenderTargetWidth(view);
-                if (!view.NeedsRender(target))
+                var budgetAtStart = activeBitmapCacheBudget;
+                if (!PageResolutionNeedsWork(view, target))
                 {
                     return;
                 }
 
-                // Realize before rendering, not after: the ink layer should exist as
-                // soon as the page enters the window, whether or not the bitmap
-                // render goes on to succeed.
-                RealizePage(view);
-
                 using (var page = document.GetPage(view.Index))
-                using (var stream = new InMemoryRandomAccessStream())
                 {
-                    var options = BuildRenderOptions(page, target);
-                    await page.RenderToStreamAsync(stream, options);
-                    if (token != activeRenderToken)
+                    var size = page.Size;
+                    if (ConfirmPageAspect(view, size.Width > 0 ? size.Height / size.Width : double.NaN))
+                    {
+                        RefreshPageGeometry(view);
+                        target = ComputeRenderTargetWidth(view);
+                    }
+                    var options = BuildRenderOptions(page, view, target);
+                    pending = await rasterBackend.RenderAsync(page, options.DestinationWidth,
+                        options.DestinationHeight, new Rect());
+
+                    if (!PageStillWanted(index, token))
                     {
                         return;
                     }
+                    if (memoryConstrained && !IsPageVisible(index)) return;
+                    // A limit can drop while the native draw is running. Discard
+                    // its oversized result; keep the displayed image until a
+                    // replacement using the new pixel budget is ready.
+                    if (activeBitmapCacheBudget < budgetAtStart &&
+                        pending.Bytes > RenderPixelBudget(view) * 8 * 1.1) return;
+                    // Preserve the current surface if a gesture began while the
+                    // worker was drawing its replacement. Do not swap refinements
+                    // into an actively moving viewport.
+                    if (view.IsRendered && (!IsScrollSettled() || !IsZoomSettled())) return;
 
-                    stream.Seek(0);
-                    var decoder = await BitmapDecoder.CreateAsync(stream);
-                    var source = new SoftwareBitmapSource();
-                    using (var pixels = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied))
+                    // Only commit pages still near the viewport. Abandoned rasters
+                    // are disposed; replaced visible ones get a bounded grace period.
+                    int visibleFirst, visibleLast;
+                    GetVisiblePageRange(out visibleFirst, out visibleLast);
+                    if (index >= visibleFirst && index <= visibleLast)
                     {
-                        if (token != activeRenderToken)
-                        {
-                            source.Dispose();
-                            return;
-                        }
-
-                        await source.SetBitmapAsync(pixels);
+                        RealizePage(view);
+                        UpdatePageSize(view);
                     }
-
-                    if (token != activeRenderToken)
-                    {
-                        source.Dispose();
-                        return;
-                    }
-
-                    // Re-realize if an eviction pass virtualized this page while the
-                    // render was in flight, then swap and free the old surface right
-                    // away instead of waiting for the GC to finalize it (that lag is
-                    // what let memory balloon into gigabytes while zooming).
-                    RealizePage(view);
-                    UpdatePageSize(view);
-                    var previous = view.Source;
-                    view.Image.Source = source;
-                    view.Source = source;
-                    if (previous != null)
-                    {
-                        previous.Dispose();
-                    }
+                    // Native pages retain only their GPU surface. The fallback
+                    // retains CPU pixels as well and accounts for both allocations.
+                    var bytes = pending.Bytes;
+                    var previousRaster = view.Raster;
+                    TrimBitmapCache(view, bytes + (view.IsRealized && previousRaster != null ? previousRaster.Bytes : 0));
+                    // Attach the replacement without an intermediate null Source.
+                    if (view.Image != null) view.Image.Source = pending.Source;
+                    ReleasePageDetail(view);
+                    cachedBitmapBytes -= view.BitmapBytes;
+                    view.Raster = pending;
+                    pending = null;
+                    view.BitmapBytes = bytes;
+                    cachedBitmapBytes += bytes;
+                    cachedPages.Add((int)view.Index);
+                    RetireRaster(previousRaster, view.IsRealized);
 
                     view.IsRendered = true;
-                    view.EverRendered = true;
                     view.RenderedWidth = options.DestinationWidth;
                 }
             }
             finally
             {
+                if (pending != null) pending.Dispose();
                 renderGate.Release();
             }
 
-            if (view != null && !everRendered && token == activeRenderToken)
+            if (view != null && view.IsRealized && !view.InkLoaded && PageStillWanted(index, token))
             {
-                await LoadInkAsync(view);
+                // Disk reads must not hold up the next visible page's raster.
+                // RestoreVisibleInkAsync isolates errors from page rendering.
+                var ignored = RestoreVisibleInkAsync(view, token);
             }
         }
 
-        private PdfPageRenderOptions BuildRenderOptions(PdfPage page, double targetWidth)
+        private double RenderPixelBudget(PageView view)
+        {
+            int first, last;
+            GetVisiblePageRange(out first, out last);
+            // Spend most of the budget on visible detail; speculative pages should
+            // not reduce the current page's resolution equally at high zoom.
+            var visible = view.Index >= first && view.Index <= last;
+            var share = visible ? 0.65 / Math.Max(1, last - first + 1) : 0.35 / (RenderWindow * 2);
+            return Math.Min(MaxRenderPixels, activeBitmapCacheBudget / 8.0 * share);
+        }
+
+        private PdfPageRenderOptions BuildRenderOptions(PdfPage page, PageView view, double targetWidth)
         {
             var size = page.Size;
             var width = (uint)Math.Max(1, Math.Round(targetWidth));
             var height = (uint)Math.Max(1, Math.Round(size.Width > 0 ? targetWidth * size.Height / size.Width : targetWidth));
+            var maxPixels = RenderPixelBudget(view);
+            var pixels = (double)width * height;
+            if (pixels > maxPixels)
+            {
+                var shrink = Math.Sqrt(maxPixels / pixels);
+                width = (uint)Math.Max(1, Math.Floor(width * shrink));
+                height = (uint)Math.Max(1, Math.Floor(height * shrink));
+            }
 
             return new PdfPageRenderOptions
             {
@@ -1048,41 +1229,52 @@ namespace LitePdfViewer
 
         private async Task RenderThumbnailCoreAsync(uint index, ulong token)
         {
+            PdfPageRaster pending = null;
             await renderGate.WaitAsync();
             try
             {
-                if (token != activeRenderToken || document == null || index >= document.PageCount)
+                if (token != activeRenderToken || document == null || index >= document.PageCount ||
+                    memoryConstrained || !thumbsRequested || !thumbnailItems.ContainsKey((int)index) ||
+                    !IsScrollSettled() || !IsZoomSettled() || DateTime.UtcNow < thumbnailSettledAt)
                 {
                     return;
                 }
 
                 using (var page = document.GetPage(index))
-                using (var stream = new InMemoryRandomAccessStream())
                 {
                     var size = page.Size;
-                    var scale = size.Width > 0 ? ThumbWidth / size.Width : 1;
-                    var width = (uint)Math.Max(1, Math.Round(ThumbWidth));
-                    var height = (uint)Math.Max(1, Math.Round(size.Height * scale));
-                    await page.RenderToStreamAsync(stream, new PdfPageRenderOptions
-                    {
-                        DestinationWidth = width,
-                        DestinationHeight = height,
-                        BitmapEncoderId = BitmapEncoder.PngEncoderId
-                    });
+                    var scale = size.Width > 0 && size.Height > 0 ? Math.Min(ThumbWidth / size.Width, 112 / size.Height) : 1;
+                    var width = (uint)Math.Max(1, Math.Round(size.Width * scale));
+                    var height = (uint)Math.Max(1, Math.Min(112, Math.Round(size.Height * scale)));
+                    pending = await rasterBackend.RenderAsync(page, width, height, new Rect());
 
-                    if (token != activeRenderToken || document == null)
+                    if (memoryConstrained || token != activeRenderToken || !thumbsRequested || !thumbnailItems.ContainsKey((int)index))
                     {
                         return;
                     }
 
-                    stream.Seek(0);
-                    var bitmap = new BitmapImage { DecodePixelWidth = (int)width };
-                    await bitmap.SetSourceAsync(stream);
-                    AddThumbnail(index, bitmap);
+                    ThumbnailItem item;
+                    if (token == activeRenderToken && thumbnailItems.TryGetValue((int)index, out item))
+                    {
+                        item.Image.Height = Math.Min(112, ThumbWidth * height / Math.Max(1.0, width));
+                        var previousRaster = item.Raster;
+                        item.Raster = pending;
+                        item.Image.Source = pending.Source;
+                        pending = null;
+                        RetireRaster(previousRaster, true);
+                        item.IsRendered = true;
+                    }
                 }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception)
+            {
+                ThumbnailItem item;
+                if (token == activeRenderToken && thumbnailItems.TryGetValue((int)index, out item)) item.RenderFailed = true;
             }
             finally
             {
+                if (pending != null) pending.Dispose();
                 renderGate.Release();
             }
         }
@@ -1091,10 +1283,13 @@ namespace LitePdfViewer
         // turn in a 900-page file costs a handful of checks rather than 900.
         private void EvictFarPages()
         {
+            int first, last;
+            GetVisiblePageRange(out first, out last);
+            var window = memoryConstrained ? 0 : EvictWindow;
             for (var i = realizedPages.Count - 1; i >= 0; i--)
             {
                 var index = realizedPages[i];
-                if (Math.Abs(index - (int)pageIndex) <= EvictWindow)
+                if (index >= first - window && index <= last + window)
                 {
                     continue;
                 }
@@ -1105,18 +1300,18 @@ namespace LitePdfViewer
             }
         }
 
-        private static void ReleasePageBitmap(PageView view)
+        private void ReleasePageBitmap(PageView view)
         {
+            ReleasePageDetail(view);
+            cachedPages.Remove((int)view.Index);
+            cachedBitmapBytes -= view.BitmapBytes;
+            view.BitmapBytes = 0;
             if (view.Image != null)
             {
                 view.Image.Source = null;
             }
 
-            if (view.Source != null)
-            {
-                view.Source.Dispose();
-                view.Source = null;
-            }
+            if (view.Raster != null) { view.Raster.Dispose(); view.Raster = null; }
 
             view.IsRendered = false;
             view.RenderedWidth = 0;
@@ -1149,6 +1344,13 @@ namespace LitePdfViewer
             var control = Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control)
                 .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
+            if (control && e.Key == Windows.System.VirtualKey.F && document != null)
+            {
+                e.Handled = true;
+                ShowSearch();
+                return;
+            }
+
             if (control && e.Key == Windows.System.VirtualKey.O)
             {
                 e.Handled = true;
@@ -1165,6 +1367,32 @@ namespace LitePdfViewer
 
             if (document == null)
             {
+                return;
+            }
+
+            // Leave native text inputs (such as the zoom box) in control of their shortcuts.
+            if (e.OriginalSource is TextBox || e.OriginalSource is PasswordBox) return;
+            if (control && e.Key == Windows.System.VirtualKey.C && selectedTextPage != null)
+            {
+                e.Handled = true;
+                CopySelectedText();
+                return;
+            }
+            if (control && e.Key == Windows.System.VirtualKey.A && currentInkTool == InkTool.None)
+            {
+                var view = GetCurrentPageView();
+                if (view != null)
+                {
+                    await EnsurePageTextAsync(view, activeRenderToken);
+                    if (pageViews.Contains(view)) SelectAllPageText(view);
+                }
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Windows.System.VirtualKey.Escape && selectedTextPage != null)
+            {
+                ClearTextSelection();
+                e.Handled = true;
                 return;
             }
 
@@ -1224,7 +1452,8 @@ namespace LitePdfViewer
             }
 
             pageIndex = nextIndex;
-            ScrollToPage(pageIndex, true);
+            if (fitPageToViewport) FitToWindow(false);
+            ScrollToPage(nextIndex, true);
             UpdateThumbnailSelection();
             EvictFarPages();
             UpdateUi();
@@ -1237,8 +1466,15 @@ namespace LitePdfViewer
 
         private void FitToWindow(bool animated)
         {
-            // Layout width already fits the viewport, so "fit" is zoom 1.
-            DocumentScroller.ChangeView(0f, (float)TopOfPage(pageIndex, 1f), 1f, !animated);
+            pendingLayoutAnchor = null;
+            fitPageToViewport = true;
+            var fitIndex = pageIndex;
+            fitReferencePage = fitIndex;
+            var view = GetCurrentPageView();
+            if (view == null) return;
+            var zoom = FitZoom(view);
+            PageFrame.Width = Math.Max(lastColumnWidth + 2 * PageBorderThickness, Math.Max(1, DocumentScroller.ViewportWidth) / zoom);
+            DocumentScroller.ChangeView(0f, (float)TopOfPage(fitIndex, zoom), zoom, !animated);
         }
 
         private void ZoomInButton_Click(object sender, RoutedEventArgs e)
@@ -1263,6 +1499,8 @@ namespace LitePdfViewer
 
         private void SetZoom(float newZoom, bool animated)
         {
+            pendingLayoutAnchor = null;
+            fitPageToViewport = false;
             newZoom = (float)Math.Max(DocumentScroller.MinZoomFactor, Math.Min(DocumentScroller.MaxZoomFactor, newZoom));
             var oldZoom = DocumentScroller.ZoomFactor;
             if (Math.Abs(newZoom - oldZoom) < 0.005f)
@@ -1273,7 +1511,7 @@ namespace LitePdfViewer
             var viewportWidth = Math.Max(1, DocumentScroller.ViewportWidth);
             var viewportHeight = Math.Max(1, DocumentScroller.ViewportHeight);
 
-            var requiredFrameWidth = Math.Max(lastColumnWidth, viewportWidth / newZoom);
+            var requiredFrameWidth = Math.Max(lastColumnWidth + 2 * PageBorderThickness, viewportWidth / newZoom);
             if (Math.Abs(PageFrame.Width - requiredFrameWidth) > 0.5)
             {
                 PageFrame.Width = requiredFrameWidth;
@@ -1335,6 +1573,7 @@ namespace LitePdfViewer
         private void MarkZoomChanging()
         {
             zoomSettledAt = DateTime.UtcNow + ZoomSettleDelay;
+            WakeRenderer();
         }
 
         private void ZoomPercentButton_Click(object sender, RoutedEventArgs e)
@@ -1425,6 +1664,7 @@ namespace LitePdfViewer
 
         private void ScrollToPage(uint index, bool animated)
         {
+            pendingLayoutAnchor = null;
             if (index >= (uint)pageViews.Count)
             {
                 return;
@@ -1448,13 +1688,18 @@ namespace LitePdfViewer
 
         private void DocumentScroller_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
+            if (e.IsIntermediate) pendingLayoutAnchor = null;
             if (document == null)
             {
                 return;
             }
 
             var zoom = DocumentScroller.ZoomFactor;
-            if (e.IsIntermediate || Math.Abs(zoom - lastObservedZoom) > 0.001f)
+            scrollActivity.Observe(DocumentScroller.HorizontalOffset, DocumentScroller.VerticalOffset,
+                e.IsIntermediate, DateTime.UtcNow);
+            if (scrollActivity.IsDirectManipulationActive && Math.Abs(zoom - lastObservedZoom) > 0.001f)
+                fitPageToViewport = false;
+            if (Math.Abs(zoom - lastObservedZoom) > 0.001f)
             {
                 lastObservedZoom = zoom;
                 MarkZoomChanging();
@@ -1462,11 +1707,17 @@ namespace LitePdfViewer
 
             UpdatePageCentering();
             UpdateCurrentPageFromScroll();
+            RestoreVisiblePages();
             UpdateZoomControls();
+            if (!e.IsIntermediate) FollowCurrentThumbnail();
+            var reference = GetFitReferencePage();
+            if (!e.IsIntermediate && fitPageToViewport && reference != null &&
+                Math.Abs(DocumentScroller.ZoomFactor - FitZoom(reference, false)) > 0.005f)
+                ScheduleRelayout();
+            WakeRenderer();
         }
 
-        // The vertical scrollbar reserving or releasing space shifts the viewport
-        // width without any scroll event; keep the edge-to-edge column in sync.
+        // Scrollbar/layout changes can affect fit even though natural page width is stable.
         private void DocumentScroller_LayoutUpdated(object sender, object e)
         {
             if (document == null)
@@ -1474,8 +1725,10 @@ namespace LitePdfViewer
                 return;
             }
 
-            var viewportWidth = DocumentScroller.ViewportWidth;
-            if (viewportWidth > 1 && Math.Abs(viewportWidth - lastColumnWidth) > 4)
+            RestoreLayoutAnchor();
+            var reference = GetFitReferencePage();
+            if (fitPageToViewport && !scrollActivity.IsDirectManipulationActive && IsScrollSettled() && reference != null &&
+                Math.Abs(DocumentScroller.ZoomFactor - FitZoom(reference, false)) > 0.005f)
             {
                 ScheduleRelayout();
             }
@@ -1504,24 +1757,12 @@ namespace LitePdfViewer
                 viewportHeight = DocumentScroller.ActualHeight;
             }
 
-            // Viewport centre expressed in unzoomed content space.
-            var center = (DocumentScroller.VerticalOffset + viewportHeight / 2) / zoom;
-
-            int lo = 0, hi = pageViews.Count - 1;
-            while (lo < hi)
-            {
-                var mid = (lo + hi) / 2;
-                var bottom = pageTops[mid] + pageViews[mid].LayoutHeight + 2 * PageBorderThickness;
-                if (bottom < center)
-                {
-                    lo = mid + 1;
-                }
-                else
-                {
-                    hi = mid;
-                }
-            }
-
+            // Anchor near the leading edge: a short/landscape page should not be
+            // skipped just because the next page occupies the viewport centre.
+            var top = DocumentScroller.VerticalOffset / zoom;
+            var leading = PageAtOffset(top);
+            var anchor = top + Math.Min(viewportHeight / zoom * 0.1, pageViews[leading].LayoutHeight * 0.25);
+            var lo = PageAtOffset(anchor);
             if ((uint)lo != pageIndex)
             {
                 pageIndex = (uint)lo;
@@ -1546,109 +1787,6 @@ namespace LitePdfViewer
         }
 
         // ============================== Thumbnails ==============================
-
-        private void ResetThumbnails()
-        {
-            thumbnailItems.Clear();
-            selectedThumbIndex = -1;
-            ThumbnailPanel.Children.Clear();
-        }
-
-        private void AddThumbnail(uint index, BitmapImage bitmap)
-        {
-            var pixelWidth = Math.Max(1, bitmap.PixelWidth);
-            var pixelHeight = Math.Max(1, bitmap.PixelHeight);
-            var image = new Image
-            {
-                Source = bitmap,
-                Width = ThumbWidth,
-                Height = Math.Round(pixelHeight * (ThumbWidth / pixelWidth)),
-                Stretch = Stretch.Fill
-            };
-
-            var card = new Border
-            {
-                Child = image,
-                Background = PageFillBrush,
-                BorderBrush = ThumbIdleBorderBrush,
-                BorderThickness = new Thickness(1)
-            };
-
-            var number = new TextBlock
-            {
-                Text = (index + 1).ToString(CultureInfo.InvariantCulture),
-                FontSize = 11,
-                Foreground = ThumbIdleTextBrush,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 6, 0, 0)
-            };
-
-            var stack = new StackPanel();
-            stack.Children.Add(card);
-            stack.Children.Add(number);
-
-            object thumbStyle;
-            var button = new Button
-            {
-                Content = stack,
-                Tag = index,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            if (Resources.TryGetValue("ThumbCardStyle", out thumbStyle))
-            {
-                button.Style = (Style)thumbStyle;
-            }
-            AutomationProperties.SetName(button, "Page thumbnail " + (index + 1).ToString(CultureInfo.InvariantCulture));
-            button.Click += ThumbnailButton_Click;
-
-            thumbnailItems.Add(new ThumbnailItem { Button = button, Card = card, Number = number });
-            ThumbnailPanel.Children.Add(button);
-            UpdateThumbnailSelection();
-        }
-
-        private void ThumbnailButton_Click(object sender, RoutedEventArgs e)
-        {
-            var button = sender as Button;
-            if (button == null || button.Tag == null)
-            {
-                return;
-            }
-
-            var targetPage = (uint)button.Tag;
-            if (targetPage != pageIndex)
-            {
-                GoToPage(targetPage);
-            }
-        }
-
-        // Repaints only the two thumbnails whose state actually changed, using shared
-        // brushes. This used to rebuild every thumbnail's brushes on every call, and
-        // AddThumbnail calls it once per thumbnail, so filling the pane for an
-        // n-page document allocated on the order of n^2 brushes.
-        private void UpdateThumbnailSelection()
-        {
-            var target = (int)pageIndex;
-            if (target == selectedThumbIndex)
-            {
-                return;
-            }
-
-            if (selectedThumbIndex >= 0 && selectedThumbIndex < thumbnailItems.Count)
-            {
-                var previous = thumbnailItems[selectedThumbIndex];
-                previous.Card.BorderBrush = ThumbIdleBorderBrush;
-                previous.Number.Foreground = ThumbIdleTextBrush;
-            }
-
-            selectedThumbIndex = -1;
-            if (target >= 0 && target < thumbnailItems.Count)
-            {
-                var current = thumbnailItems[target];
-                current.Card.BorderBrush = ThumbSelectedBorderBrush;
-                current.Number.Foreground = ThumbSelectedTextBrush;
-                selectedThumbIndex = target;
-            }
-        }
 
         // ============================== Annotation storage ==============================
 
@@ -1677,7 +1815,7 @@ namespace LitePdfViewer
 
             if (SaveButton != null)
             {
-                ToolTipService.SetToolTip(SaveButton, dirty ? "保存墨迹 (Ctrl+S) *" : "已保存 (Ctrl+S)");
+                ToolTipService.SetToolTip(SaveButton, dirty ? "保存批注 (Ctrl+S) *" : "已保存 (Ctrl+S)");
             }
 
             if (FileNameText != null && currentFile != null)
@@ -1698,23 +1836,16 @@ namespace LitePdfViewer
                 return;
             }
 
+            var token = activeRenderToken;
             try
             {
-                for (var i = 0; i < pageViews.Count; i++)
-                {
-                    var view = pageViews[i];
-                    if (view.Dirty)
-                    {
-                        await SaveInkAsync(view);
-                        ClearPageDirty(view);
-                    }
-                }
-
-                UpdateDirtyState();
+                await SaveCurrentAnnotationsAsync();
+                if (token != activeRenderToken) return;
                 ShowSaveFeedback();
             }
             catch (Exception ex)
             {
+                if (token != activeRenderToken) return;
                 var errorDialog = new Windows.UI.Popups.MessageDialog("保存失败: " + ex.Message, "错误");
                 await errorDialog.ShowAsync();
             }
@@ -1972,7 +2103,7 @@ namespace LitePdfViewer
         // InkCanvas, so it works whether or not the page is currently realized.
         private async Task LoadInkAsync(PageView view)
         {
-            if (view.InkLoaded)
+            if (view.InkLoaded || view.IsLoadingInk)
             {
                 return;
             }
@@ -1980,9 +2111,13 @@ namespace LitePdfViewer
             view.IsLoadingInk = true;
             try
             {
+                var token = activeRenderToken;
+                await EnsurePageGeometryAsync(view, token);
+                var folder = await GetAnnotationFolderAsync();
+                if (token != activeRenderToken) return;
                 var strokes = view.EnsureStrokes();
                 strokes.Clear();
-                var file = await TryGetInkFileAsync(view.Index);
+                var file = await TryGetInkFileAsync(view.Index, folder);
                 if (file != null)
                 {
                     using (var stream = await file.OpenSequentialReadAsync())
@@ -1991,15 +2126,24 @@ namespace LitePdfViewer
                     }
                 }
 
+                if (token != activeRenderToken) return;
                 view.InkLoaded = true;
+                try { await LoadTextHighlightsAsync(view, folder, token); }
+                catch (Exception)
+                {
+                    if (view.Chrome != null) AutomationProperties.SetHelpText(view.Chrome, "无法读取已保存的高亮批注");
+                }
             }
             finally
             {
                 view.IsLoadingInk = false;
+                if (view.InkLayer != null)
+                    ConfigureInkCanvas(view.InkLayer, CreateInkAttributes(), view.InkLoaded);
+                ReleaseCleanAnnotations(view);
             }
         }
 
-        private async Task SaveInkAsync(PageView view)
+        private async Task SaveInkAsync(PageView view, StorageFolder folder)
         {
             if (currentFile == null || view == null || view.IsLoadingInk)
             {
@@ -2008,7 +2152,6 @@ namespace LitePdfViewer
 
             if (view.Strokes == null)
             {
-                ClearPageDirty(view);
                 return;
             }
 
@@ -2018,21 +2161,13 @@ namespace LitePdfViewer
                 return;
             }
 
-            var folder = await GetAnnotationFolderAsync();
             var fileName = GetInkFileName(view.Index);
 
             if (strokes.Count == 0)
             {
-                try
-                {
-                    var existing = await folder.GetFileAsync(fileName);
-                    await existing.DeleteAsync(StorageDeleteOption.PermanentDelete);
-                }
-                catch (FileNotFoundException)
-                {
-                }
+                var existing = await folder.TryGetItemAsync(fileName) as StorageFile;
+                if (existing != null) await existing.DeleteAsync(StorageDeleteOption.PermanentDelete);
 
-                ClearPageDirty(view);
                 return;
             }
 
@@ -2042,20 +2177,11 @@ namespace LitePdfViewer
                 await view.Strokes.SaveAsync(stream);
             }
 
-            ClearPageDirty(view);
         }
 
-        private async Task<StorageFile> TryGetInkFileAsync(uint index)
+        private async Task<StorageFile> TryGetInkFileAsync(uint index, StorageFolder folder)
         {
-            try
-            {
-                var folder = await GetAnnotationFolderAsync();
-                return await folder.GetFileAsync(GetInkFileName(index));
-            }
-            catch (FileNotFoundException)
-            {
-                return null;
-            }
+            return await folder.TryGetItemAsync(GetInkFileName(index)) as StorageFile;
         }
 
         // Cached per document: this used to hit the filesystem for every page load
@@ -2068,9 +2194,11 @@ namespace LitePdfViewer
             }
 
             var root = ApplicationData.Current.LocalFolder;
-            var folderName = "ink-" + StableId(currentFile.Path + currentFile.DateCreated.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture));
-            annotationFolder = await root.CreateFolderAsync(folderName, CreationCollisionOption.OpenIfExists);
-            return annotationFolder;
+            var file = currentFile;
+            var folderName = "ink-" + StableId(file.Path + file.DateCreated.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture));
+            var folder = await root.CreateFolderAsync(folderName, CreationCollisionOption.OpenIfExists);
+            if (file == currentFile) annotationFolder = folder;
+            return folder;
         }
 
         private static string StableId(string text)
@@ -2311,7 +2439,10 @@ namespace LitePdfViewer
 
         private void SetInkTool(InkTool tool)
         {
+            if (tool != InkTool.None) ClearTextSelection();
+            SetTextCursor(false);
             currentInkTool = tool;
+            if (TopSelectButton != null) TopSelectButton.IsChecked = tool == InkTool.None;
 
             if (TopPenButton != null)
             {
@@ -2343,19 +2474,16 @@ namespace LitePdfViewer
             var attributes = CreateInkAttributes();
             for (var i = 0; i < realizedPages.Count; i++)
             {
-                ConfigureInkCanvas(pageViews[realizedPages[i]].InkLayer, attributes);
+                var view = pageViews[realizedPages[i]];
+                ConfigureInkCanvas(view.InkLayer, attributes, view.InkLoaded && !view.IsLoadingInk);
+                pageViews[realizedPages[i]].SelectionLayer.IsHitTestVisible = currentInkTool == InkTool.None;
             }
         }
 
-        private void ConfigureInkCanvas(InkCanvas inkCanvas)
+        private void ConfigureInkCanvas(InkCanvas inkCanvas, InkDrawingAttributes attributes, bool ready)
         {
-            ConfigureInkCanvas(inkCanvas, CreateInkAttributes());
-        }
-
-        private void ConfigureInkCanvas(InkCanvas inkCanvas, InkDrawingAttributes attributes)
-        {
-            inkCanvas.IsHitTestVisible = currentInkTool != InkTool.None;
-            if (currentInkTool == InkTool.None)
+            inkCanvas.IsHitTestVisible = ready && currentInkTool != InkTool.None;
+            if (!ready || currentInkTool == InkTool.None)
             {
                 inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
             }
@@ -2424,12 +2552,21 @@ namespace LitePdfViewer
         private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
             var view = GetCurrentPageView();
-            if (view == null || view.Strokes == null)
+            if (view == null || view.IsLoadingInk || view.Strokes == null)
             {
                 return;
             }
 
             var strokes = view.Strokes.GetStrokes();
+            var undoHighlight = view.UndoKinds.Count > 0 ? view.UndoKinds[view.UndoKinds.Count - 1] : strokes.Count == 0;
+            if (view.UndoKinds.Count > 0) view.UndoKinds.RemoveAt(view.UndoKinds.Count - 1);
+            if (undoHighlight && view.Highlights.Count > 0)
+            {
+                view.Highlights.RemoveAt(view.Highlights.Count - 1);
+                MarkPageDirty(view);
+                RedrawTextLayers(view);
+                return;
+            }
             if (strokes.Count == 0)
             {
                 return;
@@ -2443,12 +2580,16 @@ namespace LitePdfViewer
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             var view = GetCurrentPageView();
-            if (view == null || view.Strokes == null || view.Strokes.GetStrokes().Count == 0)
+            if (view == null || view.IsLoadingInk || view.Strokes == null || (view.Strokes.GetStrokes().Count == 0 && view.Highlights.Count == 0))
             {
                 return;
             }
 
             view.Strokes.Clear();
+            view.Highlights.Clear();
+            view.UndoKinds.Clear();
+            if (selectedTextPage == view) ClearTextSelection();
+            RedrawTextLayers(view);
             MarkPageDirty(view);
         }
 
@@ -2532,6 +2673,8 @@ namespace LitePdfViewer
             FitButton.IsEnabled = hasDocument;
 
             TopTouchWritingButton.IsEnabled = hasDocument;
+            TopSelectButton.IsEnabled = hasDocument;
+            AnnotationToolsButton.IsEnabled = hasDocument;
             TopPenButton.IsEnabled = hasDocument;
             TopHighlighterButton.IsEnabled = hasDocument;
             TopEraserButton.IsEnabled = hasDocument;
@@ -2552,26 +2695,44 @@ namespace LitePdfViewer
                 : "0 / 0";
         }
 
-        private sealed class PageView
+        private sealed class PageView : IPdfRenderState
         {
             public uint Index { get; set; }
             public Border Chrome { get; set; }
             public Grid Host { get; set; }
             public Image Image { get; set; }
-            public SoftwareBitmapSource Source { get; set; }
+            public PdfPageRaster Raster { get; set; }
+            public ImageSource Source { get { return Raster == null ? null : Raster.Source; } }
+            public PdfPageRaster DetailRaster { get; set; }
+            public Canvas DetailLayer { get; set; }
+            public Image DetailImage { get; set; }
+            public Rect DetailRegion { get; set; }
+            public double DetailScale { get; set; }
+            public bool DetailFailed { get; set; }
             public InkCanvas InkLayer { get; set; }
             public double LayoutWidth { get; set; }
             public double LayoutHeight { get; set; }
             public double Aspect { get; set; }
+            public bool AspectKnown { get; set; }
             public double RenderedWidth { get; set; }
+            public long BitmapBytes { get; set; }
             public bool IsRendered { get; set; }
-            public bool EverRendered { get; set; }
             public bool RenderFailed { get; set; }
             public bool IsLoadingInk { get; set; }
             public bool InkLoaded { get; set; }
             public bool Dirty { get; set; }
+            public int Revision { get; set; }
+            public Canvas HighlightLayer { get; set; }
+            public Canvas SelectionLayer { get; set; }
+            public List<TextGlyph> Glyphs { get; set; }
+            public Task TextTask { get; set; }
+            public bool TextFailed { get; set; }
+            public bool HighlightsLoaded { get; set; }
+            public readonly List<TextHighlight> Highlights = new List<TextHighlight>();
+            // true = text highlight, false = collected ink stroke; newest action first on undo.
+            public readonly List<bool> UndoKinds = new List<bool>();
 
-            // Survives virtualization: the InkCanvas comes and goes, the strokes do not.
+            // Dirty strokes survive virtualization; saved offscreen data is released.
             public InkStrokeContainer Strokes { get; set; }
 
             public bool IsRealized
@@ -2596,15 +2757,19 @@ namespace LitePdfViewer
                     return true;
                 }
 
-                return Math.Abs(RenderedWidth - targetWidth) > Math.Max(96, targetWidth * 0.3);
+                return targetWidth - RenderedWidth > Math.Max(96, targetWidth * 0.3);
             }
         }
 
         private sealed class ThumbnailItem
         {
+            public PdfPageRaster Raster { get; set; }
             public Button Button { get; set; }
             public Border Card { get; set; }
             public TextBlock Number { get; set; }
+            public Image Image { get; set; }
+            public bool IsRendered { get; set; }
+            public bool RenderFailed { get; set; }
         }
 
         private enum InkTool

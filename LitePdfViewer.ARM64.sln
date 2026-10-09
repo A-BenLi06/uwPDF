@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.0.0
+MinimumVisualStudioVersion = 15.0.0.0
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LitePdfViewer.ARM64", "LitePdfViewer\LitePdfViewer.ARM64.csproj", "{D069951E-61D6-49E5-B221-9B88191C429D}"
+EndProject
+Global
+    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+        Debug|ARM64 = Debug|ARM64
+        Release|ARM64 = Release|ARM64
+    EndGlobalSection
+    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {D069951E-61D6-49E5-B221-9B88191C429D}.Debug|ARM64.ActiveCfg = Debug|ARM64
+        {D069951E-61D6-49E5-B221-9B88191C429D}.Debug|ARM64.Build.0 = Debug|ARM64
+        {D069951E-61D6-49E5-B221-9B88191C429D}.Debug|ARM64.Deploy.0 = Debug|ARM64
+        {D069951E-61D6-49E5-B221-9B88191C429D}.Release|ARM64.ActiveCfg = Release|ARM64
+        {D069951E-61D6-49E5-B221-9B88191C429D}.Release|ARM64.Build.0 = Release|ARM64
+        {D069951E-61D6-49E5-B221-9B88191C429D}.Release|ARM64.Deploy.0 = Release|ARM64
+    EndGlobalSection
+EndGlobal

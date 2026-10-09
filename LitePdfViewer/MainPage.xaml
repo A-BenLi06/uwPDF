@@ -10,6 +10,66 @@
 
     <Page.Resources>
 
+        <!-- Native ScrollBar parts retain range, drag and page-click behavior.
+             Every state uses a 3-DIP visual inside a 12-DIP input surface. -->
+        <ControlTemplate x:Key="ThinScrollThumb" TargetType="primitives:Thumb">
+            <Grid Background="Transparent" Width="12">
+                <Border Width="3" HorizontalAlignment="Right" Margin="0,0,2,0"
+                    CornerRadius="1.5" Background="{ThemeResource SystemControlForegroundBaseMediumBrush}" />
+            </Grid>
+        </ControlTemplate>
+        <ControlTemplate x:Key="ScrollTrackButton" TargetType="primitives:RepeatButton">
+            <Grid Background="Transparent" />
+        </ControlTemplate>
+        <Style TargetType="primitives:ScrollBar">
+            <Setter Property="MinWidth" Value="12" />
+            <Setter Property="Width" Value="12" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="primitives:ScrollBar">
+                        <Grid x:Name="Root" Background="Transparent" Width="12">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver" />
+                                    <VisualState x:Name="Disabled">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="ScrollingIndicatorStates">
+                                    <VisualState x:Name="NoIndicator" />
+                                    <VisualState x:Name="TouchIndicator" />
+                                    <VisualState x:Name="MouseIndicator" />
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid x:Name="VerticalRoot">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <primitives:RepeatButton x:Name="VerticalSmallDecrease" Height="0" IsTabStop="False"
+                                    Template="{StaticResource ScrollTrackButton}" />
+                                <primitives:RepeatButton x:Name="VerticalLargeDecrease" Grid.Row="1" Height="0" IsTabStop="False"
+                                    Template="{StaticResource ScrollTrackButton}" />
+                                <primitives:Thumb x:Name="VerticalThumb" Grid.Row="2" Width="12" MinHeight="24"
+                                    Template="{StaticResource ThinScrollThumb}" AutomationProperties.AccessibilityView="Raw" />
+                                <primitives:RepeatButton x:Name="VerticalLargeIncrease" Grid.Row="3" IsTabStop="False"
+                                    Template="{StaticResource ScrollTrackButton}" />
+                                <primitives:RepeatButton x:Name="VerticalSmallIncrease" Grid.Row="4" Height="0" IsTabStop="False"
+                                    Template="{StaticResource ScrollTrackButton}" />
+                            </Grid>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- HUD icon button (dark floating toolbar) -->
         <Style x:Key="HudButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="32" />
@@ -297,7 +357,7 @@
 
     <Grid Background="#EFEFF1">
         <Grid.RowDefinitions>
-            <RowDefinition Height="48" />
+            <RowDefinition Height="52" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -313,22 +373,22 @@
                 <!-- Left action area: Open, Save, Thumbnails toggle -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Center">
                     <AppBarButton
-                        x:Name="OpenButton"
+                        x:Name="OpenButton" Width="40"
                         Icon="OpenFile"
                         IsCompact="True"
                         AutomationProperties.Name="Open PDF"
                         ToolTipService.ToolTip="打开 PDF (Ctrl+O)"
                         Click="OpenButton_Click" />
                     <AppBarButton
-                        x:Name="SaveButton"
+                        x:Name="SaveButton" Width="40"
                         Icon="Save"
                         IsCompact="True"
                         AutomationProperties.Name="Save"
-                        ToolTipService.ToolTip="保存墨迹 (Ctrl+S)"
+                        ToolTipService.ToolTip="保存批注 (Ctrl+S)"
                         Click="SaveButton_Click" />
                     <AppBarSeparator />
                     <AppBarToggleButton
-                        x:Name="ThumbsToggle"
+                        x:Name="ThumbsToggle" Width="40"
                         IsCompact="True"
                         IsChecked="False"
                         AutomationProperties.Name="Page thumbnails"
@@ -341,7 +401,7 @@
                 </StackPanel>
 
                 <!-- Center area: File Name -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0">
+                <StackPanel x:Name="FileTitleDragRegion" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0">
                     <FontIcon Glyph="&#xE8A5;" FontSize="13" Foreground="#8A8A90" Margin="0,0,6,0" VerticalAlignment="Center" />
                     <TextBlock
                         x:Name="FileNameText"
@@ -354,62 +414,82 @@
                         TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <!-- Right action area: Inking tools (Windows Snip & Sketch style in title bar) -->
-                <StackPanel x:Name="InkControlsPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,4,0" VerticalAlignment="Center">
-                    <AppBarSeparator />
-                    <AppBarToggleButton
-                        x:Name="TopTouchWritingButton"
-                        IsCompact="True"
-                        AutomationProperties.Name="Touch writing"
-                        ToolTipService.ToolTip="触摸书写 (开/关)"
-                        Click="TopTouchWritingButton_Click">
-                        <AppBarToggleButton.Icon>
-                            <FontIcon Glyph="&#xED5F;" />
-                        </AppBarToggleButton.Icon>
-                    </AppBarToggleButton>
-
-                    <AppBarToggleButton
-                        x:Name="TopPenButton"
-                        IsCompact="True"
-                        AutomationProperties.Name="Pen"
-                        ToolTipService.ToolTip="圆珠笔 (点击选择，再次点击配置颜色与粗细)"
-                        Click="TopPenButton_Click">
-                        <AppBarToggleButton.Icon>
-                            <FontIcon Glyph="&#xED63;" />
-                        </AppBarToggleButton.Icon>
+                <!-- Compact commands leave the natural PDF window readable. -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <AppBarButton x:Name="ExportButton" Width="40" Icon="Share" IsCompact="True" AutomationProperties.Name="导出批注 PDF"
+                        ToolTipService.ToolTip="导出带批注的 PDF 副本" Click="ExportButton_Click" />
+                    <AppBarButton x:Name="SearchButton" Width="40" Icon="Find" IsCompact="True" AutomationProperties.Name="搜索 PDF 文字"
+                        ToolTipService.ToolTip="搜索 (Ctrl+F)" Click="SearchButton_Click" />
+                    <AppBarButton x:Name="AnnotationToolsButton" Width="40" Icon="Edit" IsCompact="True"
+                        AutomationProperties.Name="批注工具" ToolTipService.ToolTip="批注工具：文字选择、笔、荧光笔、橡皮擦"
+                        Click="AnnotationToolsButton_Click">
                         <FlyoutBase.AttachedFlyout>
-                            <Flyout x:Name="PenFlyout" Placement="Bottom">
-                                <StackPanel Width="236" Margin="4">
-                                    <TextBlock Text="颜色" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,0,0,8" />
-                                    <Grid x:Name="PenColorGrid" />
-                                    <TextBlock Text="大小" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,12,0,6" />
-                                    <Border Background="#F7F7F8" BorderBrush="#E2E2E6" BorderThickness="1" CornerRadius="4" Height="36" Margin="0,0,0,8">
-                                        <Canvas Height="36">
-                                            <Path
-                                                x:Name="PenPreviewStroke"
-                                                Data="M 12,18 C 45,6 75,30 118,18 C 150,8 180,28 214,18"
-                                                Stroke="#E81123"
-                                                StrokeThickness="3"
-                                                StrokeStartLineCap="Round"
-                                                StrokeEndLineCap="Round"
-                                                StrokeLineJoin="Round" />
-                                        </Canvas>
-                                    </Border>
-                                    <Slider
-                                        x:Name="PenSizeSlider"
-                                        Minimum="1"
-                                        Maximum="24"
-                                        Value="3"
-                                        StepFrequency="1"
-                                        IsThumbToolTipEnabled="False"
-                                        ValueChanged="PenSizeSlider_ValueChanged" />
-                                </StackPanel>
+                            <Flyout Placement="Bottom">
+                                <StackPanel x:Name="InkControlsPanel" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0" VerticalAlignment="Center">
+                                    <AppBarSeparator Width="12" />
+                                    <AppBarToggleButton
+                                        x:Name="TopSelectButton" Width="40"
+                                        IsCompact="True"
+                                        AutomationProperties.Name="选择文字"
+                                        ToolTipService.ToolTip="选择文字：拖动选中，右键复制或高亮"
+                                        Click="TopSelectButton_Click">
+                                        <AppBarToggleButton.Icon>
+                                            <FontIcon Glyph="&#xE8D2;" />
+                                        </AppBarToggleButton.Icon>
+                                    </AppBarToggleButton>
+                                    <AppBarToggleButton
+                                        x:Name="TopTouchWritingButton" Width="40"
+                                        IsCompact="True"
+                                        AutomationProperties.Name="Touch writing"
+                                        ToolTipService.ToolTip="触摸书写 (开/关)"
+                                        Click="TopTouchWritingButton_Click">
+                                        <AppBarToggleButton.Icon>
+                                            <FontIcon Glyph="&#xED5F;" />
+                                        </AppBarToggleButton.Icon>
+                                    </AppBarToggleButton>
+
+                                    <AppBarToggleButton
+                                        x:Name="TopPenButton" Width="40"
+                                        IsCompact="True"
+                                        AutomationProperties.Name="Pen"
+                                        ToolTipService.ToolTip="圆珠笔 (点击选择，再次点击配置颜色与粗细)"
+                                        Click="TopPenButton_Click">
+                                        <AppBarToggleButton.Icon>
+                                            <FontIcon Glyph="&#xED63;" />
+                                        </AppBarToggleButton.Icon>
+                                        <FlyoutBase.AttachedFlyout>
+                                            <Flyout x:Name="PenFlyout" Placement="Bottom">
+                                                <StackPanel Width="236" Margin="4">
+                                                    <TextBlock Text="颜色" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,0,0,8" />
+                                                    <Grid x:Name="PenColorGrid" />
+                                                    <TextBlock Text="大小" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,12,0,6" />
+                                                    <Border Background="#F7F7F8" BorderBrush="#E2E2E6" BorderThickness="1" CornerRadius="4" Height="36" Margin="0,0,0,8">
+                                                        <Canvas Height="36">
+                                                            <Path
+                                                                x:Name="PenPreviewStroke"
+                                                                Data="M 12,18 C 45,6 75,30 118,18 C 150,8 180,28 214,18"
+                                                                Stroke="#E81123"
+                                                                StrokeThickness="3"
+                                                                StrokeStartLineCap="Round"
+                                                                StrokeEndLineCap="Round"
+                                                                StrokeLineJoin="Round" />
+                                                        </Canvas>
+                                                    </Border>
+                                                    <Slider
+                                                        x:Name="PenSizeSlider"
+                                                        Minimum="1"
+                                                        Maximum="24"
+                                                        Value="3"
+                                                        StepFrequency="1"
+                                                        IsThumbToolTipEnabled="False"
+                                                        ValueChanged="PenSizeSlider_ValueChanged" />
+                                                </StackPanel>
                             </Flyout>
                         </FlyoutBase.AttachedFlyout>
                     </AppBarToggleButton>
 
                     <AppBarToggleButton
-                        x:Name="TopHighlighterButton"
+                        x:Name="TopHighlighterButton" Width="40"
                         IsCompact="True"
                         AutomationProperties.Name="Highlighter"
                         ToolTipService.ToolTip="荧光笔 (点击选择，再次点击配置颜色与粗细)"
@@ -450,7 +530,7 @@
                     </AppBarToggleButton>
 
                     <AppBarToggleButton
-                        x:Name="TopEraserButton"
+                        x:Name="TopEraserButton" Width="40"
                         IsCompact="True"
                         AutomationProperties.Name="Eraser"
                         ToolTipService.ToolTip="橡皮擦"
@@ -460,10 +540,10 @@
                         </AppBarToggleButton.Icon>
                     </AppBarToggleButton>
 
-                    <AppBarSeparator />
+                    <AppBarSeparator Width="12" />
 
                     <AppBarButton
-                        x:Name="TopUndoButton"
+                        x:Name="TopUndoButton" Width="40"
                         Icon="Undo"
                         IsCompact="True"
                         AutomationProperties.Name="Undo"
@@ -471,12 +551,17 @@
                         Click="UndoButton_Click" />
 
                     <AppBarButton
-                        x:Name="TopClearButton"
+                        x:Name="TopClearButton" Width="40"
                         Icon="Delete"
                         IsCompact="True"
                         AutomationProperties.Name="Clear"
-                        ToolTipService.ToolTip="清除本页墨迹"
+                        ToolTipService.ToolTip="清除本页批注"
                         Click="ClearButton_Click" />
+                </StackPanel>
+                            </Flyout>
+                        </FlyoutBase.AttachedFlyout>
+                    </AppBarButton>
+                    <Border x:Name="CaptionButtonInset" Width="136" IsHitTestVisible="False" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -484,19 +569,20 @@
         <!-- ===================== Content ===================== -->
         <Grid Grid.Row="1" SizeChanged="DocumentSurface_SizeChanged">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="ThumbColumn" Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="ThumbColumn" Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Border
                 x:Name="ThumbnailPane"
+                Grid.Column="1"
                 Width="0"
-                HorizontalAlignment="Left"
+                HorizontalAlignment="Right"
                 Visibility="Collapsed"
                 Background="#F7F7F8"
                 BorderBrush="#DFDFE3"
-                BorderThickness="0,0,1,0">
-                <Grid Width="150">
+                BorderThickness="1,0,0,0">
+                <Grid Width="110">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="40" />
                         <RowDefinition Height="*" />
@@ -508,20 +594,22 @@
                         FontWeight="SemiBold"
                         Foreground="#86868B"
                         Text="Pages" />
-                    <ScrollViewer
+                    <ScrollViewer x:Name="ThumbnailScroller"
                         Grid.Row="1"
                         HorizontalScrollBarVisibility="Disabled"
-                        VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="ThumbnailPanel" Margin="10,10,10,20" />
+                        VerticalScrollBarVisibility="Auto"
+                        ViewChanged="ThumbnailScroller_ViewChanged" SizeChanged="ThumbnailScroller_SizeChanged">
+                        <Canvas x:Name="ThumbnailPanel" Width="94" Margin="6,10,6,20" />
                     </ScrollViewer>
                 </Grid>
             </Border>
 
             <ScrollViewer
                 x:Name="DocumentScroller"
-                Grid.Column="1"
+                Grid.Column="0"
+                Margin="13,7,13,7"
                 AutomationProperties.Name="Document scroller"
-                HorizontalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Hidden"
                 VerticalScrollBarVisibility="Auto"
                 ZoomMode="Enabled"
                 MinZoomFactor="0.25"
@@ -531,7 +619,7 @@
                 ViewChanged="DocumentScroller_ViewChanged"
                 LayoutUpdated="DocumentScroller_LayoutUpdated">
                 <Grid x:Name="PageFrame" HorizontalAlignment="Center">
-                    <StackPanel x:Name="PageStack" HorizontalAlignment="Center" />
+                    <Canvas x:Name="PageStack" HorizontalAlignment="Center" />
                 </Grid>
             </ScrollViewer>
 
@@ -709,6 +797,18 @@
                     Content="Choose PDF…"
                     Click="OpenButton_Click" />
             </StackPanel>
+            <Border x:Name="SearchPanel" Grid.ColumnSpan="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top"
+                Margin="8" Padding="8" Background="White" BorderBrush="#D0D0D4" BorderThickness="1" CornerRadius="5">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="SearchTextBox" Width="200" PlaceholderText="查找文字" TextChanged="SearchTextBox_TextChanged" KeyDown="SearchTextBox_KeyDown" />
+                        <Button Content="↑" Click="FindPrevious_Click" AutomationProperties.Name="上一个匹配" />
+                        <Button Content="↓" Click="FindNext_Click" AutomationProperties.Name="下一个匹配" />
+                        <Button Content="×" Click="CloseSearch_Click" AutomationProperties.Name="关闭搜索" />
+                    </StackPanel>
+                    <TextBlock x:Name="SearchStatus" Margin="2,4,0,0" FontSize="12" Foreground="#62626A" />
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Page>
