@@ -31,17 +31,17 @@ is separate from PDF content and remains a compatibility decision to resolve.
 | Native inertia and pinch zoom | ScrollViewer owns inertia and ZoomMode; retain existing surfaces while refining | ScrollViewer handles input; rendering is asynchronous | Touch hardware: fling, reverse direction, pinch while scrolling, no visual jumping |
 | Mixed page sizes and reading position | Actual rotated CropBox geometry; stable reading anchor and explicit fit reference | Page geometry confirmed before raster/ink/search positioning; production anchor tests cover page fractions, borders/gaps, zoom, tiny pages and cumulative differences across 600 pages. Auto-fit reference stays on the last explicitly fitted page | Current UI: mixed portrait/landscape, rotated/cropped pages, distant jumps, background prefix corrections, resize during reading; verify no top-of-page jump or automatic zoom change during scrolling |
 | No scrolling stalls or repeated white pages | Visible-first asynchronous rendering, directional prefetch, surface reuse and virtualized page controls | Visible-first scheduling; annotation reads do not block raster scheduling. Device setup uses real async native factories. Current production-loop tests verify yielding during scroll/zoom rather than repeatedly selecting rejected thumbnails. Horizontal/wheel/direct-manipulation state and backend retry/generation cleanup tests pass. Visible replacements avoid a null image source and use a bounded frame retirement queue | Current Release build: 600-page image fixture, cold/warm rapid scroll; record frame times and page latency; verify actual XAML replacement timing |
-| Thin scrollbar with usable hit target | Vertical Auto, horizontal Hidden; fixed 3-DIP thumb inside a 12-DIP hit area | XAML template uses 3-DIP visual / 12-DIP hit area | Idle, hover, drag and touch interaction |
+| Thin scrollbar with usable hit target | Vertical Auto, horizontal Hidden; fixed 3-DIP thumb inside a 12-DIP hit area | XAML template uses 3-DIP visual / 12-DIP hit area; actual mouse drag inside and 6 DIP outside the visible thumb moved the 600-page document | Touch interaction; quantify visual width across DPI and pointer states |
 | Low-latency pressure-sensitive pen | InkCanvas/InkPresenter owns live pressure ink and erasing; page-local coordinates | Native InkPresenter and pressure-enabled attributes | Surface Pen hardware: pressure, eraser, palm rejection, zoomed-page alignment and latency |
-| Text selection/copy/highlight | Auxiliary native text geometry; selectable text and simple highlights without body editing | Production native geometry tests: ordinary text, CJK, angled text, rotated CropBox; JPEG/JPX XObjects and image ActualText | Current UI: drag, double click, right click, shortcuts, zoom/resize and highlight reopening |
-| Search | Cancelable page-wise native text search with bounded text retention | Production matching tests: forward/backward anchors, overlap, whitespace, CJK, ligatures and surrogate pairs. Page matching runs on a worker; production search-loop checks verify cached-page yielding and stale query/file rejection | Current UI: next/previous wrap, query changes during search, cancellation and malformed pages |
-| Local annotation persistence | Per-document/page sidecars; dirty-only saves; unsaved annotations survive recycling | Sidecar load/save code; clean offscreen cache eviction | Save, virtualize, revisit, reopen; unsaved strokes survive scrolling; undo remains correct |
+| Text selection/copy/highlight | Auxiliary native text geometry; selectable text and simple highlights without body editing | Production native geometry tests: ordinary text, CJK, angled text, rotated CropBox; JPEG/JPX XObjects and image ActualText. Actual x64 Debug UI: CJK drag, right-click copy, clipboard paste into search, highlight/save/reopen passed | Double click, shortcuts, zoom/resize and rotated-page interaction |
+| Search | Cancelable page-wise native text search with bounded text retention | Production matching tests: forward/backward anchors, overlap, whitespace, CJK, ligatures and surrogate pairs. Worker/stale-result tests pass. Actual x64 Debug UI: forward/backward and both wraps passed after selected-page cursor correction | Query changes during search, cancellation and malformed pages in current UI |
+| Local annotation persistence | Per-document/page sidecars; dirty-only saves; unsaved annotations survive recycling | Sidecar load/save code; clean offscreen cache eviction; actual CJK highlight save, file switch and reopen passed | Ink save/reopen; unsaved strokes survive virtualization; undo remains correct |
 | Standard annotation export | Separate PDF with standard Highlight/Ink and appearance streams | Production batch export reopens; native text/geometry, page boxes/rotation preserved; Highlight/Ink with AP verified; JPEG/JPX compressed image bytes preserved. Writer page sizes match Windows.Data.Pdf rotated CropBox sizes; queued size reads survive close. Windows Ink pressure/constant-width/rectangular outlines, PointTransform and rotated PenTipTransform export as filled APs, with standard InkList; crop-aware pixel-mask IoU .976/.969 | Picker flow; current UI strokes, undo/save/reopen/export without visiting saved mixed-size pages, and other PDF viewers |
 | Quick Look sizing | First-page point size, scale <= 1 and work-area bounds; retain manual size within one session | First-page sizing calculation and native work-area bridge compile | A4/Letter/landscape, DPI, multiple monitors, manual-resize session behavior; native region API runtime |
 | Bounded memory and fast launch | Budgeted raster/text/annotation caches; measure total Release process memory and startup | First-page/visible-worker startup is independent of window sizing; one in-flight legacy work-area probe. Production startup, file-switch/resize race and cleanup checks pass. Event-driven adaptive raster budget, native streamed text, clean annotation eviction; production memory controller/policy and foreground/dirty preservation checks pass; no packaged PDF.js | Current Release: startup, peak/private memory, real Windows memory-pressure cleanup, repeated scroll/file switches; no monotonic cache growth |
 | x86/x64/ARM32/ARM64 | Native build/package and runtime validation for each architecture; preserve older-device path | Debug and Release/.NET Native x86/x64/ARM32 solution builds; separate ARM64 Debug/Release .NET Native packages pass native image, registration and dependency checks | Architecture-specific installation/runtime tests |
 | C++/WinRT native layer | Shared standard C++ cores with all six renderer/ink/display/text/writer/DTO classes; default app bridge, preserving ARM32 | All eight current default packages pass baseline/registration/exact DLL/license checks with no legacy bridge. x86/x64 Debug/Release actual document DLL activation, UTF-16 geometry, stream cloning, queued close, error recovery and unload pass. Shared core short I/O, concurrent reads and 14 injected stream failures pass; standard exports and rendered ink alignment pass | XAML/display runtime, ARM32/ARM64 and old-Windows device verification |
-| Visual Studio diagnostics | Stable Diagnostic Tools session with usable CPU/memory traces for comparable runs | Diagnostic Tools previously recovered and collected graphs; current executable/service/COM check passes and is recorded in artifacts/diagnostics/collector-check.json | Confirm current VS graph collection/session stability and collect comparable performance traces |
+| Visual Studio diagnostics | Stable Diagnostic Tools session with usable CPU/memory traces for comparable runs | Executable/service/COM checks pass. Computer-use observed actual memory/CPU curves in the resumed VS 2015 session and two fresh F5 sessions; latest session ran over 8 minutes without the failure banner | Save comparable controlled performance traces; graphs alone do not establish latency or Release memory |
 
 2026-10-09 complete C++/WinRT document bridge migration:
 
@@ -101,8 +101,8 @@ The full product goal remains open for those acceptance steps.
   module hashes and a single uncontrolled Debug memory sample are recorded in
   `artifacts/diagnostics/live-app-check.json`; neither check establishes usable
   VS graphs or Release performance.
-- The user stopped computer-use with Escape before PDF interaction tests.
-  Desktop input remains stopped pending explicit reauthorization. A separate
+- The user stopped computer-use with Escape before PDF interaction tests at
+  that point; later explicit reauthorization resumed desktop validation. A separate
   test package, `Ben.UwPdfComputerUse`, was registered from the checked x64
   Debug package under `artifacts/computer-use/x64-debug` (test-only identity,
   display name and protocol). The original deployment was restored after a
@@ -181,6 +181,35 @@ The full product goal remains open for those acceptance steps.
   correction. Logs are `artifacts/search-cursor/<architecture>/<configuration>/build.log`;
   `artifacts/text-winrt/package-checks.json` records the current source/package
   hashes, OS baselines, registrations, dependencies and exact licenses.
+
+2026-10-09 resumed computer-use acceptance:
+
+- The original VS 2015 deployment was tested, not the separate test identity.
+  The running x64 Debug application uses the default C++/WinRT bridge. Actual
+  Diagnostic Tools CPU and memory curves were visible in the existing session
+  (over 186 minutes) and both fresh F5 sessions. The final corrected-search
+  session exceeded 8 minutes; the CPU tooltip and live private-byte curve were
+  readable, with no unexpected-failure banner. The collector JSON remains a
+  service/COM check, not evidence of these GUI observations.
+- `known-text.pdf`: a mouse drag selected the complete Chinese heading;
+  the right-click menu offered copy, highlight, select all and cancel selection.
+  Copy followed by clipboard paste into search produced the exact heading.
+  A yellow highlight was saved, the file was switched, and reopening restored
+  the highlight. The normal save picker exported
+  `artifacts/native-tests/computer-use-highlight-export.pdf` (3316 bytes).
+  Independent pypdf inspection verified three pages and a page-2 `/Highlight`
+  with eight QuadPoints numbers and an `/AP` appearance stream.
+- `performance-600.pdf` (34,628,642 bytes): actual wheel forward/reverse,
+  Ctrl+End/Home and long thumb drags reached distant pages with page images
+  present in every post-input snapshot. Dragging 6 DIP left of the thin visible
+  thumb also scrolled successfully. These screenshots settle after input;
+  they cannot rule out transient white frames or measure inertia/input latency.
+- Uncontrolled Debug samples after repeated scrolling showed private bytes
+  fall from 283,353,088 to 202,743,808 rather than only increase. Debug output
+  reported individual native surface operations at 18-25 ms for the observed
+  sizes. Neither is a controlled peak-memory, frame-time or Release result.
+- Hardware pinch, Surface Pen pressure/palm rejection, Release frame timing,
+  actual memory-pressure events and ARM/old-Windows device runtime remain open.
 
 Reproducible legacy native document check: `scripts/Test-NativeText.ps1`, followed by
 `tests/VerifyNativeDocument.py`. Generated inputs/results are in
