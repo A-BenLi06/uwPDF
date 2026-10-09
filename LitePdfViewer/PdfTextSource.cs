@@ -66,28 +66,41 @@ namespace LitePdfViewer
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 var text = page.Text;
                 var values = page.Coordinates;
-                var glyphs = new List<TextGlyph>(text.Length);
-                for (var i = 0; i < text.Length; i++)
-                {
-                    var p = i * 9;
-                    var a = new Point(values[p], values[p + 1]);
-                    var b = new Point(values[p + 2], values[p + 3]);
-                    var c = new Point(values[p + 4], values[p + 5]);
-                    var d = new Point(values[p + 6], values[p + 7]);
-                    var left = Math.Min(Math.Min(a.X, b.X), Math.Min(c.X, d.X));
-                    var top = Math.Min(Math.Min(a.Y, b.Y), Math.Min(c.Y, d.Y));
-                    var right = Math.Max(Math.Max(a.X, b.X), Math.Max(c.X, d.X));
-                    var bottom = Math.Max(Math.Max(a.Y, b.Y), Math.Max(c.Y, d.Y));
-                    var units = char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]) ? 2 : 1;
-                    glyphs.Add(new TextGlyph { Text = text.Substring(i, units), X = left, Y = top,
-                        Width = right - left, Height = bottom - top, Angle = values[p + 8],
-                        TopLeft = a, TopRight = b, BottomLeft = c, BottomRight = d });
-                    i += units - 1;
-                }
+                // The native operation can complete synchronously. Explicitly
+                // queue managed geometry expansion so cached/fast pages cannot
+                // allocate thousands of glyphs on the caller's UI thread.
+                var glyphs = await Task.Run(() => ConvertGlyphs(text, values, cancellation), cancellation);
+                cancellation.ThrowIfCancellationRequested();
+                if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 Debug.WriteLine("PDF text: page " + (index + 1) + " " + glyphs.Count + " glyphs " + timer.ElapsedMilliseconds + "ms");
                 return glyphs;
             }
             finally { textGate.Release(); }
+        }
+
+        private static List<TextGlyph> ConvertGlyphs(string text, float[] values, CancellationToken cancellation)
+        {
+            var glyphs = new List<TextGlyph>(text.Length);
+            for (var i = 0; i < text.Length; i++)
+            {
+                if ((glyphs.Count & 255) == 0) cancellation.ThrowIfCancellationRequested();
+                var p = i * 9;
+                var a = new Point(values[p], values[p + 1]);
+                var b = new Point(values[p + 2], values[p + 3]);
+                var c = new Point(values[p + 4], values[p + 5]);
+                var d = new Point(values[p + 6], values[p + 7]);
+                var left = Math.Min(Math.Min(a.X, b.X), Math.Min(c.X, d.X));
+                var top = Math.Min(Math.Min(a.Y, b.Y), Math.Min(c.Y, d.Y));
+                var right = Math.Max(Math.Max(a.X, b.X), Math.Max(c.X, d.X));
+                var bottom = Math.Max(Math.Max(a.Y, b.Y), Math.Max(c.Y, d.Y));
+                var units = char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]) ? 2 : 1;
+                glyphs.Add(new TextGlyph { Text = text.Substring(i, units), X = left, Y = top,
+                    Width = right - left, Height = bottom - top, Angle = values[p + 8],
+                    TopLeft = a, TopRight = b, BottomLeft = c, BottomRight = d });
+                i += units - 1;
+            }
+            cancellation.ThrowIfCancellationRequested();
+            return glyphs;
         }
 
         public void Dispose()

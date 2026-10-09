@@ -92,10 +92,12 @@ namespace LitePdfViewer
                         continue;
                     }
                     if (version != searchVersion || token != activeRenderToken) return;
-                    var segments = new string[glyphs.Count];
-                    for (var g = 0; g < glyphs.Count; g++) segments[g] = glyphs[g].Text;
-                    PdfSearchMatch wrapped;
-                    var found = PdfTextSearch.Find(segments, query, step == 0 ? anchor : forward ? 0 : int.MaxValue, forward, out wrapped);
+                    var result = await MatchPageTextAsync(glyphs, query,
+                        step == 0 ? anchor : forward ? 0 : int.MaxValue, forward, cancellation);
+                    cancellation.ThrowIfCancellationRequested();
+                    if (version != searchVersion || token != activeRenderToken) return;
+                    var found = result.Found;
+                    var wrapped = result.Wrapped;
                     if (step == 0 && wrapped.Found)
                     {
                         firstGlyphs = glyphs;
@@ -119,6 +121,30 @@ namespace LitePdfViewer
                 if (version == searchVersion && token == activeRenderToken) SearchStatus.Text = "查找失败：" + ex.Message;
             }
             finally { if (version == searchVersion) searchBusy = false; }
+        }
+
+        private struct PageSearchResult
+        {
+            public PdfSearchMatch Found, Wrapped;
+        }
+
+        private static Task<PageSearchResult> MatchPageTextAsync(List<TextGlyph> glyphs, string query,
+            int anchor, bool forward, CancellationToken cancellation)
+        {
+            // Cached pages still need to yield: normalization, glyph mapping and
+            // matching must not monopolize input processing on the UI thread.
+            return Task.Run(() =>
+            {
+                var segments = new string[glyphs.Count];
+                for (var g = 0; g < glyphs.Count; g++)
+                {
+                    if ((g & 255) == 0) cancellation.ThrowIfCancellationRequested();
+                    segments[g] = glyphs[g].Text;
+                }
+                PdfSearchMatch wrapped;
+                var found = PdfTextSearch.Find(segments, query, anchor, forward, out wrapped, cancellation);
+                return new PageSearchResult { Found = found, Wrapped = wrapped };
+            }, cancellation);
         }
 
         private async Task ShowSearchMatchAsync(PageView view, List<TextGlyph> glyphs, int first, int last, int skipped,

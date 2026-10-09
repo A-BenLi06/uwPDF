@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
 namespace LitePdfViewer
 {
@@ -27,8 +28,9 @@ namespace LitePdfViewer
         }
 
         public static PdfSearchMatch Find(IReadOnlyList<string> glyphs, string query, int anchor,
-            bool forward, out PdfSearchMatch wrapped)
+            bool forward, out PdfSearchMatch wrapped, CancellationToken cancellation = default(CancellationToken))
         {
+            cancellation.ThrowIfCancellationRequested();
             wrapped = PdfSearchMatch.Missing;
             query = NormalizeQuery(query);
             if (query.Length == 0) return wrapped;
@@ -36,6 +38,7 @@ namespace LitePdfViewer
             var map = new List<int>();
             for (var g = 0; g < glyphs.Count; g++)
             {
+                if ((g & 255) == 0) cancellation.ThrowIfCancellationRequested();
                 foreach (var ch in glyphs[g])
                 {
                     if (char.IsWhiteSpace(ch))
@@ -51,7 +54,8 @@ namespace LitePdfViewer
             var result = PdfSearchMatch.Missing;
             for (var at = 0; at <= content.Length - query.Length;)
             {
-                    var match = content.IndexOf(query, at, StringComparison.OrdinalIgnoreCase);
+                cancellation.ThrowIfCancellationRequested();
+                var match = content.IndexOf(query, at, StringComparison.OrdinalIgnoreCase);
                 if (match < 0) break;
                 var candidate = new PdfSearchMatch { First = map[match], Last = map[match + query.Length - 1] };
                 if (!wrapped.Found || !forward) wrapped = candidate;
@@ -63,6 +67,7 @@ namespace LitePdfViewer
                 // Overlapping matches are valid ("ana" occurs twice in "banana").
                 at = match + 1;
             }
+            cancellation.ThrowIfCancellationRequested();
             return result;
         }
     }

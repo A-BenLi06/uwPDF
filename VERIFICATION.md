@@ -34,7 +34,7 @@ is separate from PDF content and remains a compatibility decision to resolve.
 | Thin scrollbar with usable hit target | Vertical Auto, horizontal Hidden; fixed 3-DIP thumb inside a 12-DIP hit area | XAML template uses 3-DIP visual / 12-DIP hit area | Idle, hover, drag and touch interaction |
 | Low-latency pressure-sensitive pen | InkCanvas/InkPresenter owns live pressure ink and erasing; page-local coordinates | Native InkPresenter and pressure-enabled attributes | Surface Pen hardware: pressure, eraser, palm rejection, zoomed-page alignment and latency |
 | Text selection/copy/highlight | Auxiliary native text geometry; selectable text and simple highlights without body editing | Production native geometry tests: ordinary text, CJK, angled text, rotated CropBox; JPEG/JPX XObjects and image ActualText | Current UI: drag, double click, right click, shortcuts, zoom/resize and highlight reopening |
-| Search | Cancelable page-wise native text search with bounded text retention | Production matching tests: forward/backward anchors, overlap, whitespace, CJK, ligatures and surrogate pairs. Cancellation/page-failure handling implemented | Current UI: next/previous wrap, query changes during search, cancellation and malformed pages |
+| Search | Cancelable page-wise native text search with bounded text retention | Production matching tests: forward/backward anchors, overlap, whitespace, CJK, ligatures and surrogate pairs. Page matching runs on a worker; production search-loop checks verify cached-page yielding and stale query/file rejection | Current UI: next/previous wrap, query changes during search, cancellation and malformed pages |
 | Local annotation persistence | Per-document/page sidecars; dirty-only saves; unsaved annotations survive recycling | Sidecar load/save code; clean offscreen cache eviction | Save, virtualize, revisit, reopen; unsaved strokes survive scrolling; undo remains correct |
 | Standard annotation export | Separate PDF with standard Highlight/Ink and appearance streams | Production batch export reopens; native text/geometry, page boxes/rotation preserved; Highlight/Ink with AP verified; JPEG/JPX compressed image bytes preserved. Writer page sizes match Windows.Data.Pdf rotated CropBox sizes; queued size reads survive close. Windows Ink pressure/constant-width/rectangular outlines, PointTransform and rotated PenTipTransform export as filled APs, with standard InkList; crop-aware pixel-mask IoU .976/.969 | Picker flow; current UI strokes, undo/save/reopen/export without visiting saved mixed-size pages, and other PDF viewers |
 | Quick Look sizing | First-page point size, scale <= 1 and work-area bounds; retain manual size within one session | First-page sizing calculation and native work-area bridge compile | A4/Letter/landscape, DPI, multiple monitors, manual-resize session behavior; native region API runtime |
@@ -108,6 +108,56 @@ The full product goal remains open for those acceptance steps.
   display name and protocol). The original deployment was restored after a
   same-version registration attempt was rejected; original app data was not
   removed. The separate test package was not launched or visually accepted.
+
+2026-10-09 background native document cleanup:
+
+- Export now awaits native writer disposal on a worker before closing its input
+  or opening the save picker. A text document whose open completes after a file
+  switch is also disposed on a worker. Final native store release can otherwise
+  execute on the UI thread; these changes remove those two synchronous paths.
+- `scripts/Test-NativeCleanup.ps1` compiles the actual export handler and
+  `PdfTextSource` with native/platform doubles and a single-thread UI context.
+  Success, append/write errors, cancellation and abandoned text opens pass:
+  the UI heartbeat runs during native teardown, cleanup occurs exactly once,
+  input closes afterward and errors/cancellation retain their original behavior.
+  Both synchronous-close negative controls fail their intended assertions.
+  Source hashes and scope are in `artifacts/native-tests/native-cleanup/result.json`.
+- All eight default application builds and package checks pass with these C#
+  changes. Logs are `artifacts/cleanup-ui/<architecture>/<configuration>/build.log`;
+  the current package/source record is `artifacts/text-winrt/package-checks.json`.
+  Isolated build outputs preserve the user's running VS debug deployment.
+- This verifies cleanup control flow and packaging. Actual PDF teardown cost,
+  scrolling white pages, input/frame latency and current VS graphs remain open
+  for desktop/performance acceptance.
+
+2026-10-09 background managed text work:
+
+- After native extraction, managed glyph/quad expansion is explicitly queued on
+  a worker even when the native task completes synchronously. Cancellation is
+  checked every 256 glyphs (including surrogate pairs at odd UTF-16 offsets).
+  The caller rechecks cancellation and source disposal before returning glyphs;
+  cancellation/failure still releases the text gate for subsequent reads.
+- Cached and newly extracted search pages queue normalization, glyph mapping
+  and matching on a worker. Only immutable per-page data is passed to that work.
+  UI publication checks the search version and document generation again after
+  matching; changing the query/file cannot publish an old match or progress.
+  Cancellation reaches both managed geometry expansion and search mapping.
+- `scripts/Test-TextWorkers.ps1` compiles production text source, matching and
+  search-loop methods with synchronous native/platform doubles. An occupied
+  worker makes the scheduling tests deterministic. CJK/surrogate/angled quad
+  mapping, bounded cancellation, gate retry, disposal during queued conversion,
+  cached forward/backward/wrapped/no-match scans and stale query/file results
+  pass. Three negative controls restoring UI glyph conversion, UI search and
+  missing post-match generation checks fail their intended assertions.
+  Source hashes are in `artifacts/native-tests/text-workers/result.json`.
+- `Test-TextSearch.ps1` and the production cleanup tests also pass after the
+  changes. These checks establish scheduling and result ownership; native
+  extraction cost, whole-app memory and actual input/frame latency still need
+  desktop/device measurements.
+- All eight default Debug/Release application builds completed with these
+  changes; logs are `artifacts/text-workers/<architecture>/<configuration>/build.log`.
+  The current source/package record is `artifacts/text-winrt/package-checks.json`.
+  Builds used isolated outputs, preserving the running user's debug deployment.
 
 Reproducible legacy native document check: `scripts/Test-NativeText.ps1`, followed by
 `tests/VerifyNativeDocument.py`. Generated inputs/results are in
