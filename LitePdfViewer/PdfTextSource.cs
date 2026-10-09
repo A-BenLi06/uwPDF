@@ -41,7 +41,9 @@ namespace LitePdfViewer
                 var opened = await PdfTextDocument.OpenAsync(stream);
                 if (disposed)
                 {
-                    opened.Dispose();
+                    // A file switch can finish while native opening is pending.
+                    // Release the abandoned document's stores off the UI thread.
+                    await Task.Run(() => opened.Dispose());
                     throw new ObjectDisposedException("PdfTextSource");
                 }
                 document = opened;

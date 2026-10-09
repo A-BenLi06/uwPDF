@@ -138,13 +138,19 @@ namespace LitePdfViewer
                 ToolTipService.SetToolTip(ExportButton, "正在生成带批注的 PDF…");
                 using (var input = await original.OpenReadAsync())
                 {
-                    using (var writer = await PdfAnnotationWriter.OpenAsync(input))
+                    var writer = await PdfAnnotationWriter.OpenAsync(input);
+                    try
                     {
                         await AppendExportAnnotationsAsync(writer, token);
                         staging = await ApplicationData.Current.TemporaryFolder.CreateFileAsync("uwpdf-export-" + Guid.NewGuid().ToString("N") + ".pdf");
                         using (var output = await staging.OpenAsync(FileAccessMode.ReadWrite)) await writer.WriteAsync(output);
                     }
-
+                    finally
+                    {
+                        // Closing the last native lease releases the PDF object/font
+                        // stores. Await worker cleanup before closing the input.
+                        await Task.Run(() => writer.Dispose());
+                    }
                 }
                 if (token != activeRenderToken) return;
                 var picker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary, SuggestedFileName = original.DisplayName + "-annotated" };
