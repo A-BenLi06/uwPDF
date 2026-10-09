@@ -159,6 +159,29 @@ The full product goal remains open for those acceptance steps.
   The current source/package record is `artifacts/text-winrt/package-checks.json`.
   Builds used isolated outputs, preserving the running user's debug deployment.
 
+2026-10-09 search continuation correction:
+
+- Computer-use reproduced a forward-search regression in `performance-600.pdf`:
+  the selected heading on page 168 was followed by page 167 after Enter. Bringing
+  the heading into view left the prior page's tail visible, so the reading-page
+  indicator differed from the selection page. Search incorrectly reused that
+  reading indicator as its cursor and discarded the selection anchor.
+- Next/previous now start from a valid selection belonging to the current
+  document. A restarted query still starts at the reading page. This preserves
+  the leading-edge indicator's intentional behavior for short/landscape pages.
+- Production search-loop tests cover both directions when the selection and
+  reading pages differ, plus query restart. The ReadingCursor negative control
+  restores the former calculation and fails the forward-continuation assertion.
+  The text-worker suite now has four negative controls.
+- Actual VS x64 Debug UI verification passed: forward 1 -> 2 -> 3, backward
+  3 -> 2 -> 1 -> 600, then forward 600 -> 1 for the repeated heading query.
+  Even with the prior page's tail still visible, navigation follows the selected
+  result. ARM/device and input-latency acceptance remain separate.
+- All eight default Debug/Release builds and package checks passed after this
+  correction. Logs are `artifacts/search-cursor/<architecture>/<configuration>/build.log`;
+  `artifacts/text-winrt/package-checks.json` records the current source/package
+  hashes, OS baselines, registrations, dependencies and exact licenses.
+
 Reproducible legacy native document check: `scripts/Test-NativeText.ps1`, followed by
 `tests/VerifyNativeDocument.py`. Generated inputs/results are in
 `artifacts/native-tests`; the geometry-derived highlight export is

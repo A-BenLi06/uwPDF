@@ -76,6 +76,7 @@ namespace LitePdfViewer
             pageIndex=(uint)page; selectedTextPage=pageViews[page]; selectionAnchor=first; selectionEnd=last;
         }
         public void Query(string value) { SearchTextBox.Text=value; }
+        public void ReadingPage(int page) { pageIndex=(uint)page; }
         public Task Find(bool forward, bool restart) { return FindTextAsync(forward,restart); }
         public void Invalidate(bool fileSwitch)
         {
@@ -235,6 +236,18 @@ internal static class Tests
         page.Query("missing"); find=page.Find(true,true); ui.Pump(find); find.GetAwaiter().GetResult();
         Assert(page.Shows==0 && page.Status=="没有匹配文字" && !page.Busy,"Cached no-match scan did not complete");
         Assert(reads==PdfNative.PdfTextDocument.Reads,"Cached searches unexpectedly reread native text");
+        // A match positioned near the viewport top can leave the leading-edge
+        // indicator on the prior page. Next/previous must follow the selection.
+        page=new MainPage(); page.AddPage("ana"); page.AddPage("ana"); page.AddPage("ana");
+        page.Select(1,0,2); page.ReadingPage(0);
+        find=page.Find(true,false); ui.Pump(find); find.GetAwaiter().GetResult();
+        Assert(page.LastPage==2,"Next match followed the previous visible page instead of selection");
+        page.Select(1,0,2); page.ReadingPage(2);
+        find=page.Find(false,false); ui.Pump(find); find.GetAwaiter().GetResult();
+        Assert(page.LastPage==0,"Previous match followed the next visible page instead of selection");
+        page.Select(1,0,2); page.ReadingPage(0);
+        find=page.Find(true,true); ui.Pump(find); find.GetAwaiter().GetResult();
+        Assert(page.LastPage==0,"Restart ignored the current reading page");
     }
     public static int Main()
     {

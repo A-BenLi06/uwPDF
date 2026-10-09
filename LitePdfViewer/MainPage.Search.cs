@@ -66,8 +66,15 @@ namespace LitePdfViewer
             var source = textSource;
             var cancellation = searchCancellation.Token;
             var skipped = 0;
-            var start = (int)pageIndex;
-            var anchor = !restart && selectedTextPage != null && selectedTextPage.Index == pageIndex
+            // Bringing a match near the top can leave the previous page's tail
+            // visible. The leading-edge page indicator is a reading position,
+            // not the search cursor: continue from the actual selection page.
+            var continueSelection = !restart && selectedTextPage != null &&
+                selectedTextPage.Index < pageViews.Count &&
+                ReferenceEquals(pageViews[(int)selectedTextPage.Index], selectedTextPage) &&
+                selectionAnchor >= 0 && selectionEnd >= 0;
+            var start = continueSelection ? (int)selectedTextPage.Index : (int)pageIndex;
+            var anchor = continueSelection
                 ? (forward ? Math.Min(selectionAnchor, selectionEnd) + 1 : Math.Max(selectionAnchor, selectionEnd) - 1)
                 : (forward ? 0 : int.MaxValue);
             searchBusy = true;

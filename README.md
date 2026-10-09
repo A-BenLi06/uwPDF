@@ -260,7 +260,8 @@ native/platform doubles; it does not measure real PDF teardown or UI latency.
 
 `scripts/Test-TextWorkers.ps1` checks background glyph expansion and page
 matching with synchronous native doubles, including cached search, cancellation,
-UTF-16/quad mapping and stale query/file rejection. Three negative controls
+UTF-16/quad mapping, stale query/file rejection and continuation from the selected
+match when the reading-page indicator differs. Four negative controls
 restore the scheduling/publication regressions and must fail. This verifies
 production control flow rather than actual input or frame latency.
 

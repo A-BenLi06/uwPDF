@@ -1,4 +1,4 @@
-param([ValidateSet('None','UiGlyphs','UiSearch','StaleSearch')][string]$NegativeControl='None')
+param([ValidateSet('None','UiGlyphs','UiSearch','StaleSearch','ReadingCursor')][string]$NegativeControl='None')
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path $PSScriptRoot -Parent
 $outputRoot=Join-Path $repoRoot 'artifacts/native-tests/text-workers'
@@ -10,6 +10,10 @@ $end=$search.IndexOf('        private async Task ShowSearchMatchAsync(')
 if ($start -lt 0 -or $end -le $start) { throw 'Search method boundaries changed' }
 $search=$search.Substring($start,$end-$start)
 switch ($NegativeControl) {
+    'ReadingCursor' {
+        $search=$search.Replace('var start = continueSelection ? (int)selectedTextPage.Index : (int)pageIndex;', 'var start = (int)pageIndex;')
+        $search=$search.Replace('var anchor = continueSelection', 'var anchor = continueSelection && selectedTextPage.Index == pageIndex')
+    }
     'UiGlyphs' { $text=$text.Replace('await Task.Run(() => ConvertGlyphs(text, values, cancellation), cancellation)', 'ConvertGlyphs(text, values, cancellation)') }
     'UiSearch' {
         $search=$search.Replace('return Task.Run(() =>','return Task.FromResult(((Func<PageSearchResult>)(() =>')
