@@ -1,5 +1,14 @@
 # uwPDF acceptance status
 
+## UI refinement — 2026-10-10
+
+- x64 Debug C++/WinRT build and AppX packaging passed on the existing SDK 14393 application target. All 26 authored FontIcons explicitly specify Segoe UI Symbol; each code point was checked against the installed font cmap and the relevant glyphs were visually inspected. MainPage has no implicit SymbolIcon/AppBar Icon shorthand remaining.
+- Windows UI checks used a separate `Ben.UwPdfUiVerification` package and the repository's SkimSample PDF. The user's running preview and its unsaved annotations were left open. The first staging attempt used old AppX files; subsequent checks used the freshly extracted package, and the registered location was checked before updating it.
+- Observed: light native title bar; title-bar dragging changed the window origin; commands and annotation toolbar fit a 502-DIP-wide outer window; only the current ink tool remains selected; pen settings open and light-dismiss without collapsing the toolbar; the 6-unit preset updates the preview and mouse ink is collected; Ctrl+F places search at the top right and highlights a matching word.
+- Observed on the final HUD implementation: idle fade; clicking the hidden zoom control position in pen mode reveals the HUD and opens zoom input without adding a stroke or marking the file dirty; zoom input keeps the HUD visible beyond its idle interval. A transparent input region protects the floating toolbar area while hidden.
+- Production-method preview startup and keyboard regression scripts passed. Keyboard coverage now includes already-handled navigation/shortcut keys, so native control input does not also invoke document commands.
+- Physical stylus pressure, touch/palm behavior, other DPI scales, minimum-height flyout scrolling, and runtime checks on ARM32/ARM64 were not exercised. These checks do not establish latency or device-performance claims.
+
 The product goal is native UWP preview and simple annotations, with old EdgeHTML
 scroll/pinch/pen behavior and Quick Look-style UI/window sizing. PDF body editing
 is outside scope; OCR is a later extension. Architecture choices are not evidence

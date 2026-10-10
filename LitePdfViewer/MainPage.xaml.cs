@@ -148,6 +148,7 @@ namespace LitePdfViewer
             Loaded += (sender, args) => StartMemoryMonitoring();
             Unloaded += (sender, args) => { StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
             InitializePreviewWindow();
+            InitializeReaderChrome();
             try
             {
                 dpiScale = DisplayInformation.GetForCurrentView().RawPixelsPerViewPixel;
@@ -1345,6 +1346,11 @@ namespace LitePdfViewer
 
         private async void Page_KeyDown(object sender, KeyRoutedEventArgs e)
         {
+            // Native controls (including pen-size sliders) own handled keys.
+            if (e.Handled) return;
+            // Alt+Space belongs to the window menu, not next-page navigation.
+            if (Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Menu)
+                .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)) return;
             var control = Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control)
                 .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
@@ -2296,6 +2302,9 @@ namespace LitePdfViewer
                 list.Add(swatch);
 
                 var capturedColor = color;
+                var colorName = WindowsInkPalette[i];
+                AutomationProperties.SetName(btn, "颜色 " + colorName);
+                ToolTipService.SetToolTip(btn, colorName);
                 btn.Click += (s, e) =>
                 {
                     if (isHighlighter)
@@ -2367,28 +2376,26 @@ namespace LitePdfViewer
 
         private void TopPenButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentInkTool == InkTool.Pen)
-            {
-                EnsurePalettesBuilt();
-                FlyoutBase.ShowAttachedFlyout(TopPenButton);
-            }
-            else
-            {
-                SetInkTool(InkTool.Pen);
-            }
+            SetInkTool(InkTool.Pen);
         }
 
         private void TopHighlighterButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentInkTool == InkTool.Highlighter)
-            {
-                EnsurePalettesBuilt();
-                FlyoutBase.ShowAttachedFlyout(TopHighlighterButton);
-            }
-            else
-            {
-                SetInkTool(InkTool.Highlighter);
-            }
+            SetInkTool(InkTool.Highlighter);
+        }
+
+        private void PenSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetInkTool(InkTool.Pen);
+            EnsurePalettesBuilt();
+            FlyoutBase.ShowAttachedFlyout(TopPenButton);
+        }
+
+        private void HighlighterSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetInkTool(InkTool.Highlighter);
+            EnsurePalettesBuilt();
+            FlyoutBase.ShowAttachedFlyout(TopHighlighterButton);
         }
 
         private void TopEraserButton_Click(object sender, RoutedEventArgs e)
@@ -2425,6 +2432,8 @@ namespace LitePdfViewer
 
         private void UpdatePenPreview()
         {
+            if (PenSizeText != null) PenSizeText.Text = penStrokeSize.ToString("0");
+            if (PenColorIndicator != null) PenColorIndicator.Fill = new SolidColorBrush(penColor);
             if (PenPreviewStroke != null)
             {
                 PenPreviewStroke.Stroke = new SolidColorBrush(penColor);
@@ -2434,6 +2443,8 @@ namespace LitePdfViewer
 
         private void UpdateHighlighterPreview()
         {
+            if (HighlighterSizeText != null) HighlighterSizeText.Text = highlighterStrokeSize.ToString("0");
+            if (HighlighterColorIndicator != null) HighlighterColorIndicator.Fill = new SolidColorBrush(highlighterColor);
             if (HighlighterPreviewStroke != null)
             {
                 HighlighterPreviewStroke.Stroke = new SolidColorBrush(highlighterColor);
@@ -2663,7 +2674,10 @@ namespace LitePdfViewer
             var hasPrevious = hasDocument && pageIndex > 0;
             var hasNext = hasDocument && pageIndex + 1 < document.PageCount;
 
+            if (!hasDocument) AnnotationToolbar.Visibility = Visibility.Collapsed;
             HudBar.Visibility = hasDocument ? Visibility.Visible : Visibility.Collapsed;
+            HudRevealZone.Visibility = hasDocument ? Visibility.Visible : Visibility.Collapsed;
+            if (hudIdleTimer != null) RevealHud();
             if (InkControlsPanel != null)
             {
                 InkControlsPanel.Visibility = hasDocument ? Visibility.Visible : Visibility.Collapsed;

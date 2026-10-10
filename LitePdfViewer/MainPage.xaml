@@ -9,6 +9,93 @@
     RequestedTheme="Light">
 
     <Page.Resources>
+        <Style TargetType="FontIcon">
+            <Setter Property="FontFamily" Value="Segoe UI Symbol" />
+            <Setter Property="FontSize" Value="20" />
+        </Style>
+
+        <Style TargetType="AppBarButton">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Foreground" Value="#252A32" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="AppBarButton">
+                        <Grid Background="Transparent">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6" />
+                            <Border x:Name="Selected" Background="#DCEBFA" BorderBrush="#7CB1E1" BorderThickness="1" CornerRadius="6" Opacity="0" />
+                            <Border x:Name="Hover" Background="#12000000" CornerRadius="6" Opacity="0" />
+                            <Border x:Name="PressSurface" Background="#22000000" CornerRadius="6" Opacity="0" />
+                            <ContentPresenter x:Name="IconContent" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="FocusOutline" BorderBrush="#0078D7" BorderThickness="2" CornerRadius="6" Margin="1" Opacity="0" IsHitTestVisible="False" />
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver"><Storyboard><DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="Pressed"><Storyboard><DoubleAnimation Storyboard.TargetName="PressSurface" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="Disabled"><Storyboard><DoubleAnimation Storyboard.TargetName="IconContent" Storyboard.TargetProperty="Opacity" To="0.35" Duration="0" /></Storyboard></VisualState>
+                                </VisualStateGroup>
+
+                                <VisualStateGroup x:Name="FocusStates">
+                                    <VisualState x:Name="Unfocused" />
+                                    <VisualState x:Name="PointerFocused" />
+                                    <VisualState x:Name="Focused"><Storyboard><DoubleAnimation Storyboard.TargetName="FocusOutline" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="AppBarToggleButton">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Foreground" Value="#252A32" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="AppBarToggleButton">
+                        <Grid Background="Transparent">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6" />
+                            <Border x:Name="Selected" Background="#DCEBFA" BorderBrush="#7CB1E1" BorderThickness="1" CornerRadius="6" Opacity="0" />
+                            <Border x:Name="Hover" Background="#12000000" CornerRadius="6" Opacity="0" />
+                            <Border x:Name="PressSurface" Background="#22000000" CornerRadius="6" Opacity="0" />
+                            <ContentPresenter x:Name="IconContent" Content="{TemplateBinding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="FocusOutline" BorderBrush="#0078D7" BorderThickness="2" CornerRadius="6" Margin="1" Opacity="0" IsHitTestVisible="False" />
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="Checked"><Storyboard><DoubleAnimation Storyboard.TargetName="Selected" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="CheckedPointerOver"><Storyboard><DoubleAnimation Storyboard.TargetName="Selected" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /><DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="CheckedPressed"><Storyboard><DoubleAnimation Storyboard.TargetName="Selected" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /><DoubleAnimation Storyboard.TargetName="PressSurface" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="CheckedDisabled"><Storyboard><DoubleAnimation Storyboard.TargetName="Selected" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0" /><DoubleAnimation Storyboard.TargetName="IconContent" Storyboard.TargetProperty="Opacity" To="0.35" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="PointerOver"><Storyboard><DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="Pressed"><Storyboard><DoubleAnimation Storyboard.TargetName="PressSurface" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                    <VisualState x:Name="Disabled"><Storyboard><DoubleAnimation Storyboard.TargetName="IconContent" Storyboard.TargetProperty="Opacity" To="0.35" Duration="0" /></Storyboard></VisualState>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="FocusStates">
+                                    <VisualState x:Name="Unfocused" />
+                                    <VisualState x:Name="PointerFocused" />
+                                    <VisualState x:Name="Focused"><Storyboard><DoubleAnimation Storyboard.TargetName="FocusOutline" Storyboard.TargetProperty="Opacity" To="1" Duration="0" /></Storyboard></VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CompactButtonStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
 
         <!-- Native ScrollBar parts retain range, drag and page-click behavior.
              Every state uses a 3-DIP visual inside a 12-DIP input surface. -->
@@ -355,9 +442,10 @@
         </Style>
     </Page.Resources>
 
-    <Grid Background="#EFEFF1">
+    <Grid x:Name="MainChrome" Background="#EFEFF1">
         <Grid.RowDefinitions>
             <RowDefinition Height="52" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -374,59 +462,66 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Center">
                     <AppBarButton
                         x:Name="OpenButton" Width="40"
-                        Icon="OpenFile"
+
                         IsCompact="True"
-                        AutomationProperties.Name="Open PDF"
+                        AutomationProperties.Name="打开 PDF"
                         ToolTipService.ToolTip="打开 PDF (Ctrl+O)"
-                        Click="OpenButton_Click" />
+                        Click="OpenButton_Click" ><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE1C1;" /></AppBarButton.Icon></AppBarButton>
                     <AppBarButton
                         x:Name="SaveButton" Width="40"
-                        Icon="Save"
+
                         IsCompact="True"
-                        AutomationProperties.Name="Save"
+                        AutomationProperties.Name="保存批注"
                         ToolTipService.ToolTip="保存批注 (Ctrl+S)"
-                        Click="SaveButton_Click" />
+                        Click="SaveButton_Click" ><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE105;" /></AppBarButton.Icon></AppBarButton>
                     <AppBarSeparator />
                     <AppBarToggleButton
                         x:Name="ThumbsToggle" Width="40"
                         IsCompact="True"
                         IsChecked="False"
-                        AutomationProperties.Name="Page thumbnails"
+                        AutomationProperties.Name="页面缩略图"
                         ToolTipService.ToolTip="页面缩略图"
                         Click="ThumbsToggle_Click">
                         <AppBarToggleButton.Icon>
-                            <FontIcon Glyph="&#xE838;" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE161;" />
                         </AppBarToggleButton.Icon>
                     </AppBarToggleButton>
                 </StackPanel>
 
                 <!-- Center area: File Name -->
-                <StackPanel x:Name="FileTitleDragRegion" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0">
-                    <FontIcon Glyph="&#xE8A5;" FontSize="13" Foreground="#8A8A90" Margin="0,0,6,0" VerticalAlignment="Center" />
+                <Grid x:Name="FileTitleRegion" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="12,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE160;" FontSize="13" Foreground="#8A8A90" Margin="0,0,6,0" VerticalAlignment="Center" />
                     <TextBlock
-                        x:Name="FileNameText"
+                        x:Name="FileNameText" Grid.Column="1"
                         VerticalAlignment="Center"
                         MaxWidth="400"
                         FontSize="13"
                         FontWeight="SemiBold"
                         Foreground="#1D1D1F"
-                        Text="Lite PDF Viewer"
+                        Text="uwPDF"
                         TextTrimming="CharacterEllipsis" />
-                </StackPanel>
+                </Grid>
 
                 <!-- Compact commands leave the natural PDF window readable. -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <AppBarButton x:Name="ExportButton" Width="40" Icon="Share" IsCompact="True" AutomationProperties.Name="导出批注 PDF"
-                        ToolTipService.ToolTip="导出带批注的 PDF 副本" Click="ExportButton_Click" />
-                    <AppBarButton x:Name="SearchButton" Width="40" Icon="Find" IsCompact="True" AutomationProperties.Name="搜索 PDF 文字"
-                        ToolTipService.ToolTip="搜索 (Ctrl+F)" Click="SearchButton_Click" />
-                    <AppBarButton x:Name="AnnotationToolsButton" Width="40" Icon="Edit" IsCompact="True"
+                    <AppBarButton x:Name="ExportButton" Width="40" IsCompact="True" AutomationProperties.Name="导出批注 PDF"
+                        ToolTipService.ToolTip="导出带批注的 PDF 副本" Click="ExportButton_Click" ><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE2B4;" /></AppBarButton.Icon></AppBarButton>
+                    <AppBarButton x:Name="SearchButton" Width="40" IsCompact="True" AutomationProperties.Name="搜索 PDF 文字"
+                        ToolTipService.ToolTip="搜索 (Ctrl+F)" Click="SearchButton_Click" ><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE11A;" /></AppBarButton.Icon></AppBarButton>
+                    <AppBarButton x:Name="AnnotationToolsButton" Width="40" IsCompact="True"
                         AutomationProperties.Name="批注工具" ToolTipService.ToolTip="批注工具：文字选择、笔、荧光笔、橡皮擦"
-                        Click="AnnotationToolsButton_Click">
-                        <FlyoutBase.AttachedFlyout>
-                            <Flyout Placement="Bottom">
-                                <StackPanel x:Name="InkControlsPanel" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0" VerticalAlignment="Center">
-                                    <AppBarSeparator Width="12" />
+                        Click="AnnotationToolsButton_Click"><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE104;" /></AppBarButton.Icon>
+
+                    </AppBarButton>
+
+                </StackPanel>
+            </Grid>
+        </Border>
+
+
+        <Border x:Name="AnnotationToolbar" Grid.Row="1" Visibility="Collapsed" Background="#FAFAFB" BorderBrush="#DADADF" BorderThickness="0,0,0,1" Padding="8,4">
+                                <StackPanel x:Name="InkControlsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center">
+
                                     <AppBarToggleButton
                                         x:Name="TopSelectButton" Width="40"
                                         IsCompact="True"
@@ -434,35 +529,35 @@
                                         ToolTipService.ToolTip="选择文字：拖动选中，右键复制或高亮"
                                         Click="TopSelectButton_Click">
                                         <AppBarToggleButton.Icon>
-                                            <FontIcon Glyph="&#xE8D2;" />
+                                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE185;" />
                                         </AppBarToggleButton.Icon>
                                     </AppBarToggleButton>
                                     <AppBarToggleButton
                                         x:Name="TopTouchWritingButton" Width="40"
                                         IsCompact="True"
-                                        AutomationProperties.Name="Touch writing"
-                                        ToolTipService.ToolTip="触摸书写 (开/关)"
+                                        AutomationProperties.Name="触摸书写"
+                                        ToolTipService.ToolTip="触摸书写：关闭时手指滚动，开启时手指书写"
                                         Click="TopTouchWritingButton_Click">
                                         <AppBarToggleButton.Icon>
-                                            <FontIcon Glyph="&#xED5F;" />
+                                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE1E3;" />
                                         </AppBarToggleButton.Icon>
                                     </AppBarToggleButton>
 
                                     <AppBarToggleButton
                                         x:Name="TopPenButton" Width="40"
                                         IsCompact="True"
-                                        AutomationProperties.Name="Pen"
-                                        ToolTipService.ToolTip="圆珠笔 (点击选择，再次点击配置颜色与粗细)"
+                                        AutomationProperties.Name="笔"
+                                        ToolTipService.ToolTip="笔：点击书写，右侧箭头设置颜色与粗细"
                                         Click="TopPenButton_Click">
                                         <AppBarToggleButton.Icon>
-                                            <FontIcon Glyph="&#xED63;" />
+                                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE104;" />
                                         </AppBarToggleButton.Icon>
                                         <FlyoutBase.AttachedFlyout>
                                             <Flyout x:Name="PenFlyout" Placement="Bottom">
                                                 <StackPanel Width="236" Margin="4">
                                                     <TextBlock Text="颜色" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,0,0,8" />
                                                     <Grid x:Name="PenColorGrid" />
-                                                    <TextBlock Text="大小" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,12,0,6" />
+                                                    <TextBlock Text="粗细" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,12,0,6" />
                                                     <Border Background="#F7F7F8" BorderBrush="#E2E2E6" BorderThickness="1" CornerRadius="4" Height="36" Margin="0,0,0,8">
                                                         <Canvas Height="36">
                                                             <Path
@@ -475,34 +570,36 @@
                                                                 StrokeLineJoin="Round" />
                                                         </Canvas>
                                                     </Border>
-                                                    <Slider
-                                                        x:Name="PenSizeSlider"
+                                                    <TextBlock x:Name="PenSizeText" FontSize="12" Foreground="#555555" Margin="0,0,0,4" />
+                                    <Slider
+                                                        x:Name="PenSizeSlider" AutomationProperties.Name="笔粗细"
                                                         Minimum="1"
                                                         Maximum="24"
                                                         Value="3"
                                                         StepFrequency="1"
                                                         IsThumbToolTipEnabled="False"
                                                         ValueChanged="PenSizeSlider_ValueChanged" />
-                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0"><Button Style="{StaticResource CompactButtonStyle}" Content="1" Tag="1" Click="PenSizePreset_Click" AutomationProperties.Name="粗细 1" /><Button Style="{StaticResource CompactButtonStyle}" Content="3" Tag="3" Click="PenSizePreset_Click" AutomationProperties.Name="粗细 3" /><Button Style="{StaticResource CompactButtonStyle}" Content="6" Tag="6" Click="PenSizePreset_Click" AutomationProperties.Name="粗细 6" /></StackPanel></StackPanel>
                             </Flyout>
                         </FlyoutBase.AttachedFlyout>
                     </AppBarToggleButton>
+                    <Button Style="{StaticResource CompactButtonStyle}" Width="36" Click="PenSettingsButton_Click" AutomationProperties.Name="笔设置" ToolTipService.ToolTip="颜色与粗细"><StackPanel><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE2A3;" FontSize="12" /><Rectangle x:Name="PenColorIndicator" Width="18" Height="3" Margin="0,5,0,0" /></StackPanel></Button>
 
                     <AppBarToggleButton
                         x:Name="TopHighlighterButton" Width="40"
                         IsCompact="True"
-                        AutomationProperties.Name="Highlighter"
-                        ToolTipService.ToolTip="荧光笔 (点击选择，再次点击配置颜色与粗细)"
+                        AutomationProperties.Name="荧光笔"
+                        ToolTipService.ToolTip="荧光笔：点击书写，右侧箭头设置颜色与粗细"
                         Click="TopHighlighterButton_Click">
                         <AppBarToggleButton.Icon>
-                            <FontIcon Glyph="&#xED60;" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE193;" />
                         </AppBarToggleButton.Icon>
                         <FlyoutBase.AttachedFlyout>
                             <Flyout x:Name="HighlighterFlyout" Placement="Bottom">
                                 <StackPanel Width="236" Margin="4">
                                     <TextBlock Text="颜色" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,0,0,8" />
                                     <Grid x:Name="HighlighterColorGrid" />
-                                    <TextBlock Text="大小" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,12,0,6" />
+                                    <TextBlock Text="粗细" FontSize="12" FontWeight="SemiBold" Foreground="#333333" Margin="0,12,0,6" />
                                     <Border Background="#F7F7F8" BorderBrush="#E2E2E6" BorderThickness="1" CornerRadius="4" Height="36" Margin="0,0,0,8">
                                         <Canvas Height="36">
                                             <Path
@@ -516,27 +613,29 @@
                                                 StrokeLineJoin="Round" />
                                         </Canvas>
                                     </Border>
+                                    <TextBlock x:Name="HighlighterSizeText" FontSize="12" Foreground="#555555" Margin="0,0,0,4" />
                                     <Slider
-                                        x:Name="HighlighterSizeSlider"
+                                        x:Name="HighlighterSizeSlider" AutomationProperties.Name="荧光笔粗细"
                                         Minimum="4"
                                         Maximum="36"
                                         Value="12"
                                         StepFrequency="1"
                                         IsThumbToolTipEnabled="False"
                                         ValueChanged="HighlighterSizeSlider_ValueChanged" />
-                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0"><Button Style="{StaticResource CompactButtonStyle}" Content="8" Tag="8" Click="HighlighterSizePreset_Click" AutomationProperties.Name="粗细 8" /><Button Style="{StaticResource CompactButtonStyle}" Content="12" Tag="12" Click="HighlighterSizePreset_Click" AutomationProperties.Name="粗细 12" /><Button Style="{StaticResource CompactButtonStyle}" Content="20" Tag="20" Click="HighlighterSizePreset_Click" AutomationProperties.Name="粗细 20" /></StackPanel></StackPanel>
                             </Flyout>
                         </FlyoutBase.AttachedFlyout>
                     </AppBarToggleButton>
+                    <Button Style="{StaticResource CompactButtonStyle}" Width="36" Click="HighlighterSettingsButton_Click" AutomationProperties.Name="荧光笔设置" ToolTipService.ToolTip="颜色与粗细"><StackPanel><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE2A3;" FontSize="12" /><Rectangle x:Name="HighlighterColorIndicator" Width="18" Height="3" Margin="0,5,0,0" /></StackPanel></Button>
 
                     <AppBarToggleButton
                         x:Name="TopEraserButton" Width="40"
                         IsCompact="True"
-                        AutomationProperties.Name="Eraser"
+                        AutomationProperties.Name="橡皮擦"
                         ToolTipService.ToolTip="橡皮擦"
                         Click="TopEraserButton_Click">
                         <AppBarToggleButton.Icon>
-                            <FontIcon Glyph="&#xED61;" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE294;" />
                         </AppBarToggleButton.Icon>
                     </AppBarToggleButton>
 
@@ -544,30 +643,24 @@
 
                     <AppBarButton
                         x:Name="TopUndoButton" Width="40"
-                        Icon="Undo"
+
                         IsCompact="True"
-                        AutomationProperties.Name="Undo"
+                        AutomationProperties.Name="撤销"
                         ToolTipService.ToolTip="撤销"
-                        Click="UndoButton_Click" />
+                        Click="UndoButton_Click" ><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE10E;" /></AppBarButton.Icon></AppBarButton>
 
                     <AppBarButton
                         x:Name="TopClearButton" Width="40"
-                        Icon="Delete"
+
                         IsCompact="True"
-                        AutomationProperties.Name="Clear"
+                        AutomationProperties.Name="清除本页批注"
                         ToolTipService.ToolTip="清除本页批注"
-                        Click="ClearButton_Click" />
+                        Click="ClearButton_Click" ><AppBarButton.Icon><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE107;" /></AppBarButton.Icon></AppBarButton>
                 </StackPanel>
-                            </Flyout>
-                        </FlyoutBase.AttachedFlyout>
-                    </AppBarButton>
-                    <Border x:Name="CaptionButtonInset" Width="136" IsHitTestVisible="False" />
-                </StackPanel>
-            </Grid>
         </Border>
 
         <!-- ===================== Content ===================== -->
-        <Grid Grid.Row="1" SizeChanged="DocumentSurface_SizeChanged">
+        <Grid Grid.Row="2" SizeChanged="DocumentSurface_SizeChanged">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="ThumbColumn" Width="Auto" />
@@ -593,7 +686,8 @@
                         FontSize="11"
                         FontWeight="SemiBold"
                         Foreground="#86868B"
-                        Text="Pages" />
+                        Text="页面" />
+                    <Button HorizontalAlignment="Right" Margin="0,0,4,0" Style="{StaticResource CompactButtonStyle}" Click="CloseThumbnails_Click" AutomationProperties.Name="关闭缩略图" ToolTipService.ToolTip="关闭缩略图"><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE10A;" FontSize="12" /></Button>
                     <ScrollViewer x:Name="ThumbnailScroller"
                         Grid.Row="1"
                         HorizontalScrollBarVisibility="Disabled"
@@ -624,6 +718,10 @@
             </ScrollViewer>
 
             <!-- ===================== Floating HUD toolbar (Quick Look style) ===================== -->
+            <!-- Reserve the toolbar's reveal area so hovering after idle never inks the page. -->
+            <Border x:Name="HudRevealZone" Grid.ColumnSpan="2" Width="320" Height="64"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8"
+                Background="Transparent" Visibility="Collapsed" />
             <Border
                 x:Name="HudBar"
                 Grid.ColumnSpan="2"
@@ -645,10 +743,10 @@
                         <Button
                             x:Name="PreviousButton"
                             Style="{StaticResource HudButtonStyle}"
-                            AutomationProperties.Name="Previous page"
+                            AutomationProperties.Name="上一页"
                             ToolTipService.ToolTip="上一页"
                             Click="PreviousButton_Click">
-                            <SymbolIcon Symbol="Previous" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE239;" FontSize="16" />
                         </Button>
                         <TextBlock
                             x:Name="PageStatusText"
@@ -662,10 +760,10 @@
                         <Button
                             x:Name="NextButton"
                             Style="{StaticResource HudButtonStyle}"
-                            AutomationProperties.Name="Next page"
+                            AutomationProperties.Name="下一页"
                             ToolTipService.ToolTip="下一页"
                             Click="NextButton_Click">
-                            <SymbolIcon Symbol="Next" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE23A;" FontSize="16" />
                         </Button>
 
                         <Rectangle Width="1" Height="18" RadiusX="0.5" RadiusY="0.5" Margin="7,0" Fill="#24FFFFFF" />
@@ -674,16 +772,16 @@
                         <Button
                             x:Name="ZoomOutButton"
                             Style="{StaticResource HudButtonStyle}"
-                            AutomationProperties.Name="Zoom out"
+                            AutomationProperties.Name="缩小"
                             ToolTipService.ToolTip="缩小 (-)"
                             Click="ZoomOutButton_Click">
-                            <SymbolIcon Symbol="ZoomOut" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE108;" FontSize="16" />
                         </Button>
 
                         <Button
                             x:Name="ZoomPercentButton"
                             Style="{StaticResource HudTextButtonStyle}"
-                            AutomationProperties.Name="Zoom ratio"
+                            AutomationProperties.Name="缩放比例"
                             ToolTipService.ToolTip="点击输入精确缩放比例"
                             Click="ZoomPercentButton_Click">
                             <TextBlock
@@ -726,10 +824,10 @@
                         <Button
                             x:Name="ZoomInButton"
                             Style="{StaticResource HudButtonStyle}"
-                            AutomationProperties.Name="Zoom in"
+                            AutomationProperties.Name="放大"
                             ToolTipService.ToolTip="放大 (+)"
                             Click="ZoomInButton_Click">
-                            <SymbolIcon Symbol="ZoomIn" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE109;" FontSize="16" />
                         </Button>
 
                         <!-- Zoom Slider (Native UWP Slider) -->
@@ -742,7 +840,7 @@
                             Value="100"
                             StepFrequency="1"
                             IsThumbToolTipEnabled="False"
-                            AutomationProperties.Name="Zoom slider"
+                            AutomationProperties.Name="缩放滑块"
                             ToolTipService.ToolTip="缩放滑块"
                             VerticalAlignment="Center"
                             ValueChanged="ZoomSlider_ValueChanged" />
@@ -750,10 +848,10 @@
                         <Button
                             x:Name="FitButton"
                             Style="{StaticResource HudButtonStyle}"
-                            AutomationProperties.Name="Fit page"
+                            AutomationProperties.Name="适应页面"
                             ToolTipService.ToolTip="适应页面 (0)"
                             Click="FitButton_Click">
-                            <SymbolIcon Symbol="FullScreen" />
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE1D8;" FontSize="16" />
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -766,45 +864,35 @@
                 Width="340"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
-                <Path
-                    Data="M4,2.5 L9.6,2.5 L12.2,5.1 L12.2,13.5 L4,13.5 Z M9.6,2.5 L9.6,5.1 L12.2,5.1 M6.2,8 L10,8 M6.2,10.2 L10,10.2"
-                    Width="54"
-                    Height="54"
-                    HorizontalAlignment="Center"
-                    Stretch="Uniform"
-                    Stroke="#C2C2C8"
-                    StrokeThickness="0.55"
-                    StrokeStartLineCap="Round"
-                    StrokeEndLineCap="Round"
-                    StrokeLineJoin="Round" />
+                <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE160;" FontSize="48" Foreground="#A8AFB8" HorizontalAlignment="Center" />
                 <TextBlock
                     Margin="0,14,0,0"
                     HorizontalAlignment="Center"
                     FontSize="21"
                     FontWeight="SemiBold"
                     Foreground="#1D1D1F"
-                    Text="Lite PDF Viewer" />
+                    Text="uwPDF" />
                 <TextBlock
                     Margin="0,7,0,0"
                     HorizontalAlignment="Center"
                     FontSize="13"
                     Foreground="#86868B"
-                    Text="Open a PDF to take a quick look." />
+                    Text="打开 PDF，开始阅读与批注。" />
                 <Button
                     Margin="0,18,0,0"
                     HorizontalAlignment="Center"
                     Style="{StaticResource AccentButtonStyle}"
-                    Content="Choose PDF…"
+                    Content="打开 PDF…"
                     Click="OpenButton_Click" />
             </StackPanel>
-            <Border x:Name="SearchPanel" Grid.ColumnSpan="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top"
-                Margin="8" Padding="8" Background="White" BorderBrush="#D0D0D4" BorderThickness="1" CornerRadius="5">
+            <Border x:Name="SearchPanel" Grid.ColumnSpan="2" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="12" Padding="12" Background="#FAFAFC" BorderBrush="#D0D0D4" BorderThickness="1" CornerRadius="5">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <TextBox x:Name="SearchTextBox" Width="200" PlaceholderText="查找文字" TextChanged="SearchTextBox_TextChanged" KeyDown="SearchTextBox_KeyDown" />
-                        <Button Content="↑" Click="FindPrevious_Click" AutomationProperties.Name="上一个匹配" />
-                        <Button Content="↓" Click="FindNext_Click" AutomationProperties.Name="下一个匹配" />
-                        <Button Content="×" Click="CloseSearch_Click" AutomationProperties.Name="关闭搜索" />
+                        <TextBox x:Name="SearchTextBox" Width="220" AutomationProperties.Name="查找 PDF 文字" PlaceholderText="查找文字" TextChanged="SearchTextBox_TextChanged" KeyDown="SearchTextBox_KeyDown" />
+                        <Button Style="{StaticResource CompactButtonStyle}" Click="FindPrevious_Click" AutomationProperties.Name="上一个匹配" ><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE110;" FontSize="14" /></Button>
+                        <Button Style="{StaticResource CompactButtonStyle}" Click="FindNext_Click" AutomationProperties.Name="下一个匹配" ><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE118;" FontSize="14" /></Button>
+                        <Button Style="{StaticResource CompactButtonStyle}" Click="CloseSearch_Click" AutomationProperties.Name="关闭搜索" ><FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE10A;" FontSize="14" /></Button>
                     </StackPanel>
                     <TextBlock x:Name="SearchStatus" Margin="2,4,0,0" FontSize="12" Foreground="#62626A" />
                 </StackPanel>

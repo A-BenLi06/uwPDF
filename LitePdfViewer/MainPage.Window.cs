@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 #if CPPWINRT_RENDERER
 using PreviewDisplay = PdfNative.Rendering.PreviewDisplay;
@@ -16,6 +16,8 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace LitePdfViewer
 {
@@ -29,21 +31,92 @@ namespace LitePdfViewer
         private Task<Size> pendingWorkAreaRead;
         private bool fitPageToViewport = true;
         private bool? thumbnailPreference;
+        private DispatcherTimer hudIdleTimer;
+        private Storyboard hudFade;
+        private bool hudPointerOver;
+        private bool hudFlyoutOpen;
+
+        private void InitializeReaderChrome()
+        {
+            hudIdleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            hudIdleTimer.Tick += (s, e) =>
+            {
+                hudIdleTimer.Stop();
+                if (hudPointerOver || hudFlyoutOpen || HasHudFocus()) return;
+                hudFade = new Storyboard();
+                var fade = new DoubleAnimation { To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(200)) };
+                Storyboard.SetTarget(fade, HudBar);
+                Storyboard.SetTargetProperty(fade, "Opacity");
+                hudFade.Children.Add(fade);
+                hudFade.Begin();
+            };
+            MainChrome.AddHandler(PointerMovedEvent, new PointerEventHandler((s, e) => RevealHud()), true);
+            MainChrome.AddHandler(PointerPressedEvent, new PointerEventHandler((s, e) => RevealHud()), true);
+            HudBar.SizeChanged += (s, e) => HudRevealZone.Width = e.NewSize.Width;
+            HudRevealZone.PointerEntered += (s, e) => RevealHud();
+            HudRevealZone.PointerMoved += (s, e) => RevealHud();
+            HudRevealZone.PointerPressed += (s, e) => { RevealHud(); e.Handled = true; };
+            HudBar.PointerEntered += (s, e) => { hudPointerOver = true; RevealHud(); };
+            HudBar.PointerExited += (s, e) => { hudPointerOver = false; RevealHud(); };
+            HudBar.GotFocus += (s, e) => RevealHud();
+            HudBar.LostFocus += (s, e) => RevealHud();
+            ZoomInputFlyout.Opened += (s, e) => { hudFlyoutOpen = true; RevealHud(); };
+            ZoomInputFlyout.Closed += (s, e) => { hudFlyoutOpen = false; RevealHud(); };
+            Loaded += (s, e) => RevealHud();
+            Unloaded += (s, e) => { hudIdleTimer.Stop(); if (hudFade != null) hudFade.Stop(); };
+        }
+
+        private bool HasHudFocus()
+        {
+            var focused = FocusManager.GetFocusedElement() as DependencyObject;
+            while (focused != null)
+            {
+                if (focused == HudBar) return true;
+                focused = VisualTreeHelper.GetParent(focused);
+            }
+            return false;
+        }
+
+        private void RevealHud()
+        {
+            if (hudFade != null) { hudFade.Stop(); hudFade = null; }
+            HudBar.Opacity = 1;
+            hudIdleTimer.Stop();
+            if (HudBar.Visibility == Visibility.Visible) hudIdleTimer.Start();
+        }
+
+        private void PenSizePreset_Click(object sender, RoutedEventArgs e)
+        {
+            PenSizeSlider.Value = double.Parse((string)((Button)sender).Tag, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private void HighlighterSizePreset_Click(object sender, RoutedEventArgs e)
+        {
+            HighlighterSizeSlider.Value = double.Parse((string)((Button)sender).Tag, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private void CloseThumbnails_Click(object sender, RoutedEventArgs e)
+        {
+            ThumbsToggle.IsChecked = false;
+            ThumbsToggle_Click(ThumbsToggle, e);
+        }
 
         private void InitializePreviewWindow()
         {
             var appView = ApplicationView.GetForCurrentView();
             appView.SetPreferredMinSize(new Size(500, 320));
+            appView.TitleBar.BackgroundColor = Color.FromArgb(255, 246, 246, 247);
+            appView.TitleBar.InactiveBackgroundColor = Color.FromArgb(255, 246, 246, 247);
+            appView.TitleBar.ForegroundColor = Colors.Black;
+            appView.TitleBar.InactiveForegroundColor = Colors.Gray;
             appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
             appView.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             appView.TitleBar.ButtonForegroundColor = Colors.Black;
             appView.TitleBar.ButtonInactiveForegroundColor = Colors.Gray;
-            // The 52-DIP app title/toolbar replaces the separate system title row.
-            var titleBar = CoreApplication.GetCurrentView().TitleBar;
-            titleBar.ExtendViewIntoTitleBar = true;
-            Window.Current.SetTitleBar(FileTitleDragRegion);
-            CaptionButtonInset.Width = titleBar.SystemOverlayRightInset;
-            titleBar.LayoutMetricsChanged += (s, e) => CaptionButtonInset.Width = titleBar.SystemOverlayRightInset;
+            // Keep the system title row available for dragging at every window width.
+            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
+            Window.Current.SetTitleBar(null);
+            appView.Title = "uwPDF";
 
             DocumentScroller.DirectManipulationStarted += (s, e) =>
             {
@@ -175,7 +248,11 @@ namespace LitePdfViewer
 
         private void AnnotationToolsButton_Click(object sender, RoutedEventArgs e)
         {
-            FlyoutBase.ShowAttachedFlyout(AnnotationToolsButton);
+            bool opening = AnnotationToolbar.Visibility != Visibility.Visible;
+            AnnotationToolbar.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
+            AnnotationToolsButton.Background = new SolidColorBrush(opening ? Color.FromArgb(255, 220, 235, 250) : Colors.Transparent);
+            ToolTipService.SetToolTip(AnnotationToolsButton, opening ? "收起批注工具，返回文字选择" : "展开批注工具");
+            if (!opening) SetInkTool(InkTool.None);
         }
     }
 }

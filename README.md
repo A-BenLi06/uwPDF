@@ -11,10 +11,11 @@ Extreme lite PDF viewer and annotator (UWP) focused on fast launch and pen annot
 - PDF text is extracted offline and cached near the viewport. Image-only pages remain viewable and support ink, but have no selectable text; no OCR is performed.
 - `Ctrl+F` opens page-by-page text search with next/previous navigation and wraparound. Query changes cancel waiting requests, unreadable pages are skipped with a partial-result notice, and search does not retain text for the entire document. Matching normalizes whitespace and supports overlapping occurrences.
 - Export creates a separate PDF containing standard Highlight and Ink annotations with appearance streams. Windows Ink generates the exported filled stroke outlines, preserving curves, pressure and pen tip shapes; the standard InkList is retained for compatibility. Annotations are appended one at a time, avoiding a whole document's expanded outline JSON in the managed heap.
-- Quick Look-style UI: slim title bar with the centered file name, a light canvas with hairline page borders, and a floating dark translucent HUD toolbar at the bottom center.
-- HUD buttons are custom line-icon ghost buttons (hover/pressed/checked overlays, no chrome), with page navigation, zoom out/fit/zoom in with a live percent label, and pen/highlighter/eraser tools.
-- The title bar's annotation menu provides text selection, touch writing, pen, highlighter, eraser, undo, and clear. Color and stroke size controls appear while an ink tool is active.
-- The initial window follows the first page's cropped, rotated PDF point dimensions. It adds 28 DIP of horizontal padding, 16 DIP of vertical padding, a 52-DIP unified title bar, and a 110-DIP right thumbnail rail for multi-page documents. It scales down to leave 32 DIP around the monitor work area, with an initial scale capped at 100% and an 800 × 600 fallback.
+- Quick Look-style UI: an independent light system title bar for window dragging, a compact file/command row, a light canvas with hairline page borders, and a floating dark HUD at the bottom center. File names truncate within the available space.
+- All authored UI icons explicitly use Segoe UI Symbol and its matching glyph map. Compact commands share hover, pressed, selected and keyboard-focus feedback.
+- The annotation button expands a persistent toolbar with text selection, touch writing, pen, highlighter, eraser, undo and clear. Pen/highlighter selection and settings use separate buttons; color indicators, live previews, size values and common size presets make the current settings visible. Collapsing the toolbar returns to text selection. Touch writing is opt-in; when disabled, fingers scroll.
+- The reading HUD fades after three idle seconds, stays visible during hover, keyboard focus or zoom input, and has a protected reveal area so clicking its hidden position cannot draw on the PDF. Search opens at the top right, and the thumbnail rail has its own close button.
+- The initial window follows the first page's cropped, rotated PDF point dimensions. Its client layout adds 28 DIP of horizontal padding, 16 DIP of vertical padding, a 52-DIP command row, and a 110-DIP right thumbnail rail for multi-page documents. It scales down using a 32-DIP monitor-work-area margin, with an initial scale capped at 100% and an 800 × 600 fallback; Windows provides the separate system title row.
 - First-page rendering and the visible-page worker start without waiting for monitor work-area probing or automatic window sizing. Rapid file switches share one pending work-area probe; completed results are read again for the current monitor. A late sizing result respects a manual resize and the current file, and sizing failures do not reject a readable PDF.
 - A manual window resize is retained when opening another file in the same session. Closing and reopening restores content-based sizing. Windows manages window position and can override sizing in snapped, maximized, or tablet layouts; the app requests a 500 × 320 minimum to keep commands usable.
 - "100%" uses one PDF point per logical DIP. Fit adapts the entire current page to the viewport without enlarging it; manual zoom can go above 100%. Zooming re-renders visible pages at higher resolution automatically. A background scheduler renders nearby pages and thumbnails first.
@@ -252,6 +253,12 @@ private/working-set bytes, handles, loaded modules and file hashes. Sampling
 can miss peaks and does not measure GPU memory, input latency or presentation;
 record UI action times separately. Run Release without the VS debugger for
 Release measurements, with the framework dependencies shipped in its package.
+
+`scripts/Test-Keyboard.ps1` compiles the actual page key handler with key-state
+and command doubles. It verifies that Alt combinations pass to Windows while
+ordinary page navigation and Ctrl+F/S/O/C remain available, and native text
+inputs retain Space. `-AllowAltNegativeControl` restores the former handler and
+must fail. Actual system-menu routing requires a desktop check.
 
 `Test-PreviewStartup.ps1` compiles the actual document loading, sizing and
 work-area probe methods with platform/work doubles and a single-thread
