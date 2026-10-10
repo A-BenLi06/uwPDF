@@ -257,7 +257,9 @@ Release measurements, with the framework dependencies shipped in its package.
 work-area probe methods with platform/work doubles and a single-thread
 synchronization context. It checks first-page/worker independence from sizing,
 stale file and resize continuations, manual-size preservation, one pending probe,
-fresh monitor queries, cleanup failures and nonfatal sizing errors. Four negative
+fresh monitor queries, cleanup failures, nonfatal sizing errors and a final
+refit after automatic window sizing. User zoom and reading position survive that
+completion, and stale documents cannot refit their replacements. Five negative
 controls deliberately restore each regression and must fail. These tests do not
 measure app startup, browser memory, actual monitor selection or frame latency.
 

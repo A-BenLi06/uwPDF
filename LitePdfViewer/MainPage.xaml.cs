@@ -359,6 +359,10 @@ namespace LitePdfViewer
                 var ignoredProbe = ProbeAspectsAsync(renderToken);
                 await previewSizing;
                 if (renderToken != activeRenderToken) return;
+                // The first fit used the launch viewport. Finish the deferred
+                // layout after the intrinsic window resize has settled, keeping
+                // the reading anchor and any user-selected zoom mode intact.
+                RebuildLayout();
             }
             catch (Exception ex)
             {

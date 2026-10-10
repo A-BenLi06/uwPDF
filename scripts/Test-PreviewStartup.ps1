@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('None', 'WaitForSizing', 'StaleFirstPage', 'ResizeOwnership', 'DuplicateProbe')]
+    [ValidateSet('None', 'WaitForSizing', 'StaleFirstPage', 'ResizeOwnership', 'DuplicateProbe', 'NoFinalFit')]
     [string]$NegativeControl = 'None'
 )
 $ErrorActionPreference = 'Stop'
@@ -17,6 +17,7 @@ $windowSource = Get-Content -LiteralPath (Join-Path $repoRoot 'LitePdfViewer/Mai
 $methods = (Extract-Method $pageSource 'private async Task LoadDocumentAsync(' 'private void ThumbsToggle_Click(') +
     (Extract-Method $windowSource 'private async Task ApplyPreviewWindowSizeAsync(' 'private float FitZoom(')
 switch ($NegativeControl) {
+    'NoFinalFit' { $methods = $methods.Replace('                RebuildLayout();', '') }
     'WaitForSizing' { $methods = $methods.Replace('var previewSizing = ApplyPreviewWindowSizeAsync(renderToken, hasIntrinsicSize);', "var previewSizing = ApplyPreviewWindowSizeAsync(renderToken, hasIntrinsicSize);`n await previewSizing;") }
     'StaleFirstPage' { $methods = $methods -replace '(?s)(await RenderPageCoreAsync\(0, renderToken\);\s*\}\s*)if \(renderToken != activeRenderToken\) return;', '$1' }
     'ResizeOwnership' { $methods = $methods.Replace('if (applyingPreviewSizeToken == token) applyingPreviewSize = false;', 'applyingPreviewSize = false;') }
@@ -39,5 +40,5 @@ foreach ($relative in @('LitePdfViewer/MainPage.xaml.cs', 'LitePdfViewer/MainPag
 }
 [pscustomobject]@{
     completed_utc = [DateTime]::UtcNow.ToString('o'); source_sha256 = $hashes
-    scope = 'Actual LoadDocumentAsync, ApplyPreviewWindowSizeAsync, ReadWorkAreaAsync and legacy probe with platform/work doubles and a single-thread synchronization context; first-page/worker independence, file-switch races, manual resize, probe sharing/cleanup and nonfatal sizing failures; excludes actual window/monitor behavior, PDF rendering and measured latency'
+    scope = 'Actual LoadDocumentAsync, ApplyPreviewWindowSizeAsync, ReadWorkAreaAsync and legacy probe with platform/work doubles and a single-thread synchronization context; first-page/worker independence, final layout dispatch, file-switch races, manual resize, probe sharing/cleanup and nonfatal sizing failures. The final-layout double checks dispatch/zoom-mode ownership, not actual viewport math. Excludes actual window/monitor behavior, PDF rendering and measured latency'
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $outputRoot 'result.json') -Encoding UTF8

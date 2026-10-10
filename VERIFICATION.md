@@ -238,6 +238,9 @@ The full product goal remains open for those acceptance steps.
   CPU/GPU/XAML/desktop-composition recording with `0xc5585011` (cannot enable
   system profiling policy); subsequent status confirmed no recording. No ETL
   or frame-time claim is made. Transient whites and input latency remain open.
+- A separate XAML event-only WPR profile, with no system sampler, also failed
+  to start with `0x80070005` (access denied). WPR status again confirmed no
+  recording. No profiling or security policy was changed to bypass the failure.
 - Two automated mouse strokes were saved through Ctrl+S and exported through
   the normal picker. Independent inspection of
   `artifacts/native-tests/computer-use-release-ink-export.pdf` (5673 bytes)
@@ -250,6 +253,34 @@ The full product goal remains open for those acceptance steps.
   intrinsic page size, while the initial fit stayed at 67% from the earlier,
   smaller startup viewport. The page and ink remained aligned. This requires
   a window-sizing/initial-fit correction before Quick Look sizing acceptance.
+
+2026-10-10 initial fit after intrinsic window sizing:
+
+- Once asynchronous automatic sizing completes, the current document performs
+  the existing anchor-preserving layout/refit operation. It uses the settled
+  viewport, without restarting first-page rendering or scrolling to page zero.
+  Existing custom-zoom mode is respected; the document-generation check runs
+  before the operation so an older open cannot refit a replacement document.
+- The production startup/control-flow suite checks that this final operation
+  happens after sizing and preserves simulated user zoom/reading ownership;
+  stale-open completion cannot invoke it. `NoFinalFit` restores the missing
+  operation and fails the intended assertion. Viewport-anchor geometry checks
+  also pass. These doubles do not establish actual viewport timing or pixels.
+- Actual x64 Release cold-open verification with the same 600x800-point PDF
+  changed from the old 67% result to 100% in the 738x868-DIP window, on page 1.
+  Both saved mouse strokes remained aligned. The revised checked Release
+  payload runs from `artifacts/computer-use/x64-release-final-fit`; only its test
+  manifest identity/display/protocol and test version 1.0.8.1 differ, retaining
+  the same test family annotation data. Production package version is unchanged.
+- All eight Debug/Release application builds and package verifiers passed with
+  the refit correction. Logs are under `artifacts/preview-final-fit`; current
+  package/source hashes are in `artifacts/text-winrt/package-checks.json`, and
+  live tested Release module hashes are in
+  `artifacts/performance/final-fit-live-release.json`. All five startup negative
+  controls failed their intended assertions.
+- Computer-use additionally exposed Alt+Space advancing the reading page while
+  opening the window's system menu. The key handler currently accepts Space
+  without checking Alt; this separate keyboard regression remains to correct.
 
 Reproducible legacy native document check: `scripts/Test-NativeText.ps1`, followed by
 `tests/VerifyNativeDocument.py`. Generated inputs/results are in
