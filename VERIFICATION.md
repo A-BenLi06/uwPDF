@@ -211,6 +211,46 @@ The full product goal remains open for those acceptance steps.
 - Hardware pinch, Surface Pen pressure/palm rejection, Release frame timing,
   actual memory-pressure events and ARM/old-Windows device runtime remain open.
 
+2026-10-10 actual x64 Release desktop measurement:
+
+- The checked x64 Release package was extracted under
+  `artifacts/computer-use/x64-release` and registered with the separate test
+  identity `Ben.UwPdfReleaseVerification`. Only identity, display name and
+  protocol differ; executable/native payloads are those of the checked package.
+  The original VS Debug deployment and its annotation data were preserved.
+  Missing Microsoft.NET.Native.Framework.1.3/Runtime.1.4 dependencies were
+  installed from the package's bundled x64 dependencies. Actual loaded modules
+  confirmed .NET Native, Windows.Data.Pdf and PdfNative.Rendering. Directly
+  executing the EXE lacks the package dependency context and failed; launching
+  its registered application identity worked and is the correct test path.
+- `Measure-ViewerProcess.ps1` collected 1372 samples over five minutes from
+  that exact Release executable, initially empty, then reading the 600-page
+  fixture and switching to `known-text.pdf`. Requested sampling interval was
+  200 ms; actual sample times are recorded. Observed maximum private bytes:
+  277,336,064 (264.5 MiB); maximum sampled working set: 365,068,288 (348.2 MiB).
+  Last sample after the file switch: 183,222,272 private bytes (174.7 MiB).
+  This is one finite run, not a leak proof, GPU total or controlled startup test.
+  Data and operation times are `artifacts/performance/release-scroll-20261010.json`
+  and `release-scroll-actions-20261010.json`. The final collector also passed
+  a short actual-process run; the long report records its earlier script hash.
+- Actual Release UI wheel forward/reverse, first/last-page jumps and thin/wide
+  thumb drags displayed page images in every settled snapshot. WPR rejected
+  CPU/GPU/XAML/desktop-composition recording with `0xc5585011` (cannot enable
+  system profiling policy); subsequent status confirmed no recording. No ETL
+  or frame-time claim is made. Transient whites and input latency remain open.
+- Two automated mouse strokes were saved through Ctrl+S and exported through
+  the normal picker. Independent inspection of
+  `artifacts/native-tests/computer-use-release-ink-export.pdf` (5673 bytes)
+  confirmed three pages and two standard `/Ink` annotations with InkList and
+  `/AP`. After closing/restarting the Release application, reopening the input
+  restored both strokes at the same relative page positions. Automated drags
+  produced short captured strokes, so this does not establish complete pointer
+  trajectories, pressure, palm rejection or hardware pen latency.
+- The cold reopen also exposed a sizing discrepancy: the window grew to the
+  intrinsic page size, while the initial fit stayed at 67% from the earlier,
+  smaller startup viewport. The page and ink remained aligned. This requires
+  a window-sizing/initial-fit correction before Quick Look sizing acceptance.
+
 Reproducible legacy native document check: `scripts/Test-NativeText.ps1`, followed by
 `tests/VerifyNativeDocument.py`. Generated inputs/results are in
 `artifacts/native-tests`; the geometry-derived highlight export is

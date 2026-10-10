@@ -245,6 +245,14 @@ activation does not verify a Visual Studio profiling session or graph collection
 `scripts/Repair-VS2015Diagnostics.ps1` repairs collector registration using the
 VS 2015 installer, with registration backups, when infrastructure checks fail.
 
+`scripts/Measure-ViewerProcess.ps1` samples one explicitly selected viewer
+process during desktop tests. Pass its PID, exact `-ExpectedExecutable`, fixture
+paths and a new `-ReportPath`. Reports include actual sample times, process CPU,
+private/working-set bytes, handles, loaded modules and file hashes. Sampling
+can miss peaks and does not measure GPU memory, input latency or presentation;
+record UI action times separately. Run Release without the VS debugger for
+Release measurements, with the framework dependencies shipped in its package.
+
 `Test-PreviewStartup.ps1` compiles the actual document loading, sizing and
 work-area probe methods with platform/work doubles and a single-thread
 synchronization context. It checks first-page/worker independence from sizing,
