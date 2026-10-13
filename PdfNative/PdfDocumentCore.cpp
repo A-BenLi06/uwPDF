@@ -283,6 +283,7 @@ namespace
             pdf_set_annot_color(ctx, annotation, 3, item->color);
             pdf_set_annot_opacity(ctx, annotation, item->opacity);
             pdf_set_annot_author(ctx, annotation, "uwPDF");
+            if (!item->owner.empty()) pdf_dict_puts_drop(ctx, pdf_annot_obj(ctx, annotation), "uwPDFOwner", pdf_new_text_string(ctx, item->owner.c_str()));
             if (item->ink)
             {
                 for (auto& point : item->points) point = fz_transform_point(point, transform);
@@ -302,6 +303,25 @@ namespace
         fz_catch(ctx) { fz_rethrow(ctx); }
     }
 
+
+    void ClearOwnedAnnotations(fz_context* ctx, pdf_document* document, const ExportAnnotation* item)
+    {
+        pdf_page* page = nullptr;
+        fz_var(page);
+        fz_try(ctx)
+        {
+            page = pdf_load_page(ctx, document, item->page);
+            for (auto annotation = pdf_first_annot(ctx, page); annotation;)
+            {
+                auto next = pdf_next_annot(ctx, annotation);
+                auto owner = pdf_dict_gets(ctx, pdf_annot_obj(ctx, annotation), "uwPDFOwner");
+                if (owner && item->owner == pdf_to_text_string(ctx, owner)) pdf_delete_annot(ctx, page, annotation);
+                annotation = next;
+            }
+        }
+        fz_always(ctx) { fz_drop_page(ctx, reinterpret_cast<fz_page*>(page)); }
+        fz_catch(ctx) { fz_rethrow(ctx); }
+    }
 
     void ExportDocument(TextDocumentState* state, StreamState* destination)
     {
@@ -373,7 +393,11 @@ void PdfNativeCore::AppendAnnotations(const std::shared_ptr<TextDocumentState>& 
     {
         auto pdf = pdf_specifics(ctx, state->document);
         if (!pdf) fz_throw(ctx, FZ_ERROR_ARGUMENT, "Not a PDF document");
-        for (auto& item : items) AddAnnotation(ctx, pdf, &item);
+        for (auto& item : items)
+        {
+            if (item.clear) ClearOwnedAnnotations(ctx, pdf, &item);
+            else AddAnnotation(ctx, pdf, &item);
+        }
     }
     fz_catch(ctx) { throw PdfError(ctx); }
 }

@@ -99,6 +99,11 @@ namespace LitePdfViewer
         {
             var view = GetFitReferencePage();
             if (view == null || scrollActivity.IsDirectManipulationActive || !IsScrollSettled()) return;
+            if (!IsZoomSettled())
+            {
+                ScheduleRelayout();
+                return;
+            }
             var zoom = FitZoom(view);
             if (Math.Abs(DocumentScroller.ZoomFactor - zoom) <= 0.005f) return;
             var top = DocumentScroller.VerticalOffset / Math.Max(0.01, DocumentScroller.ZoomFactor);
@@ -108,8 +113,9 @@ namespace LitePdfViewer
                 top = anchor.Restore(pageTops[anchor.Page], pageViews[anchor.Page].LayoutHeight, PageBorderThickness);
                 pendingLayoutAnchor = null;
             }
-            PageFrame.Width = Math.Max(lastColumnWidth + 2 * PageBorderThickness,
-                Math.Max(1, DocumentScroller.ViewportWidth) / zoom);
+            UpdatePageCentering();
+            MarkZoomChanging();
+            pointerZoomGesture = false;
             DocumentScroller.ChangeView(0, top * zoom, zoom, true);
         }
     }

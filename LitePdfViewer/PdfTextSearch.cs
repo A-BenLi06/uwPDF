@@ -30,10 +30,27 @@ namespace LitePdfViewer
         public static PdfSearchMatch Find(IReadOnlyList<string> glyphs, string query, int anchor,
             bool forward, out PdfSearchMatch wrapped, CancellationToken cancellation = default(CancellationToken))
         {
+            var matches = FindAll(glyphs, query, cancellation);
+            wrapped = matches.Count == 0 ? PdfSearchMatch.Missing : matches[forward ? 0 : matches.Count - 1];
+            var result = PdfSearchMatch.Missing;
+            foreach (var candidate in matches)
+            {
+                if (forward ? candidate.First >= anchor : candidate.Last <= anchor)
+                {
+                    result = candidate;
+                    if (forward) break;
+                }
+            }
+            return result;
+        }
+
+        public static List<PdfSearchMatch> FindAll(IReadOnlyList<string> glyphs, string query,
+            CancellationToken cancellation = default(CancellationToken))
+        {
             cancellation.ThrowIfCancellationRequested();
-            wrapped = PdfSearchMatch.Missing;
+            var matches = new List<PdfSearchMatch>();
             query = NormalizeQuery(query);
-            if (query.Length == 0) return wrapped;
+            if (query.Length == 0) return matches;
             var text = new StringBuilder();
             var map = new List<int>();
             for (var g = 0; g < glyphs.Count; g++)
@@ -51,24 +68,18 @@ namespace LitePdfViewer
                 }
             }
             var content = text.ToString();
-            var result = PdfSearchMatch.Missing;
             for (var at = 0; at <= content.Length - query.Length;)
             {
                 cancellation.ThrowIfCancellationRequested();
                 var match = content.IndexOf(query, at, StringComparison.OrdinalIgnoreCase);
                 if (match < 0) break;
                 var candidate = new PdfSearchMatch { First = map[match], Last = map[match + query.Length - 1] };
-                if (!wrapped.Found || !forward) wrapped = candidate;
-                if (forward ? candidate.First >= anchor : candidate.Last <= anchor)
-                {
-                    result = candidate;
-                    if (forward) break;
-                }
+                matches.Add(candidate);
                 // Overlapping matches are valid ("ana" occurs twice in "banana").
                 at = match + 1;
             }
             cancellation.ThrowIfCancellationRequested();
-            return result;
+            return matches;
         }
     }
 }

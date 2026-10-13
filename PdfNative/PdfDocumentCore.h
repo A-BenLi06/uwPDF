@@ -37,7 +37,8 @@ namespace PdfNativeCore
     struct ExportAnnotation
     {
         int page;
-        bool ink;
+        bool ink, clear;
+        std::string owner;
         float color[3], opacity, width;
         std::vector<fz_quad> quads;
         std::vector<fz_point> points;

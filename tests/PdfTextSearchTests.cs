@@ -24,6 +24,10 @@ class PdfTextSearchTests
         Expect(new[] { "x" }, "missing", 0, true, -1, -1, -1);
         Expect(new string[0], "x", 0, false, -1, -1, -1);
         Expect(new[] { "x" }, " \n ", 0, true, -1, -1, -1);
+        var all = PdfTextSearch.FindAll(new[] { "b", "a", "n", "a", "n", "a" }, "ana");
+        if (all.Count != 2 || all[0].First != 1 || all[1].First != 3) throw new Exception("Overlapping results were not counted.");
+        all = PdfTextSearch.FindAll(new[] { "ffi" }, "f");
+        if (all.Count != 2) throw new Exception("Two occurrences in one ligature must retain separate ordinals.");
         Console.WriteLine("PASS: overlap, forward/backward anchors, wrap, whitespace, CJK, ligature, surrogate pair and empty search");
         return 0;
     }

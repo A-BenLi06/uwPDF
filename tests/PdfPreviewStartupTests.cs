@@ -154,6 +154,10 @@ namespace LitePdfViewer
         public Task Open(StorageFile file) { return LoadDocumentAsync(file); }
         public Task SizeFor(ulong token) { activeRenderToken = token; firstPageSize = new Size(600, 800); return ApplyPreviewWindowSizeAsync(token, true); }
         public void CustomZoom(double zoom) { Zoom = zoom; fitPageToViewport = false; }
+        private Task saveInProgress;
+        private StorageFile readingCopy;
+        private Task<StorageFile> PrepareReadingFileAsync(StorageFile file, ulong token) { return Task.FromResult(file); }
+        private Task DeleteTemporaryPdfAsync(StorageFile file) { return Task.FromResult(true); }
         private void ResetSearch() { }
         private void ResetPageViews() { pageViews.Clear(); }
         private void ResetThumbnails() { }

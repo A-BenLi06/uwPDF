@@ -321,20 +321,28 @@ namespace LitePdfViewer
 
         private List<TextQuad> SelectionQuads(PageView view)
         {
+            if (selectedTextPage != view || view.Glyphs == null) return new List<TextQuad>();
+            return BuildTextQuads(view.Glyphs, Math.Min(selectionAnchor, selectionEnd), Math.Max(selectionAnchor, selectionEnd),
+                view.LayoutWidth, view.LayoutHeight);
+        }
+
+        private static List<TextQuad> BuildTextQuads(List<TextGlyph> glyphs, int first, int end, double width, double height,
+            System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken))
+        {
             var result = new List<TextQuad>();
-            if (selectedTextPage != view || view.Glyphs == null) return result;
-            for (var i = Math.Min(selectionAnchor, selectionEnd); i <= Math.Max(selectionAnchor, selectionEnd); i++)
+            for (var i = first; i <= end; i++)
             {
-                var g = view.Glyphs[i];
+                if ((i & 255) == 0) cancellation.ThrowIfCancellationRequested();
+                var g = glyphs[i];
                 if (g.Text == "\n" || g.Width <= 0 || g.Height <= 0) continue;
                 var next = new TextQuad { A = g.TopLeft, B = g.TopRight, C = g.BottomLeft, D = g.BottomRight };
                 if (result.Count > 0)
                 {
                     var last = result[result.Count - 1];
-                    var height = Math.Sqrt(Math.Pow((next.C.X - next.A.X) * view.LayoutWidth, 2) + Math.Pow((next.C.Y - next.A.Y) * view.LayoutHeight, 2));
-                    var gapTop = Math.Sqrt(Math.Pow((last.B.X - next.A.X) * view.LayoutWidth, 2) + Math.Pow((last.B.Y - next.A.Y) * view.LayoutHeight, 2));
-                    var gapBottom = Math.Sqrt(Math.Pow((last.D.X - next.C.X) * view.LayoutWidth, 2) + Math.Pow((last.D.Y - next.C.Y) * view.LayoutHeight, 2));
-                    if (height > 0 && gapTop < height * 0.35 && gapBottom < height * 0.35)
+                    var quadHeight = Math.Sqrt(Math.Pow((next.C.X - next.A.X) * width, 2) + Math.Pow((next.C.Y - next.A.Y) * height, 2));
+                    var gapTop = Math.Sqrt(Math.Pow((last.B.X - next.A.X) * width, 2) + Math.Pow((last.B.Y - next.A.Y) * height, 2));
+                    var gapBottom = Math.Sqrt(Math.Pow((last.D.X - next.C.X) * width, 2) + Math.Pow((last.D.Y - next.C.Y) * height, 2));
+                    if (quadHeight > 0 && gapTop < quadHeight * 0.35 && gapBottom < quadHeight * 0.35)
                     {
                         last.B = next.B; last.D = next.D;
                         result[result.Count - 1] = last;
@@ -397,12 +405,14 @@ namespace LitePdfViewer
                 PaintQuads(view.HighlightLayer, view, highlight.Quads, highlight.Color, 0.35);
             }
             RedrawTextSelection(view);
+            if (activeSearchHit != null && activeSearchHit.Page == view.Index) UpdateSearchFocus();
         }
 
         private void RedrawTextSelection(PageView view)
         {
             if (view.SelectionLayer == null) return;
             view.SelectionLayer.Children.Clear();
+            if (IsSearchSelection()) return;
             PaintQuads(view.SelectionLayer, view, SelectionQuads(view), Color.FromArgb(255, 0, 120, 215), 0.3);
         }
 
@@ -518,7 +528,7 @@ namespace LitePdfViewer
             return annotations.Stringify();
         }
 
-        private async Task SavePageAnnotationsAsync(PageView view)
+        private async Task SavePageAnnotationsAsync(PageView view, bool clearDirty = true)
         {
             if (view.IsLoadingInk) return;
             var revision = view.Revision;
@@ -532,7 +542,7 @@ namespace LitePdfViewer
                 var file = await folder.CreateFileAsync(HighlightFileName(view.Index), CreationCollisionOption.ReplaceExisting);
                 await FileIO.WriteTextAsync(file, highlights);
             }
-            if (token == activeRenderToken && revision == view.Revision) ClearPageDirty(view);
+            if (clearDirty && token == activeRenderToken && revision == view.Revision) ClearPageDirty(view);
         }
     }
 }

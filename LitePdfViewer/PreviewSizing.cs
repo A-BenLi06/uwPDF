@@ -8,7 +8,7 @@ namespace LitePdfViewer
     {
         public const double HorizontalPadding = 28;
         public const double VerticalPadding = 16;
-        public const double TopChrome = 52;
+        public const double TopChrome = 44;
         public const double ThumbnailRail = 110;
         public const double ScreenMargin = 32;
 

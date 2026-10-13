@@ -8,6 +8,8 @@
     </Compile>
     <Compile Include="MainPage.Text.cs" />
     <Compile Include="MainPage.Search.cs" />
+    <Compile Include="MainPage.Scrollbars.cs" />
+    <Compile Include="PdfScrollBarDrag.cs" />
     <Compile Include="PdfRenderScheduler.cs" />
     <Compile Include="PdfScrollActivity.cs" />
     <Compile Include="PdfRasterRetirement.cs" />
@@ -15,7 +17,8 @@
     <Compile Include="MainPage.Memory.cs" />
     <Compile Include="PdfViewportAnchor.cs" />
     <Compile Include="MainPage.PageGeometry.cs" />
-    <Compile Include="MainPage.Export.cs" />
+    <Compile Include="MainPage.Save.cs" />
+    <Compile Include="MainPage.Share.cs" />
     <Compile Include="MainPage.Window.cs" />
     <Compile Include="MainPage.Rendering.cs" />
     <Compile Include="MainPage.Thumbnails.cs" />

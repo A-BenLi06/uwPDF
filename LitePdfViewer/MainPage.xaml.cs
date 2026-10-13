@@ -124,6 +124,7 @@ namespace LitePdfViewer
         private bool isUpdatingZoomSlider;
         private DateTime zoomSettledAt = DateTime.MinValue;
         private float lastObservedZoom = 1f;
+        private bool pointerZoomGesture;
         private float? pendingSliderZoom;
         private DispatcherTimer sliderZoomTimer;
         private bool thumbsRequested;
@@ -149,6 +150,7 @@ namespace LitePdfViewer
             Unloaded += (sender, args) => { StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
             InitializePreviewWindow();
             InitializeReaderChrome();
+            InitializeSharing();
             try
             {
                 dpiScale = DisplayInformation.GetForCurrentView().RawPixelsPerViewPixel;
@@ -230,26 +232,14 @@ namespace LitePdfViewer
             }
         }
 
-        // Persist all dirty annotations.
+        // Explicit save writes standard annotations into the opened PDF.
         public async Task SaveCurrentAnnotationsAsync()
         {
-            if (currentFile == null || document == null)
-            {
-                return;
-            }
-
-            var token = activeRenderToken;
-            var pending = new List<PageView>();
-            foreach (var view in pageViews) if (view.Dirty) pending.Add(view);
-            foreach (var view in pending)
-            {
-                // An export/save may overlap opening another file. Never walk
-                // the new document's page list after an asynchronous disk write.
-                if (token != activeRenderToken) return;
-                await SavePageAnnotationsAsync(view);
-            }
-
-            UpdateDirtyState();
+            if (saveInProgress != null) { await saveInProgress; return; }
+            var operation = SavePdfAnnotationsAsync();
+            saveInProgress = operation;
+            try { await operation; }
+            finally { saveInProgress = null; }
         }
 
         private async void OpenButton_Click(object sender, RoutedEventArgs e)
@@ -268,7 +258,7 @@ namespace LitePdfViewer
                 }
                 else if (promptResult == SavePromptResult.Save)
                 {
-                    await SaveCurrentAnnotationsAsync();
+                    if (!await SaveCurrentAnnotationsWithFeedbackAsync()) return;
                 }
                 else
                 {
@@ -298,6 +288,9 @@ namespace LitePdfViewer
 
         private async Task LoadDocumentAsync(StorageFile file)
         {
+            if (saveInProgress != null) await saveInProgress;
+            var previousCopy = readingCopy;
+            readingCopy = null;
             ResetSearch();
             var renderToken = ++activeRenderToken;
             document = null;
@@ -311,7 +304,8 @@ namespace LitePdfViewer
 
             try
             {
-                var loadedDocument = await PdfDocument.LoadFromFileAsync(file);
+                var readingFile = await PrepareReadingFileAsync(file, renderToken);
+                var loadedDocument = await PdfDocument.LoadFromFileAsync(readingFile);
                 if (renderToken != activeRenderToken) return;
                 document = loadedDocument;
                 pageIndex = 0;
@@ -330,7 +324,8 @@ namespace LitePdfViewer
                 thumbsRequested = thumbnailPreference ?? document.PageCount > 1;
                 ThumbsToggle.IsChecked = thumbsRequested;
                 CreatePagePlaceholders(document);
-                textSource = new PdfTextSource(file);
+                textSource = new PdfTextSource(readingFile);
+                var cleanup = DeleteTemporaryPdfAsync(previousCopy);
                 // No forced UpdateLayout() here: page positions come from the cached
                 // offset table, so nothing downstream needs a synchronous layout pass
                 // over every page before the first paint.
@@ -482,31 +477,14 @@ namespace LitePdfViewer
                 return;
             }
 
-            var viewportWidth = DocumentScroller.ViewportWidth;
-            if (viewportWidth < 1)
-            {
-                viewportWidth = DocumentScroller.ActualWidth;
-            }
-            if (viewportWidth < 1)
-            {
-                return;
-            }
-
-            var zoom = DocumentScroller.ZoomFactor;
-            if (zoom <= 0.01f)
-            {
-                zoom = 1.0f;
-            }
-
-            var requiredFrameWidth = Math.Max(lastColumnWidth + 2 * PageBorderThickness, viewportWidth / zoom);
-            if (Math.Abs(PageFrame.Width - requiredFrameWidth) > 0.5)
+            // Let the native presenter center content when its zoomed extent
+            // fits the viewport. Resizing to viewport / zoom on each ViewChanged
+            // frame invalidated Direct Manipulation's extent, and the accompanying
+            // ChangeView(0, ...) interrupted the running zoom animation below 100%.
+            var requiredFrameWidth = lastColumnWidth + 2 * PageBorderThickness;
+            if (double.IsNaN(PageFrame.Width) || Math.Abs(PageFrame.Width - requiredFrameWidth) > 0.5)
             {
                 PageFrame.Width = requiredFrameWidth;
-            }
-
-            if (lastColumnWidth * zoom <= viewportWidth && DocumentScroller.HorizontalOffset > 0.5f)
-            {
-                DocumentScroller.ChangeView(0f, null, null, true);
             }
         }
 
@@ -1346,6 +1324,8 @@ namespace LitePdfViewer
 
         private async void Page_KeyDown(object sender, KeyRoutedEventArgs e)
         {
+            if (savingPdf) { e.Handled = true; return; }
+
             // Native controls (including pen-size sliders) own handled keys.
             if (e.Handled) return;
             // Alt+Space belongs to the window menu, not next-page navigation.
@@ -1477,13 +1457,15 @@ namespace LitePdfViewer
         private void FitToWindow(bool animated)
         {
             pendingLayoutAnchor = null;
+            pointerZoomGesture = false;
             fitPageToViewport = true;
             var fitIndex = pageIndex;
             fitReferencePage = fitIndex;
             var view = GetCurrentPageView();
             if (view == null) return;
             var zoom = FitZoom(view);
-            PageFrame.Width = Math.Max(lastColumnWidth + 2 * PageBorderThickness, Math.Max(1, DocumentScroller.ViewportWidth) / zoom);
+            UpdatePageCentering();
+            MarkZoomChanging();
             DocumentScroller.ChangeView(0f, (float)TopOfPage(fitIndex, zoom), zoom, !animated);
         }
 
@@ -1510,6 +1492,7 @@ namespace LitePdfViewer
         private void SetZoom(float newZoom, bool animated)
         {
             pendingLayoutAnchor = null;
+            pointerZoomGesture = false;
             fitPageToViewport = false;
             newZoom = (float)Math.Max(DocumentScroller.MinZoomFactor, Math.Min(DocumentScroller.MaxZoomFactor, newZoom));
             var oldZoom = DocumentScroller.ZoomFactor;
@@ -1521,25 +1504,14 @@ namespace LitePdfViewer
             var viewportWidth = Math.Max(1, DocumentScroller.ViewportWidth);
             var viewportHeight = Math.Max(1, DocumentScroller.ViewportHeight);
 
-            var requiredFrameWidth = Math.Max(lastColumnWidth + 2 * PageBorderThickness, viewportWidth / newZoom);
-            if (Math.Abs(PageFrame.Width - requiredFrameWidth) > 0.5)
-            {
-                PageFrame.Width = requiredFrameWidth;
-            }
-
-            float targetOffsetX;
-            if (lastColumnWidth * newZoom <= viewportWidth)
-            {
-                targetOffsetX = 0f;
-            }
-            else
-            {
-                targetOffsetX = (float)Math.Max(0, (lastColumnWidth * newZoom - viewportWidth) / 2.0);
-            }
+            UpdatePageCentering();
+            var targetOffsetX = (float)Math.Max(0,
+                ((lastColumnWidth + 2 * PageBorderThickness) * newZoom - viewportWidth) / 2.0);
 
             var centerY = (DocumentScroller.VerticalOffset + viewportHeight / 2) / oldZoom;
             var targetOffsetY = (float)Math.Max(0, centerY * newZoom - viewportHeight / 2);
 
+            MarkZoomChanging();
             DocumentScroller.ChangeView(targetOffsetX, targetOffsetY, newZoom, !animated);
         }
 
@@ -1707,7 +1679,9 @@ namespace LitePdfViewer
             var zoom = DocumentScroller.ZoomFactor;
             scrollActivity.Observe(DocumentScroller.HorizontalOffset, DocumentScroller.VerticalOffset,
                 e.IsIntermediate, DateTime.UtcNow);
-            if (scrollActivity.IsDirectManipulationActive && Math.Abs(zoom - lastObservedZoom) > 0.001f)
+            // Native ChangeView animations also raise DirectManipulationStarted.
+            // Only pointer-driven zoom should cancel the user's fit-page mode.
+            if (scrollActivity.IsDirectManipulationActive && pointerZoomGesture && Math.Abs(zoom - lastObservedZoom) > 0.001f)
                 fitPageToViewport = false;
             if (Math.Abs(zoom - lastObservedZoom) > 0.001f)
             {
@@ -1719,6 +1693,7 @@ namespace LitePdfViewer
             UpdateCurrentPageFromScroll();
             RestoreVisiblePages();
             UpdateZoomControls();
+            UpdateSearchFocus();
             if (!e.IsIntermediate) FollowCurrentThumbnail();
             var reference = GetFitReferencePage();
             if (!e.IsIntermediate && fitPageToViewport && reference != null &&
@@ -1736,6 +1711,7 @@ namespace LitePdfViewer
             }
 
             RestoreLayoutAnchor();
+            UpdateSearchFocus();
             var reference = GetFitReferencePage();
             if (fitPageToViewport && !scrollActivity.IsDirectManipulationActive && IsScrollSettled() && reference != null &&
                 Math.Abs(DocumentScroller.ZoomFactor - FitZoom(reference, false)) > 0.005f)
@@ -1810,7 +1786,7 @@ namespace LitePdfViewer
             var dirty = HasUnsavedChanges();
             if (SaveButton != null)
             {
-                SaveButton.IsEnabled = document != null;
+                SaveButton.IsEnabled = document != null && !savingPdf;
             }
 
             // Tooltip and title text only change when the flag flips; this runs on
@@ -1839,25 +1815,27 @@ namespace LitePdfViewer
             await SaveCurrentAnnotationsWithFeedbackAsync();
         }
 
-        private async Task SaveCurrentAnnotationsWithFeedbackAsync()
+        private async Task<bool> SaveCurrentAnnotationsWithFeedbackAsync()
         {
             if (currentFile == null || document == null)
             {
-                return;
+                return false;
             }
 
             var token = activeRenderToken;
             try
             {
                 await SaveCurrentAnnotationsAsync();
-                if (token != activeRenderToken) return;
+                if (token != activeRenderToken) return false;
                 ShowSaveFeedback();
+                return true;
             }
             catch (Exception ex)
             {
-                if (token != activeRenderToken) return;
+                if (token != activeRenderToken) return false;
                 var errorDialog = new Windows.UI.Popups.MessageDialog("保存失败: " + ex.Message, "错误");
                 await errorDialog.ShowAsync();
+                return false;
             }
         }
 
@@ -1907,7 +1885,7 @@ namespace LitePdfViewer
                 timer.Stop();
                 if (SaveButton != null)
                 {
-                    ToolTipService.SetToolTip(SaveButton, HasUnsavedChanges() ? "保存墨迹 (Ctrl+S) *" : "已保存 (Ctrl+S)");
+                    ToolTipService.SetToolTip(SaveButton, HasUnsavedChanges() ? "保存批注 (Ctrl+S) *" : "已保存 (Ctrl+S)");
                 }
             };
             timer.Start();
@@ -2007,8 +1985,7 @@ namespace LitePdfViewer
             var promptResult = await PromptSaveUnsavedChangesAsync();
             if (promptResult == SavePromptResult.Save)
             {
-                await SaveCurrentAnnotationsAsync();
-                return true;
+                return await SaveCurrentAnnotationsWithFeedbackAsync();
             }
             else if (promptResult == SavePromptResult.DontSave)
             {
@@ -2291,9 +2268,11 @@ namespace LitePdfViewer
                 {
                     Content = container,
                     Width = 36,
-                    Height = 36,
+                    MinWidth = 36,
+                    Height = 32,
+                    MinHeight = 32,
                     Padding = new Thickness(0),
-                    Margin = new Thickness(1),
+                    Margin = new Thickness(0),
                     Background = new SolidColorBrush(Colors.Transparent),
                     BorderThickness = new Thickness(0)
                 };
@@ -2376,12 +2355,24 @@ namespace LitePdfViewer
 
         private void TopPenButton_Click(object sender, RoutedEventArgs e)
         {
+            var showSettings = currentInkTool == InkTool.Pen;
             SetInkTool(InkTool.Pen);
+            if (showSettings)
+            {
+                EnsurePalettesBuilt();
+                FlyoutBase.ShowAttachedFlyout(TopPenButton);
+            }
         }
 
         private void TopHighlighterButton_Click(object sender, RoutedEventArgs e)
         {
+            var showSettings = currentInkTool == InkTool.Highlighter;
             SetInkTool(InkTool.Highlighter);
+            if (showSettings)
+            {
+                EnsurePalettesBuilt();
+                FlyoutBase.ShowAttachedFlyout(TopHighlighterButton);
+            }
         }
 
         private void PenSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -2613,6 +2604,7 @@ namespace LitePdfViewer
         private void DocumentScroller_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             UpdatePageCentering();
+            UpdateSearchFocus();
             ScheduleRelayout();
             UpdateHudBarResponsive(e.NewSize.Width);
         }
@@ -2674,7 +2666,12 @@ namespace LitePdfViewer
             var hasPrevious = hasDocument && pageIndex > 0;
             var hasNext = hasDocument && pageIndex + 1 < document.PageCount;
 
-            if (!hasDocument) AnnotationToolbar.Visibility = Visibility.Collapsed;
+            if (!hasDocument)
+            {
+                AnnotationToolbar.Visibility = Visibility.Collapsed;
+                AnnotationToolsButton.IsChecked = false;
+                UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
+            }
             HudBar.Visibility = hasDocument ? Visibility.Visible : Visibility.Collapsed;
             HudRevealZone.Visibility = hasDocument ? Visibility.Visible : Visibility.Collapsed;
             if (hudIdleTimer != null) RevealHud();
@@ -2693,15 +2690,19 @@ namespace LitePdfViewer
             TopTouchWritingButton.IsEnabled = hasDocument;
             TopSelectButton.IsEnabled = hasDocument;
             AnnotationToolsButton.IsEnabled = hasDocument;
+            ShareButton.IsEnabled = hasDocument;
             TopPenButton.IsEnabled = hasDocument;
+            PenSettingsButton.IsEnabled = hasDocument;
             TopHighlighterButton.IsEnabled = hasDocument;
+            HighlighterSettingsButton.IsEnabled = hasDocument;
             TopEraserButton.IsEnabled = hasDocument;
             TopUndoButton.IsEnabled = hasDocument;
+            InkMoreButton.IsEnabled = hasDocument;
             TopClearButton.IsEnabled = hasDocument;
 
             if (SaveButton != null)
             {
-                SaveButton.IsEnabled = hasDocument;
+                SaveButton.IsEnabled = hasDocument && !savingPdf;
             }
             UpdateDirtyState();
 

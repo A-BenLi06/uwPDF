@@ -11,16 +11,16 @@ if ($start -lt 0 -or $end -le $start) { throw 'Search method boundaries changed'
 $search=$search.Substring($start,$end-$start)
 switch ($NegativeControl) {
     'ReadingCursor' {
-        $search=$search.Replace('var start = continueSelection ? (int)selectedTextPage.Index : (int)pageIndex;', 'var start = (int)pageIndex;')
-        $search=$search.Replace('var anchor = continueSelection', 'var anchor = continueSelection && selectedTextPage.Index == pageIndex')
+        $search=$search.Replace('var next = (searchHitIndex + (forward ? 1 : -1) + searchHits.Count) % searchHits.Count;',
+            'var next = searchHits.FindIndex(candidate => candidate.Page == pageIndex);')
     }
     'UiGlyphs' { $text=$text.Replace('await Task.Run(() => ConvertGlyphs(text, values, cancellation), cancellation)', 'ConvertGlyphs(text, values, cancellation)') }
     'UiSearch' {
-        $search=$search.Replace('return Task.Run(() =>','return Task.FromResult(((Func<PageSearchResult>)(() =>')
+        $search=$search.Replace('return Task.Run(() =>','return Task.FromResult(((Func<List<SearchHit>>)(() =>')
         $search=$search.Replace('            }, cancellation);','            }))());')
     }
     'StaleSearch' {
-        $search=$search.Replace("                    cancellation.ThrowIfCancellationRequested();`n                    if (version != searchVersion || token != activeRenderToken) return;`n                    var found = result.Found;", '                    var found = result.Found;')
+        $search=$search.Replace('if (version != searchVersion || token != activeRenderToken) return;', '')
     }
 }
 $textPath=Join-Path $outputRoot "Text.$NegativeControl.production.cs"

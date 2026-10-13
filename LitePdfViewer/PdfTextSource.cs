@@ -103,6 +103,19 @@ namespace LitePdfViewer
             return glyphs;
         }
 
+        public async Task DisposeAsync()
+        {
+            disposed = true;
+            await textGate.WaitAsync();
+            try
+            {
+                var released = document;
+                document = null;
+                if (released != null) await Task.Run(() => released.Dispose());
+            }
+            finally { textGate.Release(); }
+        }
+
         public void Dispose()
         {
             disposed = true;

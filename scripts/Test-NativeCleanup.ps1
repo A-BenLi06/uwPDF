@@ -3,10 +3,10 @@ $ErrorActionPreference='Stop'
 $repoRoot=Split-Path $PSScriptRoot -Parent
 $outputRoot=Join-Path $repoRoot 'artifacts/native-tests/native-cleanup'
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
-$export=(Get-Content (Join-Path $repoRoot 'LitePdfViewer/MainPage.Export.cs') -Raw).Replace("`r`n", "`n")
-$start=$export.IndexOf('        private async void ExportButton_Click(')
-$end=$export.LastIndexOf("`n    }")
-if ($start -lt 0 -or $end -le $start) { throw 'Export handler boundaries changed' }
+$export=(Get-Content (Join-Path $repoRoot 'LitePdfViewer/MainPage.Save.cs') -Raw).Replace("`r`n", "`n")
+$start=$export.IndexOf('        private async Task<StorageFile> WritePdfCopyAsync(')
+$end=$export.IndexOf('        private async Task<StorageFile> PrepareReadingFileAsync(', $start)
+if ($start -lt 0 -or $end -le $start) { throw 'Save writer boundaries changed' }
 $export=$export.Substring($start,$end-$start)
 $text=Get-Content (Join-Path $repoRoot 'LitePdfViewer/PdfTextSource.cs') -Raw
 if ($NegativeControl -eq 'UiWriterClose') { $export=$export.Replace('await Task.Run(() => writer.Dispose());','writer.Dispose();') }
@@ -22,5 +22,5 @@ if ($LASTEXITCODE) { throw 'Cleanup test compilation failed' }
 if ($LASTEXITCODE) { throw "Cleanup tests failed ($NegativeControl)." }
 if ($NegativeControl -ne 'None') { throw 'Negative control unexpectedly passed.' }
 $hashes=[ordered]@{}
-foreach ($relative in @('LitePdfViewer/MainPage.Export.cs','LitePdfViewer/PdfTextSource.cs','tests/PdfNativeCleanupTests.cs','scripts/Test-NativeCleanup.ps1')) { $hashes[$relative]=(Get-FileHash (Join-Path $repoRoot $relative)).Hash }
-[pscustomobject]@{ completed_utc=[DateTime]::UtcNow.ToString('o');source_sha256=$hashes;scope='Actual export handler and PdfTextSource methods with platform/native doubles and a single-thread UI context. Proves UI heartbeat can run during teardown, input/cleanup ordering, success/error/cancellation paths and late-open release; excludes real PDF cleanup cost and GUI performance' } | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $outputRoot 'result.json') -Encoding UTF8
+foreach ($relative in @('LitePdfViewer/MainPage.Save.cs','LitePdfViewer/PdfTextSource.cs','tests/PdfNativeCleanupTests.cs','scripts/Test-NativeCleanup.ps1')) { $hashes[$relative]=(Get-FileHash (Join-Path $repoRoot $relative)).Hash }
+[pscustomobject]@{ completed_utc=[DateTime]::UtcNow.ToString('o');source_sha256=$hashes;scope='Actual save writer and PdfTextSource methods with platform/native doubles and a single-thread UI context. Proves UI heartbeat can run during teardown, input/cleanup ordering, success/error/cancellation paths and late-open release; excludes real PDF cleanup cost and GUI performance' } | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $outputRoot 'result.json') -Encoding UTF8

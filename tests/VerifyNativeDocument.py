@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--exe", type=Path, default=root / "NativeTextSmoke.exe")
 parser.add_argument("--component", type=Path)
 parser.add_argument("--output-root", type=Path, default=root)
+parser.add_argument("--skip-fixtures", action="store_true")
 args = parser.parse_args()
 exe = args.exe.resolve()
 output_root = args.output_root.resolve()
@@ -27,7 +28,8 @@ output_root.mkdir(parents=True, exist_ok=True)
 command = [str(exe)] + ([str(args.component.resolve())] if args.component else [])
 if not exe.exists():
     raise SystemExit(f"Build the native document harness first: {exe}")
-runpy.run_path(str(repo / "tests" / "CreateTextFixtures.py"))
+if not args.skip_fixtures:
+    runpy.run_path(str(repo / "tests" / "CreateTextFixtures.py"))
 source = root / "known-text.pdf"
 expected = ["uwPDF selectable text", "中文选择与高亮测试", "Crop and rotation"]
 reports = []
@@ -91,7 +93,35 @@ for page, text in enumerate(expected):
 print("PASS: native text, known quads, CJK, crop, rotation, standard annotations, appearances, preserved content")
 print(f"Visual inspection artifact: {exported}")
 
-runpy.run_path(str(repo / "tests" / "CreateImageTextFixtures.py"))
+# Repeated save replaces only annotations carrying this local workspace owner.
+owned = dict(page=0, kind="ink", owner="save-test", color=[1, 0, 0], opacity=1,
+             width=.004, points=[[.2, .2], [.4, .3]])
+foreign = dict(owned, owner="other-workspace", color=[0, 0, 1])
+save_json = output_root / "save-annotations.json"
+save_json.write_text(json.dumps([owned, foreign]), encoding="utf-8")
+saved = output_root / "saved-owned.pdf"
+subprocess.run(command + [str(exported), "0", expected[0], str(saved), str(save_json)], check=True)
+clear = dict(page=0, kind="clear", owner="save-test")
+for iteration in range(2):
+    save_json.write_text(json.dumps([clear, owned]), encoding="utf-8")
+    replaced = output_root / f"saved-replaced-{iteration}.pdf"
+    subprocess.run(command + [str(saved), "0", expected[0], str(replaced), str(save_json)], check=True)
+    result = PdfReader(replaced)
+    items = [ref.get_object() for ref in result.pages[0]["/Annots"]]
+    assert len(items) == 5
+    assert sum(item.get("/uwPDFOwner") == "save-test" for item in items) == 1
+    assert sum(item.get("/uwPDFOwner") == "other-workspace" for item in items) == 1
+    saved = replaced
+save_json.write_text(json.dumps([clear]), encoding="utf-8")
+erased = output_root / "saved-erased.pdf"
+subprocess.run(command + [str(saved), "0", expected[0], str(erased), str(save_json)], check=True)
+items = [ref.get_object() for ref in PdfReader(erased).pages[0]["/Annots"]]
+assert len(items) == 4 and all(item.get("/uwPDFOwner") != "save-test" for item in items)
+assert sum(item.get("/uwPDFOwner") == "other-workspace" for item in items) == 1
+print("PASS: repeated saves and erase replace only the current workspace, preserving original/foreign annotations")
+
+if not args.skip_fixtures:
+    runpy.run_path(str(repo / "tests" / "CreateImageTextFixtures.py"))
 for codec in ["jpeg", "jpeg2000"]:
     image_pdf = root / f"image-text-{codec}.pdf"
     data = inspect(image_pdf, 0, "Image replacement text", output_root / f"image-{codec}-geometry.json")

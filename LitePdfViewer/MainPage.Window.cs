@@ -85,14 +85,30 @@ namespace LitePdfViewer
             if (HudBar.Visibility == Visibility.Visible) hudIdleTimer.Start();
         }
 
-        private void PenSizePreset_Click(object sender, RoutedEventArgs e)
+        private bool annotationToolsStacked;
+
+        private void ReaderToolbar_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            PenSizeSlider.Value = double.Parse((string)((Button)sender).Tag, System.Globalization.CultureInfo.InvariantCulture);
+            UpdateAnnotationToolbarLayout(e.NewSize.Width);
         }
 
-        private void HighlighterSizePreset_Click(object sender, RoutedEventArgs e)
+        private void UpdateAnnotationToolbarLayout(double width)
         {
-            HighlighterSizeSlider.Value = double.Parse((string)((Button)sender).Tag, System.Globalization.CultureInfo.InvariantCulture);
+            // Keep the filename readable instead of squeezing it between two
+            // command groups when the ink tools are open in a narrow window.
+            var stacked = width < 800;
+            if (stacked != annotationToolsStacked)
+            {
+                annotationToolsStacked = stacked;
+                Grid.SetRow(AnnotationToolbar, stacked ? 1 : 0);
+                Grid.SetColumn(AnnotationToolbar, stacked ? 0 : 2);
+                Grid.SetColumnSpan(AnnotationToolbar, stacked ? 5 : 1);
+                AnnotationToolbar.Margin = stacked ? new Thickness(0) : new Thickness(8, 0, 8, 0);
+            }
+            // Balance the open ink group around the window center. Reading mode
+            // gives that space back to the left-aligned filename.
+            ToolbarBalanceColumn.Width = !stacked && AnnotationToolbar.Visibility == Visibility.Visible
+                ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
         }
 
         private void CloseThumbnails_Click(object sender, RoutedEventArgs e)
@@ -126,10 +142,11 @@ namespace LitePdfViewer
             DocumentScroller.DirectManipulationCompleted += (s, e) =>
             {
                 scrollActivity.EndGesture();
+                pointerZoomGesture = false;
                 WakeRenderer();
             };
             DocumentScroller.AddHandler(PointerPressedEvent,
-                new PointerEventHandler((s, e) => pendingLayoutAnchor = null), true);
+                new PointerEventHandler((s, e) => { pendingLayoutAnchor = null; pointerZoomGesture = true; }), true);
             DocumentScroller.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((s, e) =>
             {
                 pendingLayoutAnchor = null;
@@ -250,7 +267,8 @@ namespace LitePdfViewer
         {
             bool opening = AnnotationToolbar.Visibility != Visibility.Visible;
             AnnotationToolbar.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
-            AnnotationToolsButton.Background = new SolidColorBrush(opening ? Color.FromArgb(255, 220, 235, 250) : Colors.Transparent);
+            UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
+            AnnotationToolsButton.IsChecked = opening;
             ToolTipService.SetToolTip(AnnotationToolsButton, opening ? "收起批注工具，返回文字选择" : "展开批注工具");
             if (!opening) SetInkTool(InkTool.None);
         }

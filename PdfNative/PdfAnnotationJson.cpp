@@ -38,6 +38,11 @@ std::vector<PdfNativeCore::ExportAnnotation> PdfNativeCore::ParseAnnotations(con
         double value = 0; Check(item->GetNamedNumber(HStringReference(L"page").Get(), &value)); annotation.page = static_cast<int>(value);
         HString kind; Check(item->GetNamedString(HStringReference(L"kind").Get(), kind.GetAddressOf()));
         unsigned int kindLength = 0; auto kindText = kind.GetRawBuffer(&kindLength);
+        HString owner; Check(defaults->GetNamedStringOrDefault(HStringReference(L"owner").Get(), HStringReference(L"").Get(), owner.GetAddressOf()));
+        unsigned int ownerLength = 0; auto ownerText = owner.GetRawBuffer(&ownerLength);
+        for (unsigned int i = 0; i < ownerLength; ++i) { Require(ownerText[i] > 0 && ownerText[i] < 128); annotation.owner.push_back(static_cast<char>(ownerText[i])); }
+        annotation.clear = std::wstring(kindText, kindLength) == L"clear";
+        if (annotation.clear) { Require(!annotation.owner.empty()); result.push_back(std::move(annotation)); continue; }
         annotation.ink = kindLength == 3 && std::wstring(kindText, kindLength) == L"ink";
         ComPtr<IJsonArray> color; Check(item->GetNamedArray(HStringReference(L"color").Get(), &color));
         Require(Count(color.Get()) == 3);

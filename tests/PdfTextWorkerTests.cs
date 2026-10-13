@@ -38,7 +38,19 @@ namespace LitePdfViewer
 {
     public sealed partial class MainPage
     {
-        private sealed class PageView { public uint Index; public List<TextGlyph> Glyphs; }
+        private sealed class PageView { public uint Index; public List<TextGlyph> Glyphs; public double LayoutWidth=600, LayoutHeight=800; }
+        private struct TextQuad { }
+        private sealed class SearchHit { public uint Page; public int First, Last; public List<TextQuad> Quads; }
+        private readonly List<SearchHit> searchHits=new List<SearchHit>();
+        private SearchHit activeSearchHit;
+        private int searchHitIndex=-1, searchSkippedPages;
+        private string indexedSearchQuery;
+        private ulong indexedSearchToken;
+        private bool searchIndexComplete;
+        private static List<TextQuad> BuildTextQuads(List<TextGlyph> glyphs,int first,int last,double width,double height,CancellationToken cancellation)
+        { return new List<TextQuad>(); }
+        private void UpdateSearchNavigation() { }
+        private void ClearSearchResults() { activeSearchHit=null; searchHits.Clear(); searchHitIndex=-1; searchIndexComplete=false; indexedSearchQuery=null; searchSkippedPages=0; }
         private sealed class TextBox { public string Text="ana"; }
         private sealed class StatusBox
         {
@@ -74,6 +86,8 @@ namespace LitePdfViewer
         public void Select(int page, int first, int last)
         {
             pageIndex=(uint)page; selectedTextPage=pageViews[page]; selectionAnchor=first; selectionEnd=last;
+            searchHitIndex=searchHits.FindIndex(h=>h.Page==(uint)page && h.First==first && h.Last==last);
+            activeSearchHit=searchHitIndex>=0 ? searchHits[searchHitIndex] : null;
         }
         public void Query(string value) { SearchTextBox.Text=value; }
         public void ReadingPage(int page) { pageIndex=(uint)page; }
@@ -83,11 +97,13 @@ namespace LitePdfViewer
             if (fileSwitch) activeRenderToken++; else searchVersion++;
             searchBusy=false; SearchStatus.Text="new request";
         }
-        private Task ShowSearchMatchAsync(PageView view, List<TextGlyph> glyphs, int first, int last,
-            int skipped, int version, ulong token, CancellationToken cancellation)
+        private Task ShowSearchMatchAsync(SearchHit hit, List<TextGlyph> glyphs,
+            int version, ulong token, CancellationToken cancellation)
         {
             Tests.Assert(Thread.CurrentThread.ManagedThreadId==Probe.UiThread,"Match published off UI thread");
-            Shows++; LastPage=view.Index; LastFirst=first; LastEnd=last;
+            activeSearchHit=hit;
+            hit.Quads=new List<TextQuad>();
+            Shows++; LastPage=hit.Page; LastFirst=hit.First; LastEnd=hit.Last;
             return Task.FromResult(0);
         }
     }
@@ -216,7 +232,7 @@ internal static class Tests
             Assert(!find.IsCompleted && page.Busy,"Cached search monopolized UI instead of yielding");
         }
         ui.Pump(find); find.GetAwaiter().GetResult();
-        Assert(page.Shows==1 && page.LastFirst==1 && page.LastEnd==3 && !page.Busy,"Cached forward match changed");
+        Assert(page.Shows==1 && page.LastFirst==1 && page.LastEnd==3 && !page.Busy && page.Status=="第1/2个","Cached forward match/count changed");
         page.Select(0,3,5); find=page.Find(false,false); ui.Pump(find); find.GetAwaiter().GetResult();
         Assert(page.LastFirst==1 && page.LastEnd==3,"Backward overlapping match changed");
         page.Select(0,3,5); find=page.Find(true,false); ui.Pump(find); find.GetAwaiter().GetResult();
@@ -237,9 +253,12 @@ internal static class Tests
         Assert(page.Shows==0 && page.Status=="没有匹配文字" && !page.Busy,"Cached no-match scan did not complete");
         Assert(reads==PdfNative.PdfTextDocument.Reads,"Cached searches unexpectedly reread native text");
         // A match positioned near the viewport top can leave the leading-edge
-        // indicator on the prior page. Next/previous must follow the selection.
+        // indicator on the prior page. Next/previous follow the indexed match.
         page=new MainPage(); page.AddPage("ana"); page.AddPage("ana"); page.AddPage("ana");
-        page.Select(1,0,2); page.ReadingPage(0);
+        page.ReadingPage(1);
+        find=page.Find(true,true); ui.Pump(find); find.GetAwaiter().GetResult();
+        Assert(page.Status=="第2/3个","Initial result did not use document order");
+        page.ReadingPage(0);
         find=page.Find(true,false); ui.Pump(find); find.GetAwaiter().GetResult();
         Assert(page.LastPage==2,"Next match followed the previous visible page instead of selection");
         page.Select(1,0,2); page.ReadingPage(2);
@@ -248,6 +267,15 @@ internal static class Tests
         page.Select(1,0,2); page.ReadingPage(0);
         find=page.Find(true,true); ui.Pump(find); find.GetAwaiter().GetResult();
         Assert(page.LastPage==0,"Restart ignored the current reading page");
+        page=new MainPage(); page.AddPage("ana ana ana");
+        page.AddPage("ana ana ana ana ana ana ana ana ana ana ana ana ana ana");
+        page.ReadingPage(1);
+        find=page.Find(true,true); ui.Pump(find); find.GetAwaiter().GetResult();
+        Assert(page.Status=="第4/17个","Global counter confused match ordinal with page number");
+        for (int i=0;i<14;i++) { find=page.Find(true,false); ui.Pump(find); find.GetAwaiter().GetResult(); }
+        Assert(page.Status=="第1/17个","Forward navigation did not wrap after the final result");
+        find=page.Find(false,false); ui.Pump(find); find.GetAwaiter().GetResult();
+        Assert(page.Status=="第17/17个","Backward navigation did not wrap to the final result");
     }
     public static int Main()
     {

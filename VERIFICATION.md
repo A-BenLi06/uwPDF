@@ -1,5 +1,88 @@
 # uwPDF acceptance status
 
+## Release test package 1.0.9.0 — 2026-10-13
+
+- The x64 Release app completed .NET Native compilation and signed AppX
+  packaging. Output: `LitePdfViewer/AppPackages/CppWinRT/LitePdfViewer_1.0.9.0_x64_Test/`.
+  Both source manifests use version 1.0.9.0; ARM64 was not rebuilt in this run.
+- Package checks pass for the Windows 10 14393 baseline, all six modern WinRT
+  registrations, the exact freshly built component DLL, static CRT, and absence
+  of the legacy bridge. The developer installer includes certificate/dependencies.
+- Release native core and component tests pass, including injected stream failures,
+  cleanup, factories and concurrent close. Native document verification also passes
+  repeated saves/erase without accumulating owned annotations, preservation of
+  original/foreign annotations, text/quad geometry, CJK, rotation/crop and JPEG/JPX.
+- The current managed cleanup, text search/worker, touch-drag mapping and zoom
+  regressions pass. This package is supplied for user testing; no Release install
+  or physical touchscreen acceptance was performed here.
+
+## Touch scrollbar and search focus — 2026-10-13
+
+- Scrollbar input surfaces are now a fixed 32 DIP with a minimum 44-DIP thumb
+  height; visuals remain 3 DIP normally and 8 DIP on hover/touch dragging. The
+  touch path cancels ancestor direct manipulation, captures one pointer, handles
+  routed events even when a native part has handled them, and applies proportional
+  range values to the correct ScrollViewer. Mouse events retain native routing.
+- Search builds a cancellable document-wide range index in the background,
+  presents the first useful result while counting, and retains geometry only for
+  the active match. Next/previous use the match index independently of the reading
+  page indicator. Counts use `第4/17个`; unreadable pages are reported separately.
+- A hit-test-transparent reading overlay dims context and cuts out the active
+  glyph quads, with an amber fill/outline. It follows scroll/zoom/layout transforms,
+  supports rotated text, excludes the native scrollbar, and clears on query
+  change, close, empty query or file switch. It does not alter PDF annotations.
+- A temporary in-process XAML harness read a real two-page, 17-match PDF. It
+  verified 第4/17个, both wrap directions, the rotated last match, alignment at
+  64/80% zoom and after resizing, input transparency, cleanup, and unchanged
+  annotation dirty state. Native control bitmaps were inspected; the 800-DIP
+  offscreen layout bitmaps are clipped by the actual window on their right edge.
+  Artifacts: `artifacts/search-touch-qa/`.
+- Both native scrollbars measured 32 DIP, resolved to their own ScrollViewer,
+  had manipulation-disabled template roots and installed handled-event hooks.
+  Applying the production drag mapping moved each owner to the expected offset;
+  TouchIdle/TouchDragging/TouchIdle restored 3/8/3 visuals. This verifies controls,
+  range geometry and value routing; physical finger capture/drag has not been
+  exercised. No computer-use tools or pointer injection were used.
+- Text matching/worker, scrollbar drag, zoom, startup and keyboard regression
+  scripts pass, and the x64 Debug SDK-14393 app build passes. Temporary harness
+  code is removed before the final production rebuild and original layout sync.
+  The earlier 12-DIP hit-area verification below describes the previous version.
+
+## Zoom animation and scrollbar hover — 2026-10-11
+
+- Removed the `viewport / zoom` content-width feedback and extra immediate
+  `ChangeView` from centering. The frame retains the natural PDF width; native
+  `HorizontalContentAlignment="Center"` handles pages smaller than the viewport.
+  Explicit zoom/fit requests notify the render scheduler before animation, and
+  automatic refits wait until zoom settles. Native programmatic zoom also raises
+  DirectManipulationStarted; it no longer incorrectly cancels fit-page mode.
+- A temporary in-process XAML harness loaded the packaged sample and invoked
+  production zoom handlers at 25%, 51.2%, 64%, 80%, 100% and 125%, with 800- and
+  500-DIP layouts. Native ViewChanged traces showed no zoom reversals, final
+  targets within 0.5%, and a constant 614-DIP content width; final page centering
+  was within 2 DIP. Animated fit, rapid zoom retargeting, and immediate slider
+  requests also settled without obsolete refits. This checks native state/geometry,
+  not presented frame times.
+- The native scrollbar Normal/PointerOver/Normal states were exercised in both
+  reading and thumbnail scrollers: thumb visuals changed 3 -> 8 -> 3 DIP while
+  the input surface stayed 12 DIP and the viewport width remained unchanged.
+  This exercises visual states without simulated mouse/pointer input.
+- `scripts/Test-Zoom.ps1` covers the production methods with intermediate-frame
+  doubles, including one ChangeView request, stable extent, the reading anchor,
+  native Auto-width initialization, zoom bounds, and slider animation mode.
+  Programmatic animation preserves fit mode; a pointer zoom leaves fit mode.
+- No computer-use tooling or additional package registrations were used.
+  Native traces are retained in `artifacts/zoom-hover-qa/result.txt`; temporary
+  harness code is removed before the final Debug rebuild and layout sync.
+
+## Compact native toolbar — 2026-10-11
+
+- Segoe MDL2 Assets replaces the earlier Segoe UI Symbol map at the user's request. All 25 FontIcons use explicit font families and canonical codepoints checked against the installed font. Eraser now uses Microsoft's `E75C` EraseTool glyph; the former `E294` scanner glyph was a semantic error in the earlier version. Open uses `ED25` OpenFolderHorizontal; thumbnails use `E90D` DockRight.
+- Native Button and ToggleButton templates replace oversized AppBar controls. Buttons measure 36 × 36 DIP in a 44-DIP toolbar. At widths of at least 800 DIP, the open annotation group stays centered in the same row; at smaller widths, it wraps together into a second 44-DIP row. Filename text remains left-aligned. Touch writing and clearing the current page are in a native More flyout.
+- A temporary in-process XAML harness exercised the production layout and tool handlers, without computer-use tooling or simulated pointer/keyboard input. Native measurements passed at 1200, 800, 799 and 500 DIP; filenames retained at least 112 DIP in the tested inline layouts. Closing annotations returned to a 44-DIP reading row. `RenderTargetBitmap` outputs of the real toolbar were inspected; artifacts are `artifacts/compact-toolbar-qa/`.
+- Pen/highlighter repeat selection opened their native settings flyouts; the 216-DIP palette grid fit within the 220-DIP panel. Tool selection remained mutually exclusive, and clicking the active eraser returned to text selection. Duplicate size preset rows were removed; sliders and live previews remain.
+- Temporary harness code was removed from App and MainPage before the final build. No extra verification packages were registered. x64 Debug/AppX compilation, production preview-startup checks and existing keyboard checks passed. These checks do not establish physical stylus/touch behavior or validation on Windows 10 1607 hardware.
+
 ## UI refinement — 2026-10-10
 
 - x64 Debug C++/WinRT build and AppX packaging passed on the existing SDK 14393 application target. All 26 authored FontIcons explicitly specify Segoe UI Symbol; each code point was checked against the installed font cmap and the relevant glyphs were visually inspected. MainPage has no implicit SymbolIcon/AppBar Icon shorthand remaining.

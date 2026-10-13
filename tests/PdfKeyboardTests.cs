@@ -36,6 +36,8 @@ namespace LitePdfViewer
     public sealed class FakeScroller { public float ZoomFactor=1; }
     public sealed partial class MainPage
     {
+        private bool savingPdf;
+
         private readonly FakeDocument document=new FakeDocument();
         private uint pageIndex;
         private object selectedTextPage;

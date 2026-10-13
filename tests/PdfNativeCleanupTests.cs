@@ -93,6 +93,7 @@ namespace PdfNative
             input.BeforeClose=() => Tests.Assert(Tests.Native.Closed, "Input closed before writer cleanup finished");
             return Task.FromResult(new PdfAnnotationWriter());
         }
+        public Task AppendAsync(string items) { return Task.FromResult(0); }
         public Task WriteAsync(FakeStream output)
         {
             if (Tests.Mode=="write-failure") throw new InvalidOperationException("write failure");
@@ -121,7 +122,7 @@ namespace LitePdfViewer
         private StorageFile currentFile=new StorageFile();
         private bool exportBusy;
         private ulong activeRenderToken=1;
-        private Windows.UI.Xaml.Controls.Button ExportButton=new Windows.UI.Xaml.Controls.Button();
+        private string ClearEmbeddedAnnotations() { return "[]"; }
         private Task AppendExportAnnotationsAsync(PdfAnnotationWriter writer, ulong token)
         {
             if (Tests.Mode=="append-failure") throw new InvalidOperationException("append failure");
@@ -130,8 +131,15 @@ namespace LitePdfViewer
         }
         public bool Busy { get { return exportBusy; } }
         public bool InputClosed { get { return currentFile.Input.Closed; } }
-        public bool ExportEnabled { get { return ExportButton.IsEnabled; } }
-        public void Export() { ExportButton_Click(null,new Windows.UI.Xaml.RoutedEventArgs()); }
+        public bool ExportEnabled { get { return !exportBusy; } }
+        public async void Export()
+        {
+            exportBusy = true;
+            try { await WritePdfCopyAsync(currentFile, activeRenderToken, true); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { Tests.Error = ex.Message; }
+            finally { exportBusy = false; }
+        }
     }
 }
 internal sealed class UiContext : SynchronizationContext
@@ -169,7 +177,7 @@ internal static class Tests
                 Ui.PumpUntil(() => !page.Busy);
                 Assert(Native != null && Native.Closed && Native.CloseCount==1, "Writer cleanup did not complete exactly once: "+mode);
                 Assert(page.InputClosed && page.ExportEnabled, "Export did not release input/reset UI: "+mode);
-                Assert(PickerCount==(mode=="success" ? 1 : 0), "Unexpected picker after "+mode);
+                Assert(PickerCount==0, "Saving must not open an export picker");
                 Assert((mode=="success" || mode=="canceled") ? Error==null : Error==mode.Replace('-',' '), "Wrong export error: "+Error);
             }
             Native=new CloseProbe();
