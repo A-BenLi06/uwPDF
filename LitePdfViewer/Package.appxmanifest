@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
@@ -7,17 +7,17 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="Ben.LitePdfViewerPreview"
-    Publisher="CN=Ben"
-    Version="1.0.9.0" />
+    Name="BenLi06.uwPDF-LitePDFViewer"
+    Publisher="CN=FC1FF585-22D6-4DFB-97E0-9D22B6842CC6"
+    Version="1.0.11.0" />
 
   <mp:PhoneIdentity
     PhoneProductId="4d2e1c0f-2f5b-4e24-b3ff-7ebae7db7bc0"
     PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 
   <Properties>
-    <DisplayName>Lite PDF Viewer</DisplayName>
-    <PublisherDisplayName>Ben</PublisherDisplayName>
+    <DisplayName>ms-resource:AppDisplayName</DisplayName>
+    <PublisherDisplayName>BenLi06</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -29,7 +29,7 @@
   </Dependencies>
 
   <Resources>
-    <Resource Language="zh-CN" />
+    <Resource Language="x-generate" />
   </Resources>
 
   <Applications>
@@ -38,8 +38,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="LitePdfViewer.App">
       <uap:VisualElements
-        DisplayName="Lite PDF Viewer"
-        Description="A tiny UWP PDF viewer with pen annotations."
+        DisplayName="ms-resource:AppDisplayName"
+        Description="ms-resource:AppDescription"
         BackgroundColor="#F5F5F2"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
@@ -49,7 +49,7 @@
       <Extensions>
         <uap:Extension Category="windows.fileTypeAssociation">
           <uap:FileTypeAssociation Name="pdf">
-            <uap:DisplayName>PDF document</uap:DisplayName>
+            <uap:DisplayName>ms-resource:PdfFileType</uap:DisplayName>
             <uap:SupportedFileTypes>
               <uap:FileType>.pdf</uap:FileType>
             </uap:SupportedFileTypes>
@@ -57,7 +57,7 @@
         </uap:Extension>
         <uap:Extension Category="windows.protocol">
           <uap:Protocol Name="litepdfviewerpreview">
-            <uap:DisplayName>Lite PDF Viewer</uap:DisplayName>
+            <uap:DisplayName>ms-resource:AppDisplayName</uap:DisplayName>
           </uap:Protocol>
         </uap:Extension>
       </Extensions>

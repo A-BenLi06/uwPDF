@@ -1,0 +1,615 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="AnnotationTools" xml:space="preserve">
+    <value>注釈ツール</value>
+  </data>
+  <data name="AnnotationToolsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>注釈ツール</value>
+  </data>
+  <data name="AnnotationToolsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>注釈ツールを表示</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>手書き注釈とテキストのハイライトに対応した軽量 PDF ビューアー。</value>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>uwPDF - 軽量 PDF ビューアー</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="ClearPage" xml:space="preserve">
+    <value>このページの注釈を消去</value>
+  </data>
+  <data name="ClearPageLabel1.Text" xml:space="preserve">
+    <value>このページの注釈を消去</value>
+  </data>
+  <data name="CloseSearch" xml:space="preserve">
+    <value>検索を閉じる</value>
+  </data>
+  <data name="CloseSearchButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>検索を閉じる</value>
+  </data>
+  <data name="CloseSearchButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>閉じる (Esc)</value>
+  </data>
+  <data name="CloseThumbnails" xml:space="preserve">
+    <value>サムネイルを閉じる</value>
+  </data>
+  <data name="CloseThumbnailsLabel1.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>サムネイルを閉じる</value>
+  </data>
+  <data name="CloseThumbnailsLabel1.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>サムネイルを閉じる</value>
+  </data>
+  <data name="CloseTip" xml:space="preserve">
+    <value>閉じる (Esc)</value>
+  </data>
+  <data name="CollapseAnnotations" xml:space="preserve">
+    <value>注釈ツールを閉じてテキスト選択に戻る</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>色</value>
+  </data>
+  <data name="ColorLabel1.Text" xml:space="preserve">
+    <value>色</value>
+  </data>
+  <data name="ColorLabel2.Text" xml:space="preserve">
+    <value>色</value>
+  </data>
+  <data name="ColorName" xml:space="preserve">
+    <value>色 {0}</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>コピー (Ctrl+C)</value>
+  </data>
+  <data name="CopyFailed" xml:space="preserve">
+    <value>コピーに失敗しました。もう一度お試しください</value>
+  </data>
+  <data name="CountingMatches" xml:space="preserve">
+    <value>検索結果を集計中…</value>
+  </data>
+  <data name="DeleteHighlight" xml:space="preserve">
+    <value>ハイライトを削除</value>
+  </data>
+  <data name="Deselect" xml:space="preserve">
+    <value>選択を解除 (Esc)</value>
+  </data>
+  <data name="DontSave" xml:space="preserve">
+    <value>保存しない</value>
+  </data>
+  <data name="EmptyHint" xml:space="preserve">
+    <value>PDF を開いて閲覧・注釈を始めましょう。</value>
+  </data>
+  <data name="EmptyHintLabel1.Text" xml:space="preserve">
+    <value>PDF を開いて閲覧・注釈を始めましょう。</value>
+  </data>
+  <data name="Eraser" xml:space="preserve">
+    <value>消しゴム</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>エラー</value>
+  </data>
+  <data name="ExpandAnnotations" xml:space="preserve">
+    <value>注釈ツールを表示</value>
+  </data>
+  <data name="FindNextButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>次の検索結果</value>
+  </data>
+  <data name="FindNextButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>次へ (Enter)</value>
+  </data>
+  <data name="FindPdf" xml:space="preserve">
+    <value>PDF のテキストを検索</value>
+  </data>
+  <data name="FindPlaceholder" xml:space="preserve">
+    <value>テキストを検索</value>
+  </data>
+  <data name="FindPreviousButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>前の検索結果</value>
+  </data>
+  <data name="FindPreviousButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>前へ (Shift+Enter)</value>
+  </data>
+  <data name="FitButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ページ全体を表示</value>
+  </data>
+  <data name="FitButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>ページ全体を表示 (0)</value>
+  </data>
+  <data name="FitPage" xml:space="preserve">
+    <value>ページ全体を表示</value>
+  </data>
+  <data name="FitPageTip" xml:space="preserve">
+    <value>ページ全体を表示 (0)</value>
+  </data>
+  <data name="HighlightSelection" xml:space="preserve">
+    <value>選択したテキストをハイライト</value>
+  </data>
+  <data name="Highlighter" xml:space="preserve">
+    <value>蛍光ペン</value>
+  </data>
+  <data name="HighlighterSettings" xml:space="preserve">
+    <value>蛍光ペンの設定</value>
+  </data>
+  <data name="HighlighterSettingsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>蛍光ペンの設定</value>
+  </data>
+  <data name="HighlighterSettingsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>蛍光ペンの色と太さ</value>
+  </data>
+  <data name="HighlighterSettingsTip" xml:space="preserve">
+    <value>蛍光ペンの色と太さ</value>
+  </data>
+  <data name="HighlighterSize" xml:space="preserve">
+    <value>蛍光ペンの太さ</value>
+  </data>
+  <data name="HighlighterSizeSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>蛍光ペンの太さ</value>
+  </data>
+  <data name="HighlighterTip" xml:space="preserve">
+    <value>蛍光ペン：もう一度クリックして色と太さを設定</value>
+  </data>
+  <data name="InkMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>その他の注釈オプション</value>
+  </data>
+  <data name="InkMoreButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>その他の注釈オプション</value>
+  </data>
+  <data name="LoadingText" xml:space="preserve">
+    <value>テキストを読み込み中…</value>
+  </data>
+  <data name="MatchCount" xml:space="preserve">
+    <value>{0}/{1} 件目</value>
+  </data>
+  <data name="MoreAnnotations" xml:space="preserve">
+    <value>その他の注釈オプション</value>
+  </data>
+  <data name="NextButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>次のページ</value>
+  </data>
+  <data name="NextButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>次のページ</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>次の検索結果</value>
+  </data>
+  <data name="NextMatchTip" xml:space="preserve">
+    <value>次へ (Enter)</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>次のページ</value>
+  </data>
+  <data name="NoMatches" xml:space="preserve">
+    <value>一致するテキストはありません</value>
+  </data>
+  <data name="NoMatchesPartial" xml:space="preserve">
+    <value>一致なし（{0} ページのテキストを読み取れません）</value>
+  </data>
+  <data name="NoSelectableText" xml:space="preserve">
+    <value>このページには選択できるテキストがありません</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="OpenButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>PDF を開く</value>
+  </data>
+  <data name="OpenButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>PDF を開く (Ctrl+O)</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>PDF を開けませんでした：{0}</value>
+  </data>
+  <data name="OpenPdf" xml:space="preserve">
+    <value>PDF を開く</value>
+  </data>
+  <data name="OpenPdfCommand" xml:space="preserve">
+    <value>PDF を開く…</value>
+  </data>
+  <data name="OpenPdfCommandLabel1.Content" xml:space="preserve">
+    <value>PDF を開く…</value>
+  </data>
+  <data name="OpenPdfFirst" xml:space="preserve">
+    <value>まず PDF ファイルを開いてください。</value>
+  </data>
+  <data name="OpenPdfTip" xml:space="preserve">
+    <value>PDF を開く (Ctrl+O)</value>
+  </data>
+  <data name="PageAccessible" xml:space="preserve">
+    <value>PDF {0} ページ</value>
+  </data>
+  <data name="PageSizeError" xml:space="preserve">
+    <value>PDF のページサイズを読み取れませんでした。</value>
+  </data>
+  <data name="Pages" xml:space="preserve">
+    <value>ページ</value>
+  </data>
+  <data name="PagesLabel1.Text" xml:space="preserve">
+    <value>ページ</value>
+  </data>
+  <data name="PdfFileType" xml:space="preserve">
+    <value>PDF 文書</value>
+  </data>
+  <data name="Pen" xml:space="preserve">
+    <value>ペン</value>
+  </data>
+  <data name="PenSettings" xml:space="preserve">
+    <value>ペンの設定</value>
+  </data>
+  <data name="PenSettingsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ペンの設定</value>
+  </data>
+  <data name="PenSettingsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>ペンの色と太さ</value>
+  </data>
+  <data name="PenSettingsTip" xml:space="preserve">
+    <value>ペンの色と太さ</value>
+  </data>
+  <data name="PenSize" xml:space="preserve">
+    <value>ペンの太さ</value>
+  </data>
+  <data name="PenSizeSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ペンの太さ</value>
+  </data>
+  <data name="PenTip" xml:space="preserve">
+    <value>ペン：もう一度クリックして色と太さを設定</value>
+  </data>
+  <data name="PreviousButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>前のページ</value>
+  </data>
+  <data name="PreviousButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>前のページ</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>前の検索結果</value>
+  </data>
+  <data name="PreviousMatchTip" xml:space="preserve">
+    <value>前へ (Shift+Enter)</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>前のページ</value>
+  </data>
+  <data name="RenderedPageAccessible" xml:space="preserve">
+    <value>描画済みの PDF {0} ページ</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="SaveAnnotations" xml:space="preserve">
+    <value>注釈を保存</value>
+  </data>
+  <data name="SaveAnnotationsTip" xml:space="preserve">
+    <value>注釈を保存 (Ctrl+S)</value>
+  </data>
+  <data name="SaveButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>注釈を保存</value>
+  </data>
+  <data name="SaveButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>注釈を保存 (Ctrl+S)</value>
+  </data>
+  <data name="SaveDirtyTip" xml:space="preserve">
+    <value>注釈を保存 (Ctrl+S) *</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>保存に失敗しました：{0}</value>
+  </data>
+  <data name="SavedFeedback" xml:space="preserve">
+    <value>保存しました ✓</value>
+  </data>
+  <data name="SavedTip" xml:space="preserve">
+    <value>保存済み (Ctrl+S)</value>
+  </data>
+  <data name="SearchButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>PDF のテキストを検索</value>
+  </data>
+  <data name="SearchButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>検索 (Ctrl+F)</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>検索に失敗しました：{0}</value>
+  </data>
+  <data name="SearchPdf" xml:space="preserve">
+    <value>PDF のテキストを検索</value>
+  </data>
+  <data name="SearchTextBox.PlaceholderText" xml:space="preserve">
+    <value>テキストを検索</value>
+  </data>
+  <data name="SearchTextBox.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>PDF のテキストを検索</value>
+  </data>
+  <data name="SearchTip" xml:space="preserve">
+    <value>検索 (Ctrl+F)</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>検索中…</value>
+  </data>
+  <data name="SearchingPage" xml:space="preserve">
+    <value>{0} ページを検索中…</value>
+  </data>
+  <data name="SelectAllPage" xml:space="preserve">
+    <value>このページのテキストをすべて選択 (Ctrl+A)</value>
+  </data>
+  <data name="SelectText" xml:space="preserve">
+    <value>テキストを選択</value>
+  </data>
+  <data name="SelectTextHelp" xml:space="preserve">
+    <value>ドラッグしてテキストを選択し、右クリックでコピーまたはハイライト</value>
+  </data>
+  <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>PDF を共有</value>
+  </data>
+  <data name="ShareButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>PDF を共有（注釈を自動保存）</value>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>PDF を保存または共有できませんでした。ファイルを開き直して、もう一度お試しください。</value>
+  </data>
+  <data name="SharePanelError" xml:space="preserve">
+    <value>共有を開けませんでした</value>
+  </data>
+  <data name="SharePdf" xml:space="preserve">
+    <value>PDF を共有</value>
+  </data>
+  <data name="ShareTip" xml:space="preserve">
+    <value>PDF を共有（注釈を自動保存）</value>
+  </data>
+  <data name="SharedPdfDescription" xml:space="preserve">
+    <value>保存済みの注釈を含む PDF。</value>
+  </data>
+  <data name="SkippedPages" xml:space="preserve">
+    <value>（{0} ページのテキストを読み取れません）</value>
+  </data>
+  <data name="StrokeSize" xml:space="preserve">
+    <value>太さ</value>
+  </data>
+  <data name="StrokeSizeLabel1.Text" xml:space="preserve">
+    <value>太さ</value>
+  </data>
+  <data name="StrokeSizeLabel2.Text" xml:space="preserve">
+    <value>太さ</value>
+  </data>
+  <data name="TextLayerFailed" xml:space="preserve">
+    <value>テキストを読み込めませんでした</value>
+  </data>
+  <data name="TextLayerUnavailable" xml:space="preserve">
+    <value>テキストを読み込めません。閲覧と手書き注釈は引き続き利用できます</value>
+  </data>
+  <data name="ThumbnailAccessible" xml:space="preserve">
+    <value>{0} ページのサムネイル</value>
+  </data>
+  <data name="Thumbnails" xml:space="preserve">
+    <value>ページのサムネイル</value>
+  </data>
+  <data name="ThumbsToggle.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ページのサムネイル</value>
+  </data>
+  <data name="ThumbsToggle.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>ページのサムネイル</value>
+  </data>
+  <data name="TopClearButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>このページの注釈を消去</value>
+  </data>
+  <data name="TopEraserButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>消しゴム</value>
+  </data>
+  <data name="TopEraserButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>消しゴム</value>
+  </data>
+  <data name="TopHighlighterButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>蛍光ペン</value>
+  </data>
+  <data name="TopHighlighterButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>蛍光ペン：もう一度クリックして色と太さを設定</value>
+  </data>
+  <data name="TopPenButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ペン</value>
+  </data>
+  <data name="TopPenButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>ペン：もう一度クリックして色と太さを設定</value>
+  </data>
+  <data name="TopSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>テキストを選択</value>
+  </data>
+  <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>テキストを選択</value>
+  </data>
+  <data name="TopTouchWritingButton.Content" xml:space="preserve">
+    <value>タッチで手書き</value>
+  </data>
+  <data name="TopTouchWritingButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>タッチで手書き</value>
+  </data>
+  <data name="TopUndoButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>元に戻す</value>
+  </data>
+  <data name="TopUndoButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>元に戻す (Ctrl+Z)</value>
+  </data>
+  <data name="TouchWriting" xml:space="preserve">
+    <value>タッチで手書き</value>
+  </data>
+  <data name="TouchWritingHelp" xml:space="preserve">
+    <value>オフのときは指でスクロール</value>
+  </data>
+  <data name="TouchWritingHelpLabel1.Text" xml:space="preserve">
+    <value>オフのときは指でスクロール</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>元に戻す</value>
+  </data>
+  <data name="UndoTip" xml:space="preserve">
+    <value>元に戻す (Ctrl+Z)</value>
+  </data>
+  <data name="UnsavedPrompt" xml:space="preserve">
+    <value>この文書には未保存の注釈があります。変更を保存しますか？</value>
+  </data>
+  <data name="UnsavedTitle" xml:space="preserve">
+    <value>未保存の変更</value>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>拡大</value>
+  </data>
+  <data name="ZoomInButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>拡大</value>
+  </data>
+  <data name="ZoomInButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>拡大 (+)</value>
+  </data>
+  <data name="ZoomInTip" xml:space="preserve">
+    <value>拡大 (+)</value>
+  </data>
+  <data name="ZoomInputOkButton.Content" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ZoomLevel" xml:space="preserve">
+    <value>ズーム倍率</value>
+  </data>
+  <data name="ZoomLevelTip" xml:space="preserve">
+    <value>クリックしてズーム倍率を入力</value>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>縮小</value>
+  </data>
+  <data name="ZoomOutButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>縮小</value>
+  </data>
+  <data name="ZoomOutButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>縮小 (-)</value>
+  </data>
+  <data name="ZoomOutTip" xml:space="preserve">
+    <value>縮小 (-)</value>
+  </data>
+  <data name="ZoomPercentButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ズーム倍率</value>
+  </data>
+  <data name="ZoomPercentButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>クリックしてズーム倍率を入力</value>
+  </data>
+  <data name="ZoomSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>ズームスライダー</value>
+  </data>
+  <data name="ZoomSlider.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>ズームスライダー</value>
+  </data>
+  <data name="SavedHighlightsUnavailable" xml:space="preserve">
+    <value>保存済みのハイライトを読み取れませんでした</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="InkSelection" xml:space="preserve">
+    <value>選択したインク</value>
+  </data>
+  <data name="InkSelectionHelp" xml:space="preserve">
+    <value>選択枠をドラッグして移動。元に戻すで位置を復元</value>
+  </data>
+  <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>インクの範囲選択</value>
+  </data>
+  <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>インクを選択（ペンのサイドボタンでも選択）</value>
+  </data>
+  <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>その他の文書ツール</value>
+  </data>
+  <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>保存履歴と文字認識</value>
+  </data>
+  <data name="HistoryCommand.Text" xml:space="preserve">
+    <value>保存履歴…</value>
+  </data>
+  <data name="OcrCommand.Text" xml:space="preserve">
+    <value>このページの文字を認識…</value>
+  </data>
+  <data name="OcrTitle" xml:space="preserve">
+    <value>Windows 文字認識</value>
+  </data>
+  <data name="OcrHelp" xml:space="preserve">
+    <value>スキャンページは自動認識されます。インストール済みの言語を選んで再認識できます。結果は選択と検索に使われ、処理はすべて端末内で行われます。</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>認識言語</value>
+  </data>
+  <data name="OcrRecognize" xml:space="preserve">
+    <value>このページを認識</value>
+  </data>
+  <data name="OcrWorking" xml:space="preserve">
+    <value>認識中…</value>
+  </data>
+  <data name="OcrCompleted" xml:space="preserve">
+    <value>{0} 語を認識しました。閉じて文字を選択できます。</value>
+  </data>
+  <data name="OcrFailed" xml:space="preserve">
+    <value>認識できませんでした：{0}</value>
+  </data>
+  <data name="OcrMissingLanguages" xml:space="preserve">
+    <value>Windows OCR の言語がインストールされていません。設定の「時刻と言語」で必要な言語と文字認識機能を追加してから再試行してください。</value>
+  </data>
+  <data name="OcrSelectionHelp" xml:space="preserve">
+    <value>認識した文字は単語単位で選択できます。結果をご確認ください</value>
+  </data>
+  <data name="TextSelectionHandle" xml:space="preserve">
+    <value>文字の選択範囲を調整</value>
+  </data>
+  <data name="HistoryTitle" xml:space="preserve">
+    <value>保存履歴</value>
+  </data>
+  <data name="HistoryHelp" xml:space="preserve">
+    <value>保存ごとに PDF と編集可能な注釈を記録します。元の版と最近の履歴を保持します（最大 20 件、通常 512 MB 以内）。</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>注釈を保存すると履歴が表示されます。</value>
+  </data>
+  <data name="HistoryRestore" xml:space="preserve">
+    <value>この履歴に戻す</value>
+  </data>
+  <data name="HistoryRestoreConfirm" xml:space="preserve">
+    <value>未保存の変更を先に保存し、現在の版を履歴に残します。その後、元のファイルをこの履歴に戻します。注釈は引き続き編集できます。</value>
+  </data>
+  <data name="HistoryPageCount" xml:space="preserve">
+    <value>{0}/{1} ページ</value>
+  </data>
+  <data name="HistoryPreviousPage" xml:space="preserve">
+    <value>前のページをプレビュー</value>
+  </data>
+  <data name="HistoryNextPage" xml:space="preserve">
+    <value>次のページをプレビュー</value>
+  </data>
+  <data name="HistoryBaseline" xml:space="preserve">
+    <value>最初の編集前の元の版</value>
+  </data>
+  <data name="HistoryRescue" xml:space="preserve">
+    <value>復元前に自動保存した版</value>
+  </data>
+  <data name="HistorySaved" xml:space="preserve">
+    <value>保存した PDF と編集可能な注釈</value>
+  </data>
+  <data name="HistoryFailed" xml:space="preserve">
+    <value>履歴の操作に失敗しました：{0}</value>
+  </data>
+  <data name="HistoryCaptureFailed" xml:space="preserve">
+    <value>PDF は保存されましたが、履歴を完了できませんでした：{0}</value>
+  </data>
+  <data name="InkSelectLabel.Text" xml:space="preserve">
+    <value>インクの範囲選択</value>
+  </data>
+  <data name="BarrelSelectionHelp.Text" xml:space="preserve">
+    <value>ペンのサイドボタンを押しながら範囲選択し、選択したインクをドラッグして移動できます。</value>
+  </data>
+  <data name="HistoryWrongDocument" xml:space="preserve">
+    <value>この履歴は別の文書のものです。</value>
+  </data>
+</root>

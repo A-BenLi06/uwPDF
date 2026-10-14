@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 #if CPPWINRT_RENDERER
 using PreviewDisplay = PdfNative.Rendering.PreviewDisplay;
@@ -85,30 +85,24 @@ namespace LitePdfViewer
             if (HudBar.Visibility == Visibility.Visible) hudIdleTimer.Start();
         }
 
-        private bool annotationToolsStacked;
-
         private void ReaderToolbar_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             UpdateAnnotationToolbarLayout(e.NewSize.Width);
         }
 
+        private void SearchPanel_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
+        }
+
         private void UpdateAnnotationToolbarLayout(double width)
         {
-            // Keep the filename readable instead of squeezing it between two
-            // command groups when the ink tools are open in a narrow window.
-            var stacked = width < 800;
-            if (stacked != annotationToolsStacked)
-            {
-                annotationToolsStacked = stacked;
-                Grid.SetRow(AnnotationToolbar, stacked ? 1 : 0);
-                Grid.SetColumn(AnnotationToolbar, stacked ? 0 : 2);
-                Grid.SetColumnSpan(AnnotationToolbar, stacked ? 5 : 1);
-                AnnotationToolbar.Margin = stacked ? new Thickness(0) : new Thickness(8, 0, 8, 0);
-            }
-            // Balance the open ink group around the window center. Reading mode
-            // gives that space back to the left-aligned filename.
-            ToolbarBalanceColumn.Width = !stacked && AnnotationToolbar.Visibility == Visibility.Visible
-                ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            // Both tool/search cards overlay the unchanged document viewport.
+            if (AnnotationToolbar == null || SearchPanel == null) return;
+            var viewportWidth = DocumentScroller.ActualWidth > 0 ? DocumentScroller.ActualWidth : width;
+            AnnotationToolbar.MaxWidth = Math.Max(1, viewportWidth - 24);
+            var top = SearchPanel.Visibility == Visibility.Visible ? SearchPanel.ActualHeight + 24 : 12;
+            AnnotationToolbar.Margin = new Thickness(12, top, 12, 0);
         }
 
         private void CloseThumbnails_Click(object sender, RoutedEventArgs e)
@@ -132,7 +126,7 @@ namespace LitePdfViewer
             // Keep the system title row available for dragging at every window width.
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
             Window.Current.SetTitleBar(null);
-            appView.Title = "uwPDF";
+            appView.Title = string.Empty;
 
             DocumentScroller.DirectManipulationStarted += (s, e) =>
             {
@@ -269,7 +263,7 @@ namespace LitePdfViewer
             AnnotationToolbar.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
             UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
             AnnotationToolsButton.IsChecked = opening;
-            ToolTipService.SetToolTip(AnnotationToolsButton, opening ? "收起批注工具，返回文字选择" : "展开批注工具");
+            ToolTipService.SetToolTip(AnnotationToolsButton, opening ? L.Get("CollapseAnnotations") : L.Get("ExpandAnnotations"));
             if (!opening) SetInkTool(InkTool.None);
         }
     }

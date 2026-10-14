@@ -1,101 +1,185 @@
 using Windows.Devices.Input;
 using Windows.Foundation;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Input;
 
 namespace LitePdfViewer
 {
     public sealed partial class MainPage
     {
-        private Grid touchScrollRoot;
-        private ScrollBar touchScrollBar;
-        private ScrollViewer touchScrollOwner;
-        private uint touchScrollPointer;
-        private PdfScrollBarDrag touchScrollDrag;
         private ScrollBar documentVerticalBar;
+        private NativeScrollIndicator documentScrollIndicator, thumbnailScrollIndicator;
 
-        private void ScrollBarRoot_Loaded(object sender, RoutedEventArgs e)
+        private void InitializeNativeScrollBars()
         {
-            var root = (Grid)sender;
-            var bar = VisualTreeHelper.GetParent(root) as ScrollBar;
-            if (bar != null && bar.Orientation == Orientation.Vertical && FindScrollOwner(bar) == DocumentScroller) documentVerticalBar = bar;
-            if (root.Tag != null) return;
-            root.Tag = true;
-            // HandledEventsToo keeps native Thumb/RepeatButton routing from
-            // swallowing touch. Mouse events still use the native controls.
-            root.AddHandler(PointerPressedEvent, new PointerEventHandler(ScrollBarTouchPressed), true);
-            root.AddHandler(PointerMovedEvent, new PointerEventHandler(ScrollBarTouchMoved), true);
-            root.AddHandler(PointerReleasedEvent, new PointerEventHandler(ScrollBarTouchReleased), true);
-            root.AddHandler(PointerCanceledEvent, new PointerEventHandler(ScrollBarTouchReleased), true);
-            root.PointerCaptureLost += (s, args) =>
+            documentScrollIndicator = new NativeScrollIndicator(DocumentScroller, MainChrome);
+            thumbnailScrollIndicator = new NativeScrollIndicator(ThumbnailScroller, MainChrome);
+            DocumentScroller.Loaded += (sender, args) =>
             {
-                if (args.OriginalSource == touchScrollRoot && args.Pointer.PointerId == touchScrollPointer) EndTouchScroll();
-            };
-            root.Unloaded += (s, args) =>
-            {
-                if (touchScrollRoot == root) EndTouchScroll();
-                if (documentVerticalBar == bar) documentVerticalBar = null;
+                documentVerticalBar = documentScrollIndicator.Bar;
             };
         }
 
-        private void ScrollBarTouchPressed(object sender, PointerRoutedEventArgs e)
+        // Only native display states change. Range, template, geometry, capture,
+        // mouse dragging, keyboard input and direct touch panning remain native.
+        private sealed class NativeScrollIndicator
         {
-            var root = (Grid)sender;
-            var point = e.GetCurrentPoint(root);
-            if (point.PointerDevice.PointerDeviceType != PointerDeviceType.Touch) return;
-            if (touchScrollDrag != null) { e.Handled = true; return; }
-            var bar = VisualTreeHelper.GetParent(root) as ScrollBar;
-            var thumb = root.FindName("VerticalThumb") as Thumb;
-            if (bar == null || bar.Orientation != Orientation.Vertical || thumb == null || bar.Maximum <= bar.Minimum) return;
-            var owner = FindScrollOwner(bar);
-            if (owner == null) return;
-            root.CancelDirectManipulations();
-            if (!root.CapturePointer(e.Pointer)) return;
-            touchScrollRoot = root;
-            touchScrollBar = bar;
-            touchScrollOwner = owner;
-            touchScrollPointer = e.Pointer.PointerId;
-            var top = thumb.TransformToVisual(root).TransformPoint(new Point()).Y;
-            touchScrollDrag = new PdfScrollBarDrag(point.Position.Y, bar.Value, bar.Minimum, bar.Maximum,
-                root.ActualHeight, top, thumb.ActualHeight);
-            VisualStateManager.GoToState(bar, "TouchDragging", true);
-            owner.ChangeView(null, touchScrollDrag.ValueAt(point.Position.Y), null, true);
-            e.Handled = true;
-        }
+            private readonly ScrollViewer owner;
+            internal ScrollBar Bar { get; private set; }
+            private VisualStateGroup indicators, conscious;
+            private Thumb thumb;
+            private bool near, dragging, applying, loaded, stateUpdateQueued;
+            private string expandedState = "MouseIndicator";
 
-        private void ScrollBarTouchMoved(object sender, PointerRoutedEventArgs e)
-        {
-            if (touchScrollDrag == null || sender != touchScrollRoot || e.Pointer.PointerId != touchScrollPointer) return;
-            touchScrollOwner.ChangeView(null, touchScrollDrag.ValueAt(e.GetCurrentPoint(touchScrollRoot).Position.Y), null, true);
-            e.Handled = true;
-        }
-
-        private void ScrollBarTouchReleased(object sender, PointerRoutedEventArgs e)
-        {
-            if (touchScrollDrag == null || sender != touchScrollRoot || e.Pointer.PointerId != touchScrollPointer) return;
-            var root = touchScrollRoot;
-            EndTouchScroll();
-            root.ReleasePointerCapture(e.Pointer);
-            e.Handled = true;
-        }
-
-        private void EndTouchScroll()
-        {
-            if (touchScrollBar != null) VisualStateManager.GoToState(touchScrollBar, "TouchIdle", true);
-            var root = touchScrollRoot;
-            touchScrollRoot = null; touchScrollBar = null; touchScrollOwner = null; touchScrollDrag = null;
-            if (root != null) root.ReleasePointerCaptures();
-        }
-
-        private static ScrollViewer FindScrollOwner(DependencyObject child)
-        {
-            for (var current = VisualTreeHelper.GetParent(child); current != null; current = VisualTreeHelper.GetParent(current))
+            internal NativeScrollIndicator(ScrollViewer scroller, FrameworkElement proximityRoot)
             {
-                var owner = current as ScrollViewer;
-                if (owner != null) return owner;
+                owner = scroller;
+                owner.Loaded += (sender, args) => { loaded = true; BindTemplate(); };
+                owner.Unloaded += (sender, args) => { loaded = false; DetachTemplate(); };
+                owner.LayoutUpdated += (sender, args) => { if (loaded && Bar == null) BindTemplate(); };
+                proximityRoot.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(PointerMoved), true);
+                proximityRoot.AddHandler(UIElement.PointerEnteredEvent, new PointerEventHandler(PointerMoved), true);
+                proximityRoot.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler(PointerExited), true);
+                proximityRoot.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((sender, args) =>
+                {
+                    if (args.Pointer.PointerDeviceType == PointerDeviceType.Touch) SetNear(false);
+                }), true);
+            }
+
+            private void BindTemplate()
+            {
+                DetachTemplate();
+                owner.ApplyTemplate();
+                Bar = FindNativeVerticalScrollBar(owner);
+                if (Bar == null) return;
+                indicators = FindGroup(owner, "ScrollingIndicatorStates");
+                expandedState = HasState(indicators, "MouseIndicatorFull") ? "MouseIndicatorFull" : "MouseIndicator";
+                conscious = FindGroup(Bar, "ConsciousStates");
+                if (indicators != null) indicators.CurrentStateChanged += StateChanged;
+                if (conscious != null) conscious.CurrentStateChanged += StateChanged;
+                thumb = FindThumb(Bar);
+                if (thumb != null) { thumb.DragStarted += DragStarted; thumb.DragCompleted += DragCompleted; }
+                Bar.Unloaded += BarUnloaded;
+                ApplyStates();
+            }
+
+            private void BarUnloaded(object sender, RoutedEventArgs args) { DetachTemplate(); }
+            private void DetachTemplate()
+            {
+                if (indicators != null) indicators.CurrentStateChanged -= StateChanged;
+                if (conscious != null) conscious.CurrentStateChanged -= StateChanged;
+                if (thumb != null) { thumb.DragStarted -= DragStarted; thumb.DragCompleted -= DragCompleted; }
+                if (Bar != null) Bar.Unloaded -= BarUnloaded;
+                indicators = conscious = null; thumb = null; Bar = null; dragging = false;
+            }
+
+            private void PointerMoved(object sender, PointerRoutedEventArgs args)
+            {
+                var point = args.GetCurrentPoint(owner);
+                if (point.PointerDevice.PointerDeviceType == PointerDeviceType.Mouse ||
+                    (point.PointerDevice.PointerDeviceType == PointerDeviceType.Pen && !point.IsInContact))
+                    UpdateProximity(point.Position);
+            }
+
+            private void PointerExited(object sender, PointerRoutedEventArgs args)
+            {
+                if (args.Pointer.PointerDeviceType == PointerDeviceType.Touch) return;
+                if (args.OriginalSource == sender) SetNear(false);
+                else UpdateProximity(args.GetCurrentPoint(owner).Position);
+            }
+
+            internal void UpdateProximity(Point point)
+            {
+                if (Bar == null) return;
+                var origin = Bar.TransformToVisual(owner).TransformPoint(new Point());
+                // Enter within 24 DIP of the track; leave at 36 DIP to avoid
+                // flicker at the boundary. The detection surface captures no input.
+                var distance = near ? 36 : 24;
+                SetNear(point.X >= origin.X - distance && point.X <= origin.X + Bar.ActualWidth + distance &&
+                    point.Y >= origin.Y && point.Y <= origin.Y + Bar.ActualHeight);
+            }
+
+            internal void SetNear(bool value) { near = value; ApplyStates(); }
+            private void DragStarted(object sender, DragStartedEventArgs args) { dragging = true; ApplyStates(); }
+            private void DragCompleted(object sender, DragCompletedEventArgs args) { dragging = false; ApplyStates(); }
+            private void StateChanged(object sender, VisualStateChangedEventArgs args)
+            {
+                if (applying || stateUpdateQueued) return;
+                // Re-entering GoToState from the native state callback can be
+                // overwritten by that transition's final commit. Apply once
+                // after the native transition returns, with no polling timer.
+                stateUpdateQueued = true;
+                var update = owner.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    stateUpdateQueued = false;
+                    if (loaded) ApplyStates();
+                });
+            }
+
+            private void ApplyStates()
+            {
+                if (applying || Bar == null) return;
+                applying = true;
+                try
+                {
+                    var expanded = near || dragging;
+                    var wanted = expanded ? expandedState : "TouchIndicator";
+                    if (indicators != null && (indicators.CurrentState == null || indicators.CurrentState.Name != wanted))
+                        VisualStateManager.GoToState(owner, wanted, true);
+                    wanted = expanded ? "Expanded" : "Collapsed";
+                    if (conscious != null && (conscious.CurrentState == null || conscious.CurrentState.Name != wanted))
+                        VisualStateManager.GoToState(Bar, wanted, true);
+                }
+                finally { applying = false; }
+            }
+
+            private static bool HasState(VisualStateGroup group, string name)
+            {
+                if (group != null) foreach (var state in group.States) if (state.Name == name) return true;
+                return false;
+            }
+
+            private static VisualStateGroup FindGroup(DependencyObject control, string name)
+            {
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(control); i++)
+                {
+                    var child = VisualTreeHelper.GetChild(control, i);
+                    var root = child as FrameworkElement;
+                    if (root != null) foreach (var group in VisualStateManager.GetVisualStateGroups(root))
+                        if (group.Name == name) return group;
+                    if (child is ScrollBar || child is ScrollContentPresenter) continue;
+                    var match = FindGroup(child, name);
+                    if (match != null) return match;
+                }
+                return null;
+            }
+
+            private static Thumb FindThumb(DependencyObject control)
+            {
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(control); i++)
+                {
+                    var child = VisualTreeHelper.GetChild(control, i);
+                    var found = child as Thumb;
+                    if (found != null && found.Name == "VerticalThumb") return found;
+                    found = FindThumb(child);
+                    if (found != null) return found;
+                }
+                return null;
+            }
+        }
+
+        private static ScrollBar FindNativeVerticalScrollBar(DependencyObject element)
+        {
+            var bar = element as ScrollBar;
+            if (bar != null && bar.Name == "VerticalScrollBar" && bar.Orientation == Orientation.Vertical) return bar;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
+            {
+                var found = FindNativeVerticalScrollBar(VisualTreeHelper.GetChild(element, i));
+                if (found != null) return found;
             }
             return null;
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Threading.Tasks;
 using PdfNative;
@@ -209,8 +209,13 @@ namespace LitePdfViewer
             MainCommandBar.IsEnabled = false;
             AnnotationToolbar.IsHitTestVisible = false;
             DocumentScroller.IsEnabled = false;
+            ClearInkSelection();
+            historyWarning = null;
+            PdfSnapshot preparedSnapshot = null;
+            var oldEmbeddedPages = new HashSet<uint>(embeddedPages);
             StorageFile staging = null;
             var backups = new Dictionary<string, StorageFile>();
+            var savedRevisions = new Dictionary<PageView, int>();
             StorageFolder folder = null;
             var committed = false;
             var original = currentFile;
@@ -222,9 +227,17 @@ namespace LitePdfViewer
                 foreach (var file in await folder.GetFilesAsync())
                     if (file.Name.StartsWith("page-", StringComparison.Ordinal)) { hasSidecars = true; break; }
                 if (!HasUnsavedChanges() && (readingCopy != null || !hasSidecars)) return;
+                if ((await PdfSnapshotStore.ListAsync(folder)).Count == 0)
+                {
+                    var baseline = await PdfSnapshotStore.PrepareAsync(original, folder, "baseline", pageIndex);
+                    await PdfSnapshotStore.PublishAsync(baseline);
+                }
+                var previousState = await folder.TryGetItemAsync("pdf-state.json") as StorageFile;
+                backups["pdf-state.json"] = previousState == null ? null : await previousState.CopyAsync(ApplicationData.Current.TemporaryFolder, "uwpdf-backup-" + Guid.NewGuid().ToString("N"));
                 foreach (var view in pageViews)
                 {
                     if (!view.Dirty) continue;
+                    savedRevisions[view] = view.Revision;
                     embeddedPages.Add(view.Index);
                     foreach (var name in new[] { GetInkFileName(view.Index), HighlightFileName(view.Index) })
                     {
@@ -250,7 +263,7 @@ namespace LitePdfViewer
                     try { document = cleanDocument; }
                     finally { renderGate.Release(); }
                     if (textSource != null) await textSource.DisposeAsync();
-                    textSource = new PdfTextSource(readingCopy);
+                    textSource = CreateTextSource(readingCopy);
                     // Windows.Data.Pdf has no Close/Dispose API. Its previous
                     // wrapper must release the memory-mapped original before
                     // Windows can replace it. Run collection off the UI thread.
@@ -267,13 +280,22 @@ namespace LitePdfViewer
                 var stateFile = await folder.CreateFileAsync("pdf-state.json", CreationCollisionOption.ReplaceExisting);
                 await FileIO.WriteTextAsync(stateFile, state.Stringify());
                 if (token != activeRenderToken) throw new OperationCanceledException();
+                preparedSnapshot = await PdfSnapshotStore.PrepareAsync(staging, folder, "save", pageIndex);
                 await staging.CopyAndReplaceAsync(original);
                 committed = true;
-                foreach (var view in pageViews) ClearPageDirty(view);
+                foreach (var saved in savedRevisions) if (saved.Key.Revision == saved.Value) ClearPageDirty(saved.Key);
                 UpdateDirtyState();
+                try { await PdfSnapshotStore.PublishAsync(preparedSnapshot); if (!historyOpen) await PdfSnapshotStore.PruneAsync(folder); }
+                catch (Exception ex) { historyWarning = L.Format("HistoryCaptureFailed", ex.Message); }
             }
             finally
             {
+                if (!committed) { embeddedPages.Clear(); foreach (var page in oldEmbeddedPages) embeddedPages.Add(page); }
+                if (!committed && preparedSnapshot != null)
+                {
+                    try { await preparedSnapshot.Folder.DeleteAsync(); }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Snapshot cleanup: " + ex.Message); }
+                }
                 // Restore the last successful editable state if PDF replacement
                 // failed, including pages erased during this attempt.
                 foreach (var backup in backups)

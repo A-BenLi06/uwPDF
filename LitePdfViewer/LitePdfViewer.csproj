@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>LitePdfViewer</RootNamespace>
     <AssemblyName>LitePdfViewer</AssemblyName>
-    <DefaultLanguage>zh-CN</DefaultLanguage>
+    <DefaultLanguage>en-US</DefaultLanguage>
     <PdfRendererBridge Condition="'$(PdfRendererBridge)' == ''">CppWinRT</PdfRendererBridge>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion>10.0.14393.0</TargetPlatformVersion>
@@ -117,9 +117,10 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="LitePdfViewer.Shared.projitems" />
+  <Import Project="PackageIdentity.props" />
 
   <ItemGroup>
-    <AppxManifest Include="Package.appxmanifest">
+    <AppxManifest Include="$(SelectedAppxManifest)">
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="LitePdfViewer_TemporaryKey.pfx" />
@@ -130,6 +131,7 @@
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <Import Project="PackageIdentity.targets" />
   <Target Name="ValidatePdfRendererBridge" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(PdfRendererBridge)' != 'CppWinRT' and '$(PdfRendererBridge)' != 'Legacy'" Text="PdfRendererBridge must be CppWinRT (default) or Legacy." />
   </Target>

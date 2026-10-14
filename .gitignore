@@ -22,3 +22,14 @@ manual-packages/
 
 # Scratch verification output
 verification-empty.png
+
+# Compiler intermediates generated outside bin/obj
+*.pdb
+*.obj
+*.idb
+*.ilk
+*.pch
+
+# Unused WebView/PDF.js text-layer prototype (native text extraction is used)
+/LitePdfViewer/TextLayer/
+/scripts/build-text-layer.cjs

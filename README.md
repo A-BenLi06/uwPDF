@@ -1,9 +1,14 @@
-# uwPDF
+﻿# uwPDF
 
 Extreme lite PDF viewer and annotator (UWP) focused on fast launch and pen annotations, aiming to reproduce the old Edge browser's PDF experience, styled after the macOS Finder Quick Look PDF preview.
 
 ## Features
 
+- Native UWP localization supports Simplified Chinese (`zh-Hans`), Traditional
+  Chinese (`zh-Hant`), English (`en-US`) and Japanese (`ja-JP`). The interface
+  follows the user's Windows language preferences, with English fallback.
+  Strings in tooltips, accessibility names, search, dialogs and package metadata
+  use `Strings/<language>/Resources.resw`; there is no app-specific language override.
 - Opens local PDF files with the built-in `Windows.Data.Pdf` renderer. A native DirectX 11 / `IPdfRendererNative` component renders into XAML surfaces; devices rejecting interop use a system-rendered bitmap fallback.
 - DirectX device initialization runs through an asynchronous worker factory in both native bridges. Unsupported device/interop setup is not retried for every page; a page-specific draw failure keeps the device for other pages. Device recovery allows another setup attempt, and temporary allocation pressure does not permanently disable native rendering. Resetting the backend cancels stale native/bitmap results and releases partially allocated pixels.
 - Selects PDF text with the default text tool: drag to select, double-click a word, then right-click for Copy, Highlight, Select all text on this page, or Deselect. `Ctrl+C`, `Ctrl+A` (current page), and `Esc` work too. Touch continues to scroll.
@@ -13,14 +18,14 @@ Extreme lite PDF viewer and annotator (UWP) focused on fast launch and pen annot
 - Saving writes standard Highlight and Ink annotations with appearance streams through a temporary PDF before replacing the original. Windows Ink preserves curves, pressure and pen tip shapes; the standard InkList remains for compatibility. Repeated saves replace only this local workspace's annotations, preserving preexisting annotations. A clean reading copy prevents the editable overlays from appearing twice. Failed saves retain the dirty flag and restore the previous local editable data.
 - The native Share button uses the UWP DataTransferManager sharing interface, saves pending annotations first, and supplies the actual PDF file with brokered read-only access.
 - Quick Look-style UI: an independent light system title bar for window dragging, a compact file/command row, a light canvas with hairline page borders, and a floating dark HUD at the bottom center. File names stay left-aligned and truncate within the available space. Toolbar actions and their flyouts use native UWP controls and system templates.
-- All authored UI icons explicitly use Segoe MDL2 Assets and Microsoft's canonical glyph map, including the real EraseTool icon. The top toolbar uses native Button and ToggleButton templates, 36-DIP controls, and a 44-DIP row; the filename stays left-aligned.
-- The annotation button reveals a compact tool group centered in the same row at widths of 800 DIP and above. Narrower windows place that group in a second 44-DIP row, preserving filename space. Clicking pen/highlighter selects the tool; clicking again or its adjacent arrow opens color and size settings. Color indicators and live previews show the current settings. Touch writing and page clearing live in the native More flyout. Collapsing the tool group returns to text selection. Touch writing is opt-in; when disabled, fingers scroll.
-- The reading HUD fades after three idle seconds, stays visible during hover, keyboard focus or zoom input, and has a protected reveal area so clicking its hidden position cannot draw on the PDF. Search opens at the top right, highlights the current match against a dimmed reading area, and displays a document-wide ordinal such as `第4/17个`. Enter / Shift+Enter advance or go back, wrapping at either end. Closing or clearing search restores normal reading. The thumbnail rail has its own close button.
+- Toolbar/action icons explicitly use Segoe MDL2 Assets and Microsoft's canonical glyph map, including the real EraseTool and Share icons. App branding uses the supplied glossy PDF artwork. The top toolbar uses native Button and ToggleButton templates, 36-DIP controls, and a 44-DIP row; the filename stays left-aligned.
+- The annotation button reveals a compact floating tool card above the document. It overlays the page at every window width: the command row stays 44 DIP and opening/closing tools does not resize, zoom or reposition the PDF viewport. When search is open, the tool card sits below the search card without changing the document layout. Clicking pen/highlighter selects the tool; clicking again or its adjacent arrow opens color and size settings. Color indicators and live previews show the current settings. Touch writing and page clearing live in the native More flyout. Collapsing the tool group returns to text selection. Touch writing is opt-in; when disabled, fingers scroll.
+- The reading HUD is anchored to the window overlay, so opening the wrapped annotation row cannot push it below the client area. It fades after three idle seconds, stays visible during hover, keyboard focus or zoom input, and has a protected reveal area so clicking its hidden position cannot draw on the PDF. Search opens at the top right with aligned 32-DIP native controls, 12-DIP panel padding and a separate status row. It highlights the current match against a dimmed reading area and displays a document-wide ordinal such as `第4/17个`. Enter / Shift+Enter advance or go back with native animated scrolling, preserving zoom and wrapping at either end. Closing or clearing search restores normal reading. The thumbnail rail has its own close button.
 - The initial window follows the first page's cropped, rotated PDF point dimensions. Its client layout adds 28 DIP of horizontal padding, 16 DIP of vertical padding, a 44-DIP command row, and a 110-DIP right thumbnail rail for multi-page documents. It scales down using a 32-DIP monitor-work-area margin, with an initial scale capped at 100% and an 800 × 600 fallback; Windows provides the separate system title row.
 - First-page rendering and the visible-page worker start without waiting for monitor work-area probing or automatic window sizing. Rapid file switches share one pending work-area probe; completed results are read again for the current monitor. A late sizing result respects a manual resize and the current file, and sizing failures do not reject a readable PDF.
 - A manual window resize is retained when opening another file in the same session. Closing and reopening restores content-based sizing. Windows manages window position and can override sizing in snapped, maximized, or tablet layouts; the app requests a 500 × 320 minimum to keep commands usable.
 - "100%" uses one PDF point per logical DIP. Fit adapts the entire current page to the viewport without enlarging it; manual zoom can go above 100%. The native presenter centers smaller pages while the content width stays fixed through zoom animations, avoiding layout feedback below 100%. Zooming re-renders visible pages at higher resolution automatically. A background scheduler renders nearby pages and thumbnails first.
-- Vertical scrollbars show a 3-DIP thumb normally and expand to 8 DIP during hover or touch dragging. Their fixed 32-DIP input surface and minimum 44-DIP thumb height make finger contact easier. Touch captures its pointer, preserves the initial thumb grab position, and maps finger movement to the owning scroller; touching the track centers the thumb there. Mouse input retains native ScrollBar behavior. Horizontal scrolling remains available for zoomed pages, with its scrollbar hidden.
+- Document and thumbnail scrollbars retain the system UWP ScrollViewer/ScrollBar templates, range and input routing. Their native display states expand when the pointer comes within 24 DIP of the track and return to a visible compact indicator beyond 36 DIP; the small hysteresis prevents boundary flicker. Native thumb dragging holds the expanded display until release. Mouse dragging remains native; fingers pan the document directly when touch writing is disabled. There is no custom scrollbar pointer capture or range mapping, and visual expansion does not change the PDF viewport. Horizontal scrolling remains available for zoomed pages, with its scrollbar hidden. This follows the native control approach in the [Windows Community Toolkit UWP samples](https://github.com/CommunityToolkit/WindowsCommunityToolkit/blob/main/Microsoft.Toolkit.Uwp.SampleApp/Styles/Generic.xaml).
 - Page controls and thumbnails are created only near their respective viewports, on absolute canvases that retain the full document scroll extent. Saved offscreen ink/highlight data is released and restored on demand; unsaved annotations survive virtualization. Annotation disk reads run independently of the page render queue.
 - Visible pages keep rendering during scrolling and pinch zoom, using a smaller first bitmap when needed. All missing visible pages are filled before upgrading any existing visible surface. Once they are filled during scrolling, one adjacent missing page is prefetched in the movement direction. Further prefetching, text extraction, and resolution upgrades wait for a 120-ms pause (or the final event). Existing bitmaps stay visible during upgrades; a budgeted cache survives control recycling and immediately restores revisited pages. Obsolete results are discarded, and idle rendering waits for an event instead of polling.
 - Horizontal panning, vertical scrolling, wheel input and active direct-manipulation gestures all defer background work. Queued refinements/detail work recheck input state before drawing and committing. Thumbnail selection uses the same scroll/zoom conditions as its execution guard, preventing a synchronous rejection loop during pinch or slider zoom.
@@ -31,15 +36,50 @@ Extreme lite PDF viewer and annotator (UWP) focused on fast launch and pen annot
 - Mixed page dimensions are confirmed before first raster display, ink restoration and search-result positioning. Background geometry corrections preserve the current page fraction after layout rather than returning to its top; active gestures are not programmatically re-anchored. Fit uses the last explicitly fitted page as its reference, so scrolling onto another page size does not automatically change zoom; window refitting retains the reading position.
 - Saving reads each annotated page's actual rotated CropBox size from the export document, including pages never visited in the current session. It does not normalize saved strokes against an assumed first-page aspect ratio.
 - Editable sidecars write only dirty pages; saving embeds the current annotations into the PDF. Page turns never wait on disk I/O.
+- Hold a pen barrel button while dragging to select an ink rectangle; drag the selected ink to move it. The native `InkPresenter.UnprocessedInput` path leaves ordinary ink handling intact. Explicit ink selection lives in the annotation More menu, with the Microsoft Marquee glyph. Moves preserve native stroke transforms/pressure and can be undone; canceled moves restore their original positions.
+- Saving keeps an immutable copy of the PDF and editable annotation sidecars. Reader More → Save history previews any snapshot page and restores the original file plus editable ink/highlights. Pending edits are saved and a rescue checkpoint is retained before a restore. History retains the baseline and recent versions (up to 20, normally within 512 MiB; two recent versions remain even for oversized documents). Failed saves roll back ownership metadata and sidecars; late stroke revisions remain dirty. History is local to this device and is not included in sharing.
+- Pen text selection has an 8-DIP initial hit tolerance, rotated-quad hit testing, a small line-boundary hysteresis, screen-sized draggable selection handles and viewport-edge auto-scroll. A first drag waits for page text without dropping its starting point; fingers still pan the page outside handles.
+- Scanned pages automatically use offline `Windows.Media.Ocr` when there is no native PDF text. Reader More → Recognize text selects an installed OCR language and can explicitly recognize the current page. Recognized word boxes support text selection, copying, highlighting and full-document search; they do not add an OCR text layer to the PDF. Recognition uses a separate worker and an eight-page cache, renders within the system image-size limit, and discards canceled/disposed results. Windows OCR language features must be installed; the app explains this when none are available.
+
 - Supports ink annotations with pen, drawing tablet, and mouse through `InkCanvas` and `InkPresenter` (`CoreInputDeviceTypes.Pen | Mouse`), kept editable per document/page in local storage and embedded into the original PDF when saved. Touch still scrolls the document.
 - Keyboard: `Space`/`Page Down`/`→`/`↓` next page, `Back`/`Page Up`/`←`/`↑` previous page, `Home`/`End` first/last page, `+`/`-` zoom, `0` fit, `Ctrl+O` open.
 - Supports PDF file activation and the `litepdfviewerpreview://sample` protocol through the app manifest.
 
 ## Build
 
+The unmodified supplied logo is preserved in `LitePdfViewer/Branding/LogoSource.png`.
+`scripts/Generate-AppAssets.ps1` derives transparent, centered assets for the app
+list, tiles, Store and splash screen: five scale factors and 14 target sizes with
+default/unplated/light-unplated variants, following the [Windows icon asset
+guidance](https://learn.microsoft.com/en-us/windows/apps/design/iconography/app-icon-construction).
+The original's transparent padding is trimmed around the subject with a bleed
+margin; the drawing is not redesigned. Regeneration uses System.Drawing and
+FFmpeg for lossless PNG compression where needed to meet the UWP tile size limit.
+The manifests reference virtual base names; the shared project includes the
+qualified asset files. The app's empty state also displays this logo.
+
 Run `scripts/Prepare-NativeDependencies.ps1` to restore the pinned native auxiliary engine and generate font/source inputs. The C# UWP/XAML application retains SDK 10.0.14393.0 and its existing .NET Native build tools. Its default native component is C++/WinRT, requiring modern MSVC and SDK 10.0.26100.0; ARM32 uses the pinned local tools described below. Open `LitePdfViewer.sln` with the UWP workload installed. Debug and Release/.NET Native configurations for x86, x64 and ARM32 are retained. ARM64 uses the separate `LitePdfViewer.ARM64.sln` and build script below.
 
-The development package certificate is generated without a password.
+`Package.appxmanifest` and `Package.ARM64.appxmanifest` use the supplied Store
+identity `BenLi06.uwPDF-LitePDFViewer`, publisher
+`CN=FC1FF585-22D6-4DFB-97E0-9D22B6842CC6`, and publisher display name `BenLi06`.
+`StoreIdentity.json` records Store ID `9PP3QW43QJ77`, PFN and package SID.
+PFN/SID are derived identifiers and do not belong in extra manifest attributes.
+
+Release defaults to `/p:UseStoreIdentity=true` and produces an unsigned Store
+package, ready for the submission workflow where Microsoft signs the package.
+The local development certificate's subject is `CN=Ben`, so it is not used to
+sign the Store publisher. Debug generates a development manifest under `obj/`,
+retaining the existing `Ben.LitePdfViewerPreview` identity, certificate and F5
+data. Source Store manifests are not rewritten during a Debug build. To make a
+signed local Release test package, explicitly pass `/p:UseStoreIdentity=false`.
+The development certificate is generated without a password.
+
+Validate localization with `python tests/ValidateLocalization.py`. Validate a
+Store package with `scripts/Test-StorePackage.ps1 -PackagePath <appx>`; this checks
+identity, all four languages, localized manifest references, compiled resources,
+and Windows-derived PFN/SID consistency. x64 Store output from this run is under
+`artifacts/store-packages/x64/`; it is separate from the earlier test archive.
 
 The DirectX device and PDF draw code now live in a shared standard C++ core.
 The default C++/WinRT component uses that same core for x86/x64/ARM32/ARM64.
@@ -290,10 +330,11 @@ continuation from the indexed match when the reading-page indicator differs. Fou
 restore the scheduling/publication regressions and must fail. This verifies
 production control flow rather than actual input or frame latency.
 
-`scripts/Test-ScrollBarDrag.ps1` checks the production touch mapping: offset thumb
-grabs do not jump, track contact centers the thumb, drags follow the available
-travel, and targets stay within bounds even with a minimum-size thumb or no
-usable travel. Actual pointer capture and touch hardware need device acceptance.
+`scripts/Test-SearchScroll.ps1` checks the production animated search request:
+clamped/equal targets, intermediate versus final completion, rejected requests,
+cancellation and event cleanup. The implementation follows the native
+`ChangeView`/`ViewChanged` pattern in the [Toolkit smooth-scroll extension](https://github.com/CommunityToolkit/WindowsCommunityToolkit/blob/rel/7.1.0/Microsoft.Toolkit.Uwp.UI/Extensions/ListViewBase/ListViewExtensions.SmoothScrollIntoView.cs).
+The former custom scrollbar-drag implementation and its tests have been removed.
 
 For a reproducible image-heavy performance fixture and an engine-only baseline:
 

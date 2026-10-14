@@ -1,0 +1,8 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="PrepareDevelopmentManifest" BeforeTargets="PrepareForBuild" Condition="'$(UseStoreIdentity)' != 'true'">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Copy SourceFiles="$(StoreAppxManifest)" DestinationFiles="$(SelectedAppxManifest)" />
+    <XmlPoke XmlInputPath="$(SelectedAppxManifest)" Query="/*[local-name()='Package']/*[local-name()='Identity']/@Name" Value="Ben.LitePdfViewerPreview" />
+    <XmlPoke XmlInputPath="$(SelectedAppxManifest)" Query="/*[local-name()='Package']/*[local-name()='Identity']/@Publisher" Value="CN=Ben" />
+  </Target>
+</Project>

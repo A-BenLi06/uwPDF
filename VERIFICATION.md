@@ -1,5 +1,139 @@
 # uwPDF acceptance status
 
+## Local x64 test package 1.0.10.0 — 2026-10-14
+
+- Both source manifests now use 1.0.10.0 so the local Release test package can
+  upgrade the prior 1.0.9.0 and the next F5 build uses the same version.
+- x64 Release/.NET Native with `UseStoreIdentity=false` completed and signed
+  with the existing CN=Ben development certificate. Native package and 14393
+  baseline checks pass. The AppX CMS signature verifies cryptographically;
+  local certificate trust is handled by the included developer installer.
+- Archive: `artifacts/releases/uwPDF-1.0.10.0-x64-test-20261014.zip`, approximately
+  20.82 MiB, with AppX, public certificate, PowerShell installer, dependencies
+  and TESTING.txt. Required ZIP entries were verified. The adjacent JSON records
+  hashes and that the current uncommitted working tree is included. No install
+  or Store upload was performed; the previous 1.0.9.0 archive remains preserved.
+
+## Floating annotation layer and scrollbar proximity — 2026-10-14
+
+- The annotation card is reparented from the command row into the document
+  overlay. The header remains 44 DIP at every width; no second row is measured.
+  A native rounded rectangle backs the tool card. Search and annotations share
+  the overlay, with annotations placed below search when both are visible.
+- Document and thumbnail ScrollViewer/ScrollBar templates and input/range logic
+  remain native. A root-level mouse/pen-hover proximity observer selects native
+  expanded/compact display states at 24/36 DIP, with hysteresis and native thumb
+  drag retention. It never captures a pointer, handles an input event or maps a
+  scrollbar value to a document offset. Touch continues to pan the document.
+- Native automatic mouse/hide state changes are reconciled through one coalesced
+  dispatcher action after the native transition commits. Calling GoToState
+  recursively from CurrentStateChanged was observed to lose to the native commit;
+  the final implementation avoids that re-entry and does not poll.
+- A temporary own-app XAML harness used a real PDF at 500x320, 799x400,
+  800x600 and 1000x650 DIP. Opening pen tools, the settings flyout and search,
+  and closing the tools preserved exact document actual/viewport width/height,
+  zoom, horizontal/vertical offsets and origin. Header/card/HUD bounds passed.
+- Both native bars passed compact, near expanded, hysteresis and far compact
+  checks; native body-mouse and hide transitions did not defeat the policy.
+  Compact indicators remained after 3.6 seconds idle, with unchanged PDF layout.
+  Own-app bitmaps show the full rail versus thin indicator. No computer-use
+  tools or OS input injection was used; physical mouse drag/proximity and touch
+  still require device acceptance. Artifacts: `artifacts/overlay-proximity-qa/`.
+- Temporary harness code is removed before the final Debug build/layout sync
+  and Store Release build. Localization, text-worker, zoom and startup checks pass.
+  This revision supersedes the earlier wrapped annotation row and fully automatic
+  scrollbar visibility descriptions below.
+
+## Supplied glossy PDF logo — 2026-10-14
+
+- The supplied PNG is preserved byte-for-byte in `Branding/LogoSource.png`;
+  SHA-256 matches the original Downloads file. Its background is transparent.
+  Assets use an alpha-bounded crop with a 13-pixel source bleed margin, centered
+  and resized without distorting the drawing. Native source/small/tile PNGs
+  were visually inspected.
+- Generated 67 transparent assets: app/tile/Store/splash at 100/125/150/200/400%
+  and 14 exact app-icon sizes from 16 to 256 pixels, each with default, unplated
+  and light-unplated forms. Both architectures use the shared qualified assets;
+  manifest virtual base references are retained. The empty-page logo is updated.
+- The large tile PNGs initially exceeded SDK-14393's 200-KiB limit. Lossless
+  refiltering/compression reduces them below the limit. Decoded RGBA pixel hashes
+  match before/after compression; there is no color quantization. Splash uses
+  the same lossless optimization. The generator retains this compression step.
+- x64 Debug package build passes; new assets are synchronized to the original
+  F5 layout and the obsolete five unqualified preview assets are removed there.
+  Store Release is rebuilt with the new artwork. No Explorer cache reset,
+  computer-use tools or new app registration is used.
+
+## Store identity and four language resources — 2026-10-14
+
+- Both canonical manifests use `BenLi06.uwPDF-LitePDFViewer`, publisher
+  `CN=FC1FF585-22D6-4DFB-97E0-9D22B6842CC6`, and `BenLi06` display name.
+  `StoreIdentity.json` records the supplied PFN, SID and Store ID without the
+  pasted trailing whitespace/entities. Windows SID derivation matches the PFN.
+- Release uses Store identity and no local signature. Debug generates its
+  manifest under `obj/`, preserving the original development identity and signing
+  certificate for F5. This avoids a certificate-subject mismatch and a new local
+  app registration/data container. `/p:UseStoreIdentity` explicitly selects either.
+- Simplified Chinese (`zh-Hans`), Traditional Chinese (`zh-Hant`), English
+  (`en-US`, fallback), and Japanese (`ja-JP`) each have 165 matching RESW entries.
+  XAML uses native x:Uid, including tooltip/accessibility attached properties;
+  code uses ResourceLoader. Search status, menus, save/unsaved/error feedback,
+  accessibility names and package display/description/file-type strings are
+  localized. There is no production language override or manual regional mapping.
+- A temporary own-app harness launched a fresh process per locale with a
+  nonpersistent MRT language qualifier. Native XAML, tooltip, accessibility,
+  code and pen flyout checks passed for zh-CN, zh-TW, zh-HK, en-US, en-GB and
+  ja-JP; fr-FR fell back to English. Search read the real 17-match PDF and showed
+  the localized fourth-result count. At 500x320 DIP, search/control bounds and
+  the pen/HUD layout remained usable. Own-app bitmaps were inspected. Artifacts:
+  `artifacts/localization-qa/`. No computer-use tools or OS input injection used.
+- x64 Release completed .NET Native compilation and produced an unsigned Store
+  AppX under `artifacts/store-packages/x64/`. Its manifest declares all four
+  languages and the Store identity; the compiled PRI map uses the Store name and
+  contains all language candidates. Baseline 14393 and native component package
+  checks pass. No Store upload, Store installation or ARM64 rebuild was performed.
+- Resource coverage/placeholders, search workers, search animation, startup,
+  zoom and keyboard regressions pass. The temporary harness is removed before
+  the final Debug build and original F5 layout synchronization.
+
+## Native scrollbars, HUD anchoring and search refinement — 2026-10-13
+
+- This working-tree revision supersedes the custom touch scrollbar described
+  below and shipped in the earlier 1.0.9.0 / 6306c23 test archive. The user chose
+  native scrollbars and direct finger panning on the document. Both scrollers
+  retain the system templates and indicator/input behavior; custom pointer
+  capture, drag math and templates are removed. No Slider replacement is used.
+- References inspected: [Toolkit UWP sample styles](https://github.com/CommunityToolkit/WindowsCommunityToolkit/blob/main/Microsoft.Toolkit.Uwp.SampleApp/Styles/Generic.xaml),
+  [Toolkit smooth scrolling](https://github.com/CommunityToolkit/WindowsCommunityToolkit/blob/rel/7.1.0/Microsoft.Toolkit.Uwp.UI/Extensions/ListViewBase/ListViewExtensions.SmoothScrollIntoView.cs),
+  and [Microsoft's UWP scrollbar controller](https://github.com/microsoft/microsoft-ui-xaml/blob/v2.8.6/dev/ScrollView/ScrollBarController.cpp).
+  These inform use of native controls and animated ChangeView completion;
+  they do not add a WinUI dependency or change the SDK-14393 baseline.
+- MainChrome has an Auto command row and a remaining-space document row.
+  The HUD and its reveal surface span the window root, independently of the
+  annotation row. Search uses a 360-DIP bounded panel, 12-DIP padding,
+  aligned 32-DIP native input/actions, 8-DIP group/status gaps and a wrapping
+  status row. The count is also announced as a polite accessibility live region.
+- Search navigation submits a single animated native ChangeView to the match,
+  preserving zoom. The old preliminary page-top jump/refit is removed. Navigation
+  waits for the final ViewChanged; equal/clamped targets, cancellation, rejected
+  requests and a missing-event timeout do not retain the temporary handler.
+- A temporary own-app XAML harness used a real 17-match PDF. At 500x320,
+  approximately 799x400, 800x600 and 1000x650 DIP, toolbar wrapping changed
+  between 88 and 44 DIP while HUD bounds remained inside the root, with a
+  12-DIP bottom margin and unchanged Y across annotation opening/closing.
+  Test root sizes were constrained to the actual window; window bounds also
+  matched these requests within pixel rounding. Search action/input alignment,
+  padding and panel bounds passed. Both scrollbars measured the native 12 DIP
+  and had no authored Style. Own-app control bitmaps were inspected.
+- Animated navigation to 第4/17个 produced 24 intermediate ViewChanged events
+  and a final event. Next/previous, both wraps, rotated glyph mask alignment,
+  unchanged 80% zoom, no annotation dirtying and search cleanup passed.
+  Reports/bitmaps: `artifacts/refined-ui-qa/`. No computer-use tools, OS input
+  injection or physical touch acceptance were performed.
+- Search-scroll, text-worker, zoom, startup and keyboard regressions pass.
+  Temporary harness code is removed before the production Debug build and sync
+  to the original F5 layout. The earlier Release archive is a separate snapshot.
+
 ## Release test package 1.0.9.0 — 2026-10-13
 
 - The x64 Release app completed .NET Native compilation and signed AppX
@@ -775,3 +909,47 @@ hashes are historical and do not describe the final application packages.
 - Text extraction/annotation-writer bridge migration, live XAML/monitor/input
   acceptance, scrolling white-page/latency and total-process memory measurements,
   old-device runtime and current VS graph collection remain required.
+
+## 2026-10-15 — ink selection, save history, pen selection and Windows OCR
+
+- `scripts/Test-ReaderEditing.ps1` compiles a temporary in-process QA entry point,
+  uses independent generated PDF fixtures, runs the native Windows APIs, then
+  restores production launch/project source, rebuilds and synchronizes the
+  existing Debug layout. It neither installs a package nor uses computer use,
+  UI Automation, desktop screenshots or injected pointer/keyboard input.
+- Native x64 QA passed rectangular selection through `InkStrokeContainer`, a
+  padded drag target for thin ink, moving transforms, cancel restoration, undo
+  without deleting selected strokes, editable ISF persistence, original/saved
+  snapshots, native PDF preview of embedded ink and restoration of the original
+  PDF plus sidecars. A missing snapshot PDF forced the restore error path: the
+  original PDF bytes and editable ink survived, the reader reloaded, and input
+  was re-enabled. Snapshot ownership is checked against the current document.
+- Native text quad hit testing and pen tolerance passed at 64/80/100/160%; two
+  selection handles retain screen-space sizing and disable system manipulation
+  on the handle itself. Fingers can still pan the document outside handles.
+- Actual `Windows.Media.Ocr` recognized the raster-only two-page fixture. Native
+  extraction confirmed the fixture has no PDF text; automatic OCR fallback,
+  normalized word boxes, selection and complete animated search (2 matches)
+  passed. This host has en-US, ja, zh-Hans-CN and zh-Hant-HK OCR engines; the
+  raster recognition acceptance test uses English. Recognition remains offline.
+- Portable production-source text worker tests now cover native text bypassing
+  OCR, empty-page fallback, explicit OCR overrides, cancellation/disposal during
+  recognition and gate recovery. Copying OCR words with geometry-free spaces
+  and line breaks is checked against the production selection methods. Search,
+  animated scrolling, keyboard and zoom checks also pass.
+- The resource validator passes 200 corresponding entries in zh-Hans, zh-Hant,
+  en-US and ja-JP. New menus/dialogs use native UWP controls, the page's Light
+  theme and bounded native ScrollViewers; new ink selection uses Microsoft's
+  Segoe MDL2 Assets Marquee glyph and stays in More to preserve toolbar width.
+- Final production x64 Debug and local signed .NET Native Release 1.0.11.0
+  builds pass. Both retain local development identity for testing and the
+  original F5 path; canonical manifests retain the supplied Store identity.
+  The test package passes the 14393 minimum/target check and exact six native
+  activation registrations/DLL hashes. Signature, four resource languages and
+  all 67 logo assets were checked. Package/archive hashes and production source
+  hashes are recorded next to the test ZIP in `artifacts/releases`.
+- Reports, build logs and native control renderings are in
+  `artifacts/reader-editing-qa`; physical barrel-button behavior, touchscreen
+  operation and pen selection feel still require hardware acceptance. The
+  tests do not claim physical input coverage. No test launch/compile hook is
+  left in production source and the test package is not automatically installed.

@@ -63,6 +63,7 @@ namespace LitePdfViewer
         private void ShowSearch()
         {
             SearchPanel.Visibility = Visibility.Visible;
+            UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
             UpdateSearchFocus();
             UpdateSearchNavigation();
             SearchTextBox.Focus(FocusState.Programmatic);
@@ -74,6 +75,7 @@ namespace LitePdfViewer
         {
             CancelSearchWork();
             SearchPanel.Visibility = Visibility.Collapsed;
+            UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
             SearchTextBox.Text = string.Empty;
             SearchStatus.Text = string.Empty;
         }
@@ -123,7 +125,7 @@ namespace LitePdfViewer
                 if (restart || !searchIndexComplete || indexedSearchQuery != query || indexedSearchToken != token)
                 {
                     ClearSearchResults();
-                    SearchStatus.Text = "正在查找…";
+                    SearchStatus.Text = L.Get("Searching");
                     var start = (int)pageIndex;
                     var pages = new List<SearchHit>[pageViews.Count];
                     var skipped = 0;
@@ -156,7 +158,7 @@ namespace LitePdfViewer
                             if (version != searchVersion || token != activeRenderToken) return;
                         }
                         SearchStatus.Text = activeSearchHit == null
-                            ? "正在查找：第 " + (index + 1) + " 页" : "正在统计匹配…";
+                            ? L.Format("SearchingPage", index + 1) : L.Get("CountingMatches");
                     }
                     if (version != searchVersion || token != activeRenderToken) return;
                     foreach (var matches in pages) if (matches != null) searchHits.AddRange(matches);
@@ -178,9 +180,9 @@ namespace LitePdfViewer
                     searchHitIndex = next;
                 }
                 SearchStatus.Text = searchHits.Count == 0
-                    ? (searchSkippedPages > 0 ? "未找到匹配文字；" + searchSkippedPages + " 页无法读取文字" : "没有匹配文字")
-                    : "第" + (searchHitIndex + 1) + "/" + searchHits.Count + "个"
-                        + (searchSkippedPages > 0 ? "；" + searchSkippedPages + " 页无法读取文字" : "");
+                    ? (searchSkippedPages > 0 ? L.Format("NoMatchesPartial", searchSkippedPages) : L.Get("NoMatches"))
+                    : L.Format("MatchCount", searchHitIndex + 1, searchHits.Count)
+                        + (searchSkippedPages > 0 ? L.Format("SkippedPages", searchSkippedPages) : "");
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -188,7 +190,7 @@ namespace LitePdfViewer
                 if (version == searchVersion && token == activeRenderToken)
                 {
                     ClearSearchResults();
-                    SearchStatus.Text = "查找失败：" + ex.Message;
+                    SearchStatus.Text = L.Format("SearchFailed", ex.Message);
                 }
             }
             finally
@@ -227,7 +229,9 @@ namespace LitePdfViewer
             var width = view.LayoutWidth; var height = view.LayoutHeight;
             var quads = await Task.Run(() => BuildTextQuads(glyphs, hit.First, hit.Last, width, height, cancellation), cancellation);
             if (version != searchVersion || token != activeRenderToken) return;
-            GoToPage(view.Index);
+            // Prepare the result without a preliminary page-top jump/refit.
+            // The final match position is the only native scrolling request.
+            pendingLayoutAnchor = null;
             ClearTextSelection();
             RealizePage(view);
             view.Glyphs = glyphs;
@@ -239,9 +243,37 @@ namespace LitePdfViewer
             activeSearchHit = hit;
             RedrawTextSelection(view);
             var y = pageTops[(int)view.Index] + glyphs[hit.First].Y * view.LayoutHeight;
-            DocumentScroller.ChangeView(null, Math.Max(0, y * DocumentScroller.ZoomFactor - DocumentScroller.ViewportHeight * 0.25), null, true);
             drawnSearchHit = null;
             UpdateSearchFocus();
+            WakeRenderer();
+            await ScrollToSearchMatchAsync(y * DocumentScroller.ZoomFactor - DocumentScroller.ViewportHeight * 0.25, cancellation);
+        }
+
+        private async Task ScrollToSearchMatchAsync(double target, CancellationToken cancellation)
+        {
+            // Community Toolkit SmoothScrollIntoView uses one animated ChangeView
+            // and waits for the final ViewChanged. Equal/clamped targets must not wait.
+            cancellation.ThrowIfCancellationRequested();
+            target = Math.Max(0, Math.Min(DocumentScroller.ScrollableHeight, target));
+            if (Math.Abs(target - DocumentScroller.VerticalOffset) < 0.5) return;
+            var finished = new TaskCompletionSource<bool>();
+            EventHandler<ScrollViewerViewChangedEventArgs> changed = (sender, args) =>
+            {
+                if (!args.IsIntermediate) finished.TrySetResult(true);
+            };
+            DocumentScroller.ViewChanged += changed;
+            try
+            {
+                using (cancellation.Register(() => finished.TrySetCanceled()))
+                {
+                    if (!DocumentScroller.ChangeView(null, target, null, false)) return;
+                    // A suspended view may not deliver a final event. Do not leave
+                    // search navigation permanently disabled in that case.
+                    await Task.WhenAny(finished.Task, Task.Delay(1500, cancellation));
+                    cancellation.ThrowIfCancellationRequested();
+                }
+            }
+            finally { DocumentScroller.ViewChanged -= changed; }
         }
 
         private void UpdateSearchFocus()
@@ -251,8 +283,8 @@ namespace LitePdfViewer
             SearchFocusLayer.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
             if (!visible) { drawnSearchHit = null; SearchDimPath.Data = SearchMatchPath.Data = null; return; }
             var viewport = new Rect(0, 0, Math.Max(0, DocumentScroller.ViewportWidth), Math.Max(0, DocumentScroller.ViewportHeight));
-            // The system scrollbar can overlay the viewport; keep its controls
-            // outside the dimmed reading area in either native layout mode.
+            if (documentVerticalBar != null && VisualTreeHelper.GetParent(documentVerticalBar) == null)
+                documentVerticalBar = FindNativeVerticalScrollBar(DocumentScroller);
             if (documentVerticalBar != null && documentVerticalBar.Visibility == Visibility.Visible)
                 viewport.Width = Math.Max(0, Math.Min(viewport.Width,
                     documentVerticalBar.TransformToVisual(SearchFocusLayer).TransformPoint(new Point()).X));

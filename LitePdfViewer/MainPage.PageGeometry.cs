@@ -63,7 +63,7 @@ namespace LitePdfViewer
                     var size = page.Size;
                     if (ConfirmPageAspect(view, size.Width > 0 ? size.Height / size.Width : double.NaN))
                         RefreshPageGeometry(view);
-                    if (!view.AspectKnown) throw new InvalidOperationException("无法读取 PDF 页面尺寸。");
+                    if (!view.AspectKnown) throw new InvalidOperationException(L.Get("PageSizeError"));
                 }
             }
             finally { renderGate.Release(); }

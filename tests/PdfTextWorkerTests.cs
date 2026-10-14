@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -73,6 +73,11 @@ namespace LitePdfViewer
         private TextBox SearchTextBox=new TextBox();
         private StatusBox SearchStatus=new StatusBox();
         private List<PageView> pageViews=new List<PageView>();
+        internal string SelectionText(List<TextGlyph> glyphs)
+        {
+            selectedTextPage=new PageView { Glyphs=glyphs }; selectionAnchor=0; selectionEnd=glyphs.Count-1;
+            return SelectedText();
+        }
         public int Shows, LastFirst, LastEnd;
         public uint LastPage;
         public bool Busy { get { return searchBusy; } }
@@ -221,6 +226,50 @@ internal static class Tests
         catch (OperationCanceledException) { }
         Assert(segments.LastRead<1024,"Canceled search mapped the entire page");
     }
+    private static void OcrFallback()
+    {
+        SetPage("native");
+        var recognized=new List<TextGlyph> { new TextGlyph { Text="recognized word", FromOcr=true } };
+        var calls=0;
+        Func<uint,CancellationToken,Task<List<TextGlyph>>> fallback=(index,cancel) => { calls++; return Task.FromResult(recognized); };
+        var source=new PdfTextSource(new Windows.Storage.StorageFile(),fallback);
+        var pending=source.ReadPageAsync(0); ui.Pump(pending);
+        Assert(pending.GetAwaiter().GetResult()[0].Text=="n" && calls==0,"Native text unexpectedly invoked OCR");
+        source.Dispose();
+        SetPage(""); source=new PdfTextSource(new Windows.Storage.StorageFile(),fallback);
+        pending=source.ReadPageAsync(0); ui.Pump(pending);
+        Assert(pending.GetAwaiter().GetResult()==recognized && calls==1,"Empty native text failed OCR fallback");
+        source.Dispose();
+        SetPage("native"); var reads=PdfNative.PdfTextDocument.Reads;
+        source=new PdfTextSource(new Windows.Storage.StorageFile(),fallback,index => index==4);
+        pending=source.ReadPageAsync(4); ui.Pump(pending);
+        Assert(pending.GetAwaiter().GetResult()==recognized && PdfNative.PdfTextDocument.Reads==reads,"Explicit OCR override used native text instead");
+        source.Dispose();
+        var completion=new TaskCompletionSource<List<TextGlyph>>();
+        source=new PdfTextSource(new Windows.Storage.StorageFile(),(index,cancel)=>completion.Task,index=>true);
+        pending=source.ReadPageAsync(0);
+        var dispose=source.DisposeAsync();
+        Assert(!dispose.IsCompleted,"Disposal did not serialize with pending recognition");
+        completion.SetResult(recognized); ui.Pump(pending); ui.Pump(dispose);
+        Assert(pending.IsFaulted && pending.Exception.InnerException is ObjectDisposedException,"Disposed OCR source published stale recognized text");
+        var cancellation=new CancellationTokenSource(); completion=new TaskCompletionSource<List<TextGlyph>>();
+        source=new PdfTextSource(new Windows.Storage.StorageFile(),(index,cancel)=>completion.Task,index=>true);
+        pending=source.ReadPageAsync(0,cancellation.Token); cancellation.Cancel(); completion.SetResult(recognized); ui.Pump(pending);
+        Assert(pending.IsCanceled,"Canceled recognition was published");
+        pending=source.ReadPageAsync(0); ui.Pump(pending);
+        Assert(pending.GetAwaiter().GetResult()==recognized,"Canceled OCR retained the text gate");
+        source.Dispose();
+        var copy=new MainPage();
+        var words=new List<TextGlyph> {
+            new TextGlyph { Text="Windows", X=.05, Y=.2, Width=.1, Height=.02, FromOcr=true },
+            new TextGlyph { Text=" " },
+            new TextGlyph { Text="OCR", X=.17, Y=.2, Width=.05, Height=.02, FromOcr=true },
+            new TextGlyph { Text=" " },
+            new TextGlyph { Text="recognition", X=.25, Y=.2, Width=.2, Height=.02, FromOcr=true },
+            new TextGlyph { Text="\n" },
+            new TextGlyph { Text="Next", X=.05, Y=.25, Width=.1, Height=.02, FromOcr=true } };
+        Assert(copy.SelectionText(words)=="Windows OCR recognition\nNext", "OCR copy invented line breaks around geometry-free separators");
+    }
     private static void Search()
     {
         var reads=PdfNative.PdfTextDocument.Reads;
@@ -285,8 +334,8 @@ internal static class Tests
             Assert(ThreadPool.SetMinThreads(1,1) && ThreadPool.SetMaxThreads(1,1),"Could not configure isolated worker pool");
             Probe.UiThread=Thread.CurrentThread.ManagedThreadId;
             ui=new UiContext(); SynchronizationContext.SetSynchronizationContext(ui);
-            Geometry(); CancellationAndDisposal(); Search();
-            Console.WriteLine("PASS: queued glyph/search workers, UTF-16/quad mapping, bounded cancellation, disposal, cached search/wrap and stale query/file rejection.");
+            Geometry(); CancellationAndDisposal(); OcrFallback(); Search();
+            Console.WriteLine("PASS: queued glyph/search workers, UTF-16/quad mapping, bounded cancellation, disposal, OCR fallback/override/cancellation/disposal, cached search/wrap and stale query/file rejection.");
             return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }

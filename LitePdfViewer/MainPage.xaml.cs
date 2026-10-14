@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -150,6 +150,7 @@ namespace LitePdfViewer
             Unloaded += (sender, args) => { StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
             InitializePreviewWindow();
             InitializeReaderChrome();
+            InitializeNativeScrollBars();
             InitializeSharing();
             try
             {
@@ -228,7 +229,7 @@ namespace LitePdfViewer
             }
             catch (Exception ex)
             {
-                FileNameText.Text = "Could not open PDF: " + ex.Message;
+                FileNameText.Text = L.Format("OpenFailed", ex.Message);
             }
         }
 
@@ -298,6 +299,7 @@ namespace LitePdfViewer
             ResetThumbnails();
 
             currentFile = file;
+            forcedOcrPages.Clear();
             annotationFolder = null;
             FileNameText.Text = file.Name;
             EmptyState.Visibility = Visibility.Collapsed;
@@ -324,7 +326,7 @@ namespace LitePdfViewer
                 thumbsRequested = thumbnailPreference ?? document.PageCount > 1;
                 ThumbsToggle.IsChecked = thumbsRequested;
                 CreatePagePlaceholders(document);
-                textSource = new PdfTextSource(readingFile);
+                textSource = CreateTextSource(readingFile);
                 var cleanup = DeleteTemporaryPdfAsync(previousCopy);
                 // No forced UpdateLayout() here: page positions come from the cached
                 // offset table, so nothing downstream needs a synchronous layout pass
@@ -368,7 +370,7 @@ namespace LitePdfViewer
                 ResetPageViews();
                 ResetThumbnails();
                 EmptyState.Visibility = Visibility.Visible;
-                FileNameText.Text = "Could not open PDF: " + ex.Message;
+                FileNameText.Text = L.Format("OpenFailed", ex.Message);
             }
 
             UpdateUi();
@@ -677,7 +679,7 @@ namespace LitePdfViewer
                 Background = PageFillBrush, BorderBrush = PageBorderBrush,
                 BorderThickness = new Thickness(PageBorderThickness)
             };
-            AutomationProperties.SetName(view.Chrome, "PDF page " + (view.Index + 1).ToString(CultureInfo.InvariantCulture));
+            AutomationProperties.SetName(view.Chrome, L.Format("PageAccessible", view.Index + 1));
             Canvas.SetTop(view.Chrome, pageTops[(int)view.Index]);
             PageStack.Children.Add(view.Chrome);
 
@@ -687,7 +689,7 @@ namespace LitePdfViewer
                 Height = view.LayoutHeight,
                 Stretch = Stretch.Fill
             };
-            AutomationProperties.SetName(image, "Rendered PDF page " + (view.Index + 1).ToString(CultureInfo.InvariantCulture));
+            AutomationProperties.SetName(image, L.Format("RenderedPageAccessible", view.Index + 1));
 
             var inkLayer = new InkCanvas
             {
@@ -706,13 +708,14 @@ namespace LitePdfViewer
             {
                 if (args.Strokes.Count > 0)
                 {
-                    for (var i = 0; i < args.Strokes.Count; i++) view.UndoKinds.Add(false);
+                    for (var i = 0; i < args.Strokes.Count; i++) view.UndoKinds.Add(0);
                     MarkPageDirty(view);
                 }
             };
 
             inkLayer.InkPresenter.StrokesErased += (sender, args) =>
             {
+                ClearInkSelection(); view.InkMoves.Clear(); view.UndoKinds.Clear();
                 if (args.Strokes.Count > 0)
                 {
                     MarkPageDirty(view);
@@ -733,6 +736,7 @@ namespace LitePdfViewer
             view.InkLayer = inkLayer;
             view.Chrome.Child = host;
             AttachTextLayers(view);
+            AttachInkSelection(view);
             AttachDetailLayer(view);
 
             if (view.Source != null)
@@ -757,6 +761,8 @@ namespace LitePdfViewer
             view.DetailImage = null;
             view.DetailLayer = null;
             if (selectedTextPage == view) ClearTextSelection();
+            if (selectedInkPage == view) ClearInkSelection();
+            view.InkSelectionLayer = null;
             view.Glyphs = null;
             view.HighlightLayer = null;
             view.SelectionLayer = null;
@@ -784,6 +790,7 @@ namespace LitePdfViewer
             if (view.Strokes != null) view.Strokes.Clear();
             view.Strokes = null;
             view.Highlights.Clear();
+            view.UndoKinds.Clear(); view.InkMoves.Clear();
             view.InkLoaded = false;
             view.HighlightsLoaded = false;
         }
@@ -840,6 +847,7 @@ namespace LitePdfViewer
             pendingLayoutAnchor = null;
             fitReferencePage = 0;
             ClearTextSelection();
+            ClearInkSelection();
             if (textSource != null) { textSource.Dispose(); textSource = null; }
             for (var i = realizedPages.Count - 1; i >= 0; i--) VirtualizePage(pageViews[realizedPages[i]]);
             foreach (var view in pageViews)
@@ -1801,7 +1809,7 @@ namespace LitePdfViewer
 
             if (SaveButton != null)
             {
-                ToolTipService.SetToolTip(SaveButton, dirty ? "保存批注 (Ctrl+S) *" : "已保存 (Ctrl+S)");
+                ToolTipService.SetToolTip(SaveButton, dirty ? L.Get("SaveDirtyTip") : L.Get("SavedTip"));
             }
 
             if (FileNameText != null && currentFile != null)
@@ -1828,12 +1836,13 @@ namespace LitePdfViewer
                 await SaveCurrentAnnotationsAsync();
                 if (token != activeRenderToken) return false;
                 ShowSaveFeedback();
+                if (historyWarning != null) await new Windows.UI.Popups.MessageDialog(historyWarning, L.Get("HistoryTitle")).ShowAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 if (token != activeRenderToken) return false;
-                var errorDialog = new Windows.UI.Popups.MessageDialog("保存失败: " + ex.Message, "错误");
+                var errorDialog = new Windows.UI.Popups.MessageDialog(L.Format("SaveFailed", ex.Message), L.Get("ErrorTitle"));
                 await errorDialog.ShowAsync();
                 return false;
             }
@@ -1878,14 +1887,14 @@ namespace LitePdfViewer
             sb.Children.Add(animY);
             sb.Begin();
 
-            ToolTipService.SetToolTip(SaveButton, "已保存 ✓");
+            ToolTipService.SetToolTip(SaveButton, L.Get("SavedFeedback"));
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             timer.Tick += (s, e) =>
             {
                 timer.Stop();
                 if (SaveButton != null)
                 {
-                    ToolTipService.SetToolTip(SaveButton, HasUnsavedChanges() ? "保存批注 (Ctrl+S) *" : "已保存 (Ctrl+S)");
+                    ToolTipService.SetToolTip(SaveButton, HasUnsavedChanges() ? L.Get("SaveDirtyTip") : L.Get("SavedTip"));
                 }
             };
             timer.Start();
@@ -1903,13 +1912,13 @@ namespace LitePdfViewer
             {
                 var dialog = new ContentDialog
                 {
-                    Title = "未保存的更改"
+                    Title = L.Get("UnsavedTitle")
                 };
 
                 var panel = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
                 var text = new TextBlock
                 {
-                    Text = "当前文档有未保存的墨迹批注。是否保存更改？",
+                    Text = L.Get("UnsavedPrompt"),
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 0, 0, 24),
                     FontSize = 14
@@ -1924,7 +1933,7 @@ namespace LitePdfViewer
 
                 var saveBtn = new Button
                 {
-                    Content = "保存",
+                    Content = L.Get("Save"),
                     MinWidth = 76,
                     Margin = new Thickness(0, 0, 8, 0),
                     Background = new SolidColorBrush(Color.FromArgb(255, 0, 120, 215)),
@@ -1932,13 +1941,13 @@ namespace LitePdfViewer
                 };
                 var dontSaveBtn = new Button
                 {
-                    Content = "不保存",
+                    Content = L.Get("DontSave"),
                     MinWidth = 76,
                     Margin = new Thickness(0, 0, 8, 0)
                 };
                 var cancelBtn = new Button
                 {
-                    Content = "取消",
+                    Content = L.Get("Cancel"),
                     MinWidth = 76
                 };
 
@@ -2118,7 +2127,7 @@ namespace LitePdfViewer
                 try { await LoadTextHighlightsAsync(view, folder, token); }
                 catch (Exception)
                 {
-                    if (view.Chrome != null) AutomationProperties.SetHelpText(view.Chrome, "无法读取已保存的高亮批注");
+                    if (view.Chrome != null) AutomationProperties.SetHelpText(view.Chrome, L.Get("SavedHighlightsUnavailable"));
                 }
             }
             finally
@@ -2282,7 +2291,7 @@ namespace LitePdfViewer
 
                 var capturedColor = color;
                 var colorName = WindowsInkPalette[i];
-                AutomationProperties.SetName(btn, "颜色 " + colorName);
+                AutomationProperties.SetName(btn, L.Format("ColorName", colorName));
                 ToolTipService.SetToolTip(btn, colorName);
                 btn.Click += (s, e) =>
                 {
@@ -2445,7 +2454,9 @@ namespace LitePdfViewer
 
         private void SetInkTool(InkTool tool)
         {
+            ClearInkSelection();
             if (tool != InkTool.None) ClearTextSelection();
+            if (InkSelectButton != null) InkSelectButton.IsChecked = tool == InkTool.InkSelect;
             SetTextCursor(false);
             currentInkTool = tool;
             if (TopSelectButton != null) TopSelectButton.IsChecked = tool == InkTool.None;
@@ -2496,13 +2507,14 @@ namespace LitePdfViewer
             else
             {
                 var types = Windows.UI.Core.CoreInputDeviceTypes.Pen | Windows.UI.Core.CoreInputDeviceTypes.Mouse;
-                if (touchInkingEnabled)
+                if (touchInkingEnabled && currentInkTool != InkTool.InkSelect)
                 {
                     types |= Windows.UI.Core.CoreInputDeviceTypes.Touch;
                 }
                 inkCanvas.InkPresenter.InputDeviceTypes = types;
             }
 
+            inkCanvas.InkPresenter.InputProcessingConfiguration.RightDragAction = InkInputRightDragAction.LeaveUnprocessed;
             inkCanvas.InkPresenter.InputProcessingConfiguration.Mode =
                 currentInkTool == InkTool.Eraser ? InkInputProcessingMode.Erasing :
                 currentInkTool == InkTool.Pen || currentInkTool == InkTool.Highlighter ? InkInputProcessingMode.Inking :
@@ -2557,14 +2569,21 @@ namespace LitePdfViewer
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
-            var view = GetCurrentPageView();
+            var view = selectedInkPage ?? GetCurrentPageView();
             if (view == null || view.IsLoadingInk || view.Strokes == null)
             {
                 return;
             }
 
+            ClearInkSelection();
+            if (view.UndoKinds.Count > 0 && view.UndoKinds[view.UndoKinds.Count - 1] == 2)
+            {
+                view.UndoKinds.RemoveAt(view.UndoKinds.Count - 1);
+                var move = view.InkMoves[view.InkMoves.Count - 1];
+                view.InkMoves.RemoveAt(view.InkMoves.Count - 1); move.Restore(); MarkPageDirty(view); return;
+            }
             var strokes = view.Strokes.GetStrokes();
-            var undoHighlight = view.UndoKinds.Count > 0 ? view.UndoKinds[view.UndoKinds.Count - 1] : strokes.Count == 0;
+            var undoHighlight = view.UndoKinds.Count > 0 ? view.UndoKinds[view.UndoKinds.Count - 1] == 1 : strokes.Count == 0;
             if (view.UndoKinds.Count > 0) view.UndoKinds.RemoveAt(view.UndoKinds.Count - 1);
             if (undoHighlight && view.Highlights.Count > 0)
             {
@@ -2591,10 +2610,13 @@ namespace LitePdfViewer
                 return;
             }
 
+            ClearInkSelection();
             view.Strokes.Clear();
+            view.InkMoves.Clear();
             view.Highlights.Clear();
             view.UndoKinds.Clear();
             if (selectedTextPage == view) ClearTextSelection();
+            if (selectedInkPage == view) ClearInkSelection();
             RedrawTextLayers(view);
             MarkPageDirty(view);
         }
@@ -2603,6 +2625,7 @@ namespace LitePdfViewer
 
         private void DocumentScroller_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            UpdateAnnotationToolbarLayout(e.NewSize.Width);
             UpdatePageCentering();
             UpdateSearchFocus();
             ScheduleRelayout();
@@ -2611,6 +2634,7 @@ namespace LitePdfViewer
 
         private void DocumentSurface_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            SearchPanel.MaxWidth = Math.Max(1, e.NewSize.Width - 24);
             UpdatePageCentering();
             ScheduleRelayout();
             if (DocumentScroller != null)
@@ -2621,6 +2645,9 @@ namespace LitePdfViewer
 
         private void UpdateHudBarResponsive(double availableWidth)
         {
+            // HUD is anchored to the window overlay, independently of the
+            // changing document viewport and wrapped annotation row.
+            if (MainChrome.ActualWidth > 0) availableWidth = MainChrome.ActualWidth;
             if (HudBar != null)
             {
                 HudBar.MaxWidth = Math.Max(260, availableWidth - 24);
@@ -2748,8 +2775,10 @@ namespace LitePdfViewer
             public bool TextFailed { get; set; }
             public bool HighlightsLoaded { get; set; }
             public readonly List<TextHighlight> Highlights = new List<TextHighlight>();
-            // true = text highlight, false = collected ink stroke; newest action first on undo.
-            public readonly List<bool> UndoKinds = new List<bool>();
+            // 0 = collected ink, 1 = text highlight, 2 = moved ink; undo in action order.
+            public readonly List<int> UndoKinds = new List<int>();
+            public Canvas InkSelectionLayer;
+            public readonly List<InkMoveUndo> InkMoves = new List<InkMoveUndo>();
 
             // Dirty strokes survive virtualization; saved offscreen data is released.
             public InkStrokeContainer Strokes { get; set; }
@@ -2796,7 +2825,8 @@ namespace LitePdfViewer
             None,
             Pen,
             Highlighter,
-            Eraser
+            Eraser,
+            InkSelect
         }
 
         private enum SavePromptResult

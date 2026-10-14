@@ -67,7 +67,7 @@ namespace LitePdfViewer
             var button = new Button { Content = stack, Tag = (uint)index, Style = (Style)Resources["ThumbCardStyle"],
                 Width = 94, Height = 148 };
             button.Click += ThumbnailButton_Click;
-            AutomationProperties.SetName(button, "Page thumbnail " + (index + 1).ToString(CultureInfo.InvariantCulture));
+            AutomationProperties.SetName(button, L.Format("ThumbnailAccessible", index + 1));
             Canvas.SetTop(button, index * ThumbnailRowHeight);
             thumbnailItems.Add(index, new ThumbnailItem { Button = button, Card = card, Number = number, Image = image });
             ThumbnailPanel.Children.Add(button);

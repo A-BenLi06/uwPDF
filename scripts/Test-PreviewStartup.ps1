@@ -27,7 +27,8 @@ $productionPath = Join-Path $outputRoot "MainPage.$NegativeControl.production.cs
 ('using System; using System.Threading.Tasks; using Windows.Foundation; using Windows.UI.Core; using Windows.UI.ViewManagement; using Windows.UI.Xaml; using Windows.UI.Xaml.Controls; using Windows.Data.Json; using Windows.Data.Pdf; using Windows.Storage; using PreviewDisplay = PdfNative.PreviewDisplay; namespace LitePdfViewer { public sealed partial class MainPage { ' + $methods + ' } }') |
     Set-Content -LiteralPath $productionPath -Encoding UTF8
 $executable = Join-Path $outputRoot "PdfPreviewStartupTests.$NegativeControl.exe"
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$executable" $productionPath `
+& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe /r:System.Xml.Linq.dll "/out:$executable" $productionPath `
+    (Join-Path $repoRoot 'LitePdfViewer/L.cs') (Join-Path $repoRoot 'tests/ResourceLoaderStub.cs') `
     (Join-Path $repoRoot 'LitePdfViewer/PreviewSizing.cs') `
     (Join-Path $repoRoot 'tests/PdfPreviewStartupTests.cs')
 if ($LASTEXITCODE) { throw 'Production preview startup test compilation failed.' }

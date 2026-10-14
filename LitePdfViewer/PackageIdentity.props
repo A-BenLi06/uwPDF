@@ -1,0 +1,13 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Release is Store-ready; local Debug preserves the existing F5 identity/data. -->
+    <UseStoreIdentity Condition="'$(UseStoreIdentity)' == '' and '$(Configuration)' == 'Release'">true</UseStoreIdentity>
+    <UseStoreIdentity Condition="'$(UseStoreIdentity)' == ''">false</UseStoreIdentity>
+    <StoreAppxManifest Condition="'$(Platform)' != 'ARM64'">Package.appxmanifest</StoreAppxManifest>
+    <StoreAppxManifest Condition="'$(Platform)' == 'ARM64'">Package.ARM64.appxmanifest</StoreAppxManifest>
+    <SelectedAppxManifest Condition="'$(UseStoreIdentity)' == 'true'">$(StoreAppxManifest)</SelectedAppxManifest>
+    <SelectedAppxManifest Condition="'$(UseStoreIdentity)' != 'true'">$(IntermediateOutputPath)Package.Development.appxmanifest</SelectedAppxManifest>
+    <!-- The CN=Ben development certificate cannot sign the Store publisher. -->
+    <AppxPackageSigningEnabled Condition="'$(UseStoreIdentity)' == 'true'">false</AppxPackageSigningEnabled>
+  </PropertyGroup>
+</Project>

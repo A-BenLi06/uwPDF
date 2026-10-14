@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -15,6 +15,7 @@ namespace LitePdfViewer
     internal sealed class TextGlyph
     {
         public string Text;
+        public bool FromOcr;
         // Fractions of the rotated CropBox; no canvas font measurements.
         public double X, Y, Width, Height, Angle;
         public Point TopLeft, TopRight, BottomLeft, BottomRight;
@@ -25,12 +26,14 @@ namespace LitePdfViewer
     internal sealed class PdfTextSource : IDisposable
     {
         private readonly StorageFile file;
+        private readonly Func<uint, CancellationToken, Task<List<TextGlyph>>> fallback;
+        private readonly Func<uint, bool> preferFallback;
         private PdfTextDocument document;
         private Task initialization;
         private bool disposed;
         private readonly SemaphoreSlim textGate = new SemaphoreSlim(1, 1);
 
-        public PdfTextSource(StorageFile file) { this.file = file; }
+        public PdfTextSource(StorageFile file, Func<uint, CancellationToken, Task<List<TextGlyph>>> fallback = null, Func<uint, bool> preferFallback = null) { this.file = file; this.fallback = fallback; this.preferFallback = preferFallback; }
         public bool IsUnavailable { get { return initialization != null && initialization.IsFaulted; } }
 
         private async Task InitializeAsync()
@@ -56,6 +59,13 @@ namespace LitePdfViewer
             try
             {
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
+                if (fallback != null && preferFallback != null && preferFallback(index))
+                {
+                    var recognized = await fallback(index, cancellation);
+                    cancellation.ThrowIfCancellationRequested();
+                    if (disposed) throw new ObjectDisposedException("PdfTextSource");
+                    return recognized;
+                }
                 if (initialization == null) initialization = InitializeAsync();
                 await initialization;
                 cancellation.ThrowIfCancellationRequested();
@@ -70,6 +80,10 @@ namespace LitePdfViewer
                 // queue managed geometry expansion so cached/fast pages cannot
                 // allocate thousands of glyphs on the caller's UI thread.
                 var glyphs = await Task.Run(() => ConvertGlyphs(text, values, cancellation), cancellation);
+                cancellation.ThrowIfCancellationRequested();
+                if (disposed) throw new ObjectDisposedException("PdfTextSource");
+                if (fallback != null && !glyphs.Exists(g => !string.IsNullOrWhiteSpace(g.Text)))
+                    glyphs = await fallback(index, cancellation);
                 cancellation.ThrowIfCancellationRequested();
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 Debug.WriteLine("PDF text: page " + (index + 1) + " " + glyphs.Count + " glyphs " + timer.ElapsedMilliseconds + "ms");

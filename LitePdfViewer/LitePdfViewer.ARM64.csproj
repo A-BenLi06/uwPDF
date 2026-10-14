@@ -13,7 +13,7 @@
     <OutputType>AppContainerExe</OutputType>
     <RootNamespace>LitePdfViewer</RootNamespace>
     <AssemblyName>LitePdfViewer</AssemblyName>
-    <DefaultLanguage>zh-CN</DefaultLanguage>
+    <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -55,11 +55,13 @@
       <Link>PdfNative.Rendering.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <AppxManifest Include="Package.ARM64.appxmanifest" />
     <None Include="LitePdfViewer_TemporaryKey.pfx" />
   </ItemGroup>
   <Import Project="LitePdfViewer.Shared.projitems" />
+  <Import Project="PackageIdentity.props" />
+  <ItemGroup><AppxManifest Include="$(SelectedAppxManifest)" /></ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <Import Project="PackageIdentity.targets" />
   <Target Name="ValidateArm64Platform" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(Platform)'!='ARM64'" Text="This project is the ARM64 UWP build. Use LitePdfViewer.csproj for x86/x64/ARM32." />
   </Target>

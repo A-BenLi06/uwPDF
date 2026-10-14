@@ -1,4 +1,4 @@
-param([ValidateSet('None','UiGlyphs','UiSearch','StaleSearch','ReadingCursor')][string]$NegativeControl='None')
+﻿param([ValidateSet('None','UiGlyphs','UiSearch','StaleSearch','ReadingCursor')][string]$NegativeControl='None')
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path $PSScriptRoot -Parent
 $outputRoot=Join-Path $repoRoot 'artifacts/native-tests/text-workers'
@@ -23,12 +23,19 @@ switch ($NegativeControl) {
         $search=$search.Replace('if (version != searchVersion || token != activeRenderToken) return;', '')
     }
 }
+$selectionSource=(Get-Content (Join-Path $repoRoot 'LitePdfViewer/MainPage.Text.cs') -Raw -Encoding UTF8).Replace("`r`n","`n")
+$copyStart=$selectionSource.IndexOf('        private string SelectedText()')
+$copyEnd=$selectionSource.IndexOf('        private void CopySelectedText()', $copyStart)
+$spacingStart=$selectionSource.IndexOf('        private static void GlyphSpacing(')
+$spacingEnd=$selectionSource.IndexOf('        private void ClearTextSelection()', $spacingStart)
+if ($copyStart -lt 0 -or $copyEnd -lt 0 -or $spacingStart -lt 0 -or $spacingEnd -lt 0) { throw 'Selection method boundaries changed' }
+$search += $selectionSource.Substring($copyStart,$copyEnd-$copyStart) + $selectionSource.Substring($spacingStart,$spacingEnd-$spacingStart)
 $textPath=Join-Path $outputRoot "Text.$NegativeControl.production.cs"
 $searchPath=Join-Path $outputRoot "Search.$NegativeControl.production.cs"
 $text | Set-Content $textPath -Encoding UTF8
-('using System; using System.Collections.Generic; using System.Threading; using System.Threading.Tasks; namespace LitePdfViewer { public sealed partial class MainPage { ' + $search + ' } }') | Set-Content $searchPath -Encoding UTF8
+('using System; using System.Text; using System.Collections.Generic; using System.Threading; using System.Threading.Tasks; namespace LitePdfViewer { public sealed partial class MainPage { ' + $search + ' } }') | Set-Content $searchPath -Encoding UTF8
 $exe=Join-Path $outputRoot "PdfTextWorkerTests.$NegativeControl.exe"
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$exe" $textPath $searchPath (Join-Path $repoRoot 'LitePdfViewer/PdfTextSearch.cs') (Join-Path $repoRoot 'tests/PdfTextWorkerTests.cs')
+& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe /r:System.Xml.Linq.dll "/out:$exe" $textPath $searchPath (Join-Path $repoRoot 'LitePdfViewer/PdfTextSearch.cs') (Join-Path $repoRoot 'LitePdfViewer/L.cs') (Join-Path $repoRoot 'tests/ResourceLoaderStub.cs') (Join-Path $repoRoot 'tests/PdfTextWorkerTests.cs')
 if ($LASTEXITCODE) { throw 'Text worker test compilation failed' }
 & $exe
 if ($LASTEXITCODE) { throw "Text worker tests failed ($NegativeControl)." }

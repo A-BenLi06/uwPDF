@@ -49,9 +49,9 @@ namespace LitePdfViewer
                 requestedShareFile = null;
                 await new ContentDialog
                 {
-                    Title = "无法打开分享面板",
+                    Title = L.Get("SharePanelError"),
                     Content = ex.Message,
-                    PrimaryButtonText = "确定"
+                    PrimaryButtonText = L.Get("Ok")
                 }.ShowAsync();
             }
         }
@@ -62,7 +62,7 @@ namespace LitePdfViewer
             requestedShareFile = null;
             if (file == null)
             {
-                args.Request.FailWithDisplayText("请先打开一个 PDF 文件。");
+                args.Request.FailWithDisplayText(L.Get("OpenPdfFirst"));
                 return;
             }
 
@@ -72,14 +72,14 @@ namespace LitePdfViewer
                 if (file == currentFile) await SaveCurrentAnnotationsAsync();
                 var data = args.Request.Data;
                 data.Properties.Title = file.Name;
-                data.Properties.Description = "包含已保存批注的 PDF。";
+                data.Properties.Description = L.Get("SharedPdfDescription");
                 data.RequestedOperation = DataPackageOperation.Copy;
                 // Share the actual file with brokered read-only access, not its path.
                 data.SetStorageItems(new IStorageItem[] { file }, true);
             }
             catch (Exception)
             {
-                args.Request.FailWithDisplayText("无法保存或分享此 PDF，请重新打开文件后重试。");
+                args.Request.FailWithDisplayText(L.Get("ShareFailed"));
             }
             finally { deferral.Complete(); }
         }

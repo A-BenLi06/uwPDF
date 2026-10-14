@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -25,6 +25,10 @@ namespace LitePdfViewer
         private int selectionAnchor = -1, selectionEnd = -1;
         private uint? selectionPointer;
         private MenuFlyout textMenu;
+        private bool selectionIsPen;
+        private Point selectionLastPoint;
+        private DispatcherTimer selectionScrollTimer;
+        private Point selectionViewportPoint;
         private static readonly Windows.UI.Core.CoreCursor TextCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.IBeam, 0);
         private static readonly Windows.UI.Core.CoreCursor ArrowCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Arrow, 0);
 
@@ -53,8 +57,8 @@ namespace LitePdfViewer
             view.SelectionLayer.PointerPressed += (s, e) => TextPointerPressed(view, e);
             view.SelectionLayer.PointerMoved += (s, e) => TextPointerMoved(view, e);
             view.SelectionLayer.PointerReleased += (s, e) => EndTextDrag(view, e);
-            view.SelectionLayer.PointerCanceled += (s, e) => EndTextDrag(view, e);
-            view.SelectionLayer.PointerCaptureLost += (s, e) => selectionPointer = null;
+            view.SelectionLayer.PointerCanceled += (s, e) => EndTextDrag(view, e, true);
+            view.SelectionLayer.PointerCaptureLost += (s, e) => { if (inkGesturePointer == e.Pointer.PointerId) CancelInkGesture(); selectionPointer = null; StopSelectionScroll(); };
             view.SelectionLayer.PointerExited += (s, e) => SetTextCursor(false);
             view.SelectionLayer.RightTapped += (s, e) => ShowTextMenu(view, e);
             view.SelectionLayer.DoubleTapped += (s, e) =>
@@ -79,57 +83,112 @@ namespace LitePdfViewer
         {
             try
             {
-                var glyphs = await textSource.ReadPageAsync(view.Index);
+                var source = textSource;
+                var glyphs = await source.ReadPageAsync(view.Index);
+                if (source != textSource) return;
                 if (token != activeRenderToken) return;
                 // Evicted text is discarded too, so long documents keep a bounded text cache.
                 if (!view.IsRealized) return;
                 view.Glyphs = glyphs;
-                AutomationProperties.SetHelpText(view.Chrome, glyphs.Count == 0 ? "本页没有可选择的文字" : "拖动选择文字，右键复制或高亮");
+                AutomationProperties.SetHelpText(view.Chrome, glyphs.Count == 0 ? L.Get("NoSelectableText") : L.Get("SelectTextHelp"));
             }
             catch (Exception)
             {
                 if (token == activeRenderToken && view.IsRealized)
                 {
                     view.TextFailed = true;
-                    AutomationProperties.SetHelpText(view.Chrome, "文字层加载失败；仍可预览和手写批注");
+                    AutomationProperties.SetHelpText(view.Chrome, L.Get("TextLayerUnavailable"));
                 }
             }
             finally { view.TextTask = null; }
         }
 
-        private void TextPointerPressed(PageView view, PointerRoutedEventArgs e)
+        private async void TextPointerPressed(PageView view, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(view.SelectionLayer);
-            if (currentInkTool != InkTool.None || point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch ||
-                !point.Properties.IsLeftButtonPressed) return;
-            if (view.Glyphs == null)
+            if (currentInkTool != InkTool.None || point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch) return;
+            if (point.Properties.IsBarrelButtonPressed)
             {
-                var ignored = EnsurePageTextAsync(view, activeRenderToken);
+                if (!view.InkLoaded || view.IsLoadingInk) return;
+                if (view.SelectionLayer.CapturePointer(e.Pointer))
+                { BeginInkGesture(view, point.Position, e.Pointer.PointerId); e.Handled = true; }
                 return;
             }
-            var hit = HitGlyph(view, point.Position, false);
-            ClearTextSelection();
-            if (hit < 0) return;
+            if (!point.Properties.IsLeftButtonPressed) return;
+            ClearInkSelection(); ClearTextSelection();
+            if (!view.SelectionLayer.CapturePointer(e.Pointer)) return;
             selectedTextPage = view;
-            selectionAnchor = selectionEnd = hit;
             selectionPointer = e.Pointer.PointerId;
-            view.SelectionLayer.CapturePointer(e.Pointer);
-            Focus(FocusState.Programmatic);
-            RedrawTextSelection(view);
+            selectionIsPen = point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Pen;
+            selectionLastPoint = point.Position;
+            var start = point.Position; var token = activeRenderToken;
             e.Handled = true;
+            if (view.Glyphs == null) await EnsurePageTextAsync(view, token);
+            if (token != activeRenderToken || selectedTextPage != view || view.SelectionLayer == null) return;
+            var hit = HitGlyph(view, start, selectionIsPen, selectionIsPen ? 8 / DocumentScroller.ZoomFactor : 0);
+            if (hit < 0) { ClearTextSelection(); return; }
+            selectionAnchor = hit;
+            selectionEnd = HitGlyph(view, selectionLastPoint, true);
+            if (selectionEnd < 0) selectionEnd = hit;
+            Focus(FocusState.Programmatic); RedrawTextSelection(view);
         }
 
         private void TextPointerMoved(PageView view, PointerRoutedEventArgs e)
         {
+            if (selectedInkPage == view && inkGesturePointer == e.Pointer.PointerId)
+            { UpdateInkGesture(view, e.GetCurrentPoint(view.SelectionLayer).Position, e.Pointer.PointerId); e.Handled = true; return; }
             if (selectedTextPage != view || selectionPointer != e.Pointer.PointerId)
             {
-                SetTextCursor(HitGlyph(view, e.GetCurrentPoint(view.SelectionLayer).Position, false) >= 0);
+                if (e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+                    SetTextCursor(HitGlyph(view, e.GetCurrentPoint(view.SelectionLayer).Position, false) >= 0);
                 return;
             }
-            var hit = HitGlyph(view, e.GetCurrentPoint(view.SelectionLayer).Position, true);
-            if (hit >= 0 && hit != selectionEnd) { selectionEnd = hit; RedrawTextSelection(view); }
+            selectionLastPoint = e.GetCurrentPoint(view.SelectionLayer).Position;
+            selectionViewportPoint = e.GetCurrentPoint(DocumentScroller).Position;
+            UpdateSelectionEnd(view, selectionLastPoint);
+            UpdateSelectionScroll();
             e.Handled = true;
         }
+        private void UpdateSelectionEnd(PageView view, Point point)
+        {
+            if (selectionAnchor < 0) return;
+            var hit = HitGlyph(view, point, true);
+            // A small screen-space dead band keeps a pen grazing the space
+            // between lines from flipping the endpoint back and forth.
+            if (selectionIsPen && hit >= 0 && selectionEnd >= 0 && hit != selectionEnd)
+            {
+                var old = view.Glyphs[selectionEnd]; var next = view.Glyphs[hit];
+                double line, gap, height;
+                GlyphSpacing(view, old, next, out line, out gap, out height);
+                var margin = 3 / DocumentScroller.ZoomFactor;
+                var insideNext = ContainsQuad(new TextQuad { A = next.TopLeft, B = next.TopRight, C = next.BottomLeft, D = next.BottomRight }, new Point(point.X / view.LayoutWidth, point.Y / view.LayoutHeight));
+                if (!insideNext && line > height * 0.6 && point.Y >= old.Y * view.LayoutHeight - margin &&
+                    point.Y <= (old.Y + old.Height) * view.LayoutHeight + margin) hit = selectionEnd;
+            }
+            if (hit >= 0 && hit != selectionEnd) { selectionEnd = hit; RedrawTextSelection(view); }
+        }
+        private void UpdateSelectionScroll()
+        {
+            if (selectionScrollTimer == null)
+            {
+                selectionScrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                selectionScrollTimer.Tick += (s, e) =>
+                {
+                    var view = selectedTextPage;
+                    if (selectionPointer == null || view == null || view.SelectionLayer == null) { StopSelectionScroll(); return; }
+                    var height = DocumentScroller.ViewportHeight;
+                    var speed = selectionViewportPoint.Y < 28 ? -Math.Min(14, (28 - selectionViewportPoint.Y) * 0.35) :
+                        selectionViewportPoint.Y > height - 28 ? Math.Min(14, (selectionViewportPoint.Y - height + 28) * 0.35) : 0;
+                    if (speed == 0) return;
+                    var before = DocumentScroller.VerticalOffset;
+                    DocumentScroller.ChangeView(null, Math.Max(0, Math.Min(DocumentScroller.ScrollableHeight, before + speed)), null, true);
+                    var p = DocumentScroller.TransformToVisual(view.SelectionLayer).TransformPoint(selectionViewportPoint);
+                    selectionLastPoint = p; UpdateSelectionEnd(view, p);
+                };
+            }
+            if (!selectionScrollTimer.IsEnabled) selectionScrollTimer.Start();
+        }
+        private void StopSelectionScroll() { if (selectionScrollTimer != null) selectionScrollTimer.Stop(); }
 
         private static void SetTextCursor(bool overText)
         {
@@ -137,31 +196,49 @@ namespace LitePdfViewer
             if (Window.Current.CoreWindow.PointerCursor != cursor) Window.Current.CoreWindow.PointerCursor = cursor;
         }
 
-        private void EndTextDrag(PageView view, PointerRoutedEventArgs e)
+        private void EndTextDrag(PageView view, PointerRoutedEventArgs e, bool canceled = false)
         {
+            if (selectedInkPage == view && inkGesturePointer == e.Pointer.PointerId)
+            {
+                if (canceled) CancelInkGesture();
+                else FinishInkGesture(view, e.GetCurrentPoint(view.SelectionLayer).Position, e.Pointer.PointerId);
+                view.SelectionLayer.ReleasePointerCapture(e.Pointer); e.Handled = true; return;
+            }
             if (selectionPointer != e.Pointer.PointerId) return;
-            selectionPointer = null;
+            if (canceled) { ClearTextSelection(); e.Handled = true; return; }
+            selectionPointer = null; StopSelectionScroll();
             view.SelectionLayer.ReleasePointerCapture(e.Pointer);
+            RedrawTextSelection(view);
             e.Handled = true;
         }
 
-        private static int HitGlyph(PageView view, Point point, bool nearest)
+        private static int HitGlyph(PageView view, Point point, bool nearest, double maximumDistance = double.PositiveInfinity)
         {
             if (view.Glyphs == null) return -1;
-            var x = point.X / view.LayoutWidth;
-            var y = point.Y / view.LayoutHeight;
-            var best = -1;
-            var distance = double.MaxValue;
+            var best = -1; var distance = double.MaxValue;
             for (var i = 0; i < view.Glyphs.Count; i++)
             {
                 var g = view.Glyphs[i];
-                if (g.Text == "\n" || g.Width <= 0 || g.Height <= 0) continue;
-                if (ContainsQuad(new TextQuad { A = g.TopLeft, B = g.TopRight, C = g.BottomLeft, D = g.BottomRight }, new Point(x, y))) return i;
+                if (string.IsNullOrWhiteSpace(g.Text) || g.Width <= 0 || g.Height <= 0) continue;
+                var ax = Math.Max(g.X * view.LayoutWidth - point.X, Math.Max(0, point.X - (g.X + g.Width) * view.LayoutWidth));
+                var ay = Math.Max(g.Y * view.LayoutHeight - point.Y, Math.Max(0, point.Y - (g.Y + g.Height) * view.LayoutHeight));
+                if (ax * ax + ay * ay > Math.Min(distance, maximumDistance * maximumDistance)) continue;
+                var q = new TextQuad { A = g.TopLeft, B = g.TopRight, C = g.BottomLeft, D = g.BottomRight };
+                if (ContainsQuad(q, new Point(point.X / view.LayoutWidth, point.Y / view.LayoutHeight))) return i;
                 if (!nearest) continue;
-                var dx = Math.Max(g.X - x, Math.Max(0, x - g.X - g.Width)) * view.LayoutWidth;
-                var dy = Math.Max(g.Y - y, Math.Max(0, y - g.Y - g.Height)) * view.LayoutHeight;
-                var d = dx * dx + dy * dy;
-                if (d < distance) { best = i; distance = d; }
+                var d = double.MaxValue;
+                for (var edge = 0; edge < 4; edge++)
+                {
+                    var p1 = QuadPoint(q, edge); var p2 = QuadPoint(q, (edge + 1) % 4);
+                    var a = new Point(p1.X * view.LayoutWidth, p1.Y * view.LayoutHeight);
+                    var b = new Point(p2.X * view.LayoutWidth, p2.Y * view.LayoutHeight);
+                    var dx = b.X - a.X; var dy = b.Y - a.Y;
+                    var length = dx * dx + dy * dy;
+                    var t = length == 0 ? 0 : Math.Max(0, Math.Min(1, ((point.X - a.X) * dx + (point.Y - a.Y) * dy) / length));
+                    var px = point.X - a.X - t * dx; var py = point.Y - a.Y - t * dy;
+                    d = Math.Min(d, px * px + py * py);
+                }
+                if (d <= maximumDistance * maximumDistance && d < distance) { best = i; distance = d; }
             }
             return best;
         }
@@ -203,18 +280,19 @@ namespace LitePdfViewer
             selectedTextPage = null;
             selectionPointer = null;
             selectionAnchor = selectionEnd = -1;
+            StopSelectionScroll();
             if (old != null && old.SelectionLayer != null) old.SelectionLayer.Children.Clear();
         }
 
         private string SelectedText()
         {
-            if (selectedTextPage == null || selectedTextPage.Glyphs == null) return string.Empty;
+            if (selectedTextPage == null || selectedTextPage.Glyphs == null || selectionAnchor < 0) return string.Empty;
             var text = new StringBuilder();
             TextGlyph previous = null;
             for (var i = Math.Min(selectionAnchor, selectionEnd); i <= Math.Max(selectionAnchor, selectionEnd); i++)
             {
                 var g = selectedTextPage.Glyphs[i];
-                if (previous != null && g.Text != "\n" && previous.Text != "\n")
+                if (previous != null && !string.IsNullOrWhiteSpace(g.Text) && !string.IsNullOrWhiteSpace(previous.Text))
                 {
                     double lineOffset, gap, height;
                     GlyphSpacing(selectedTextPage, previous, g, out lineOffset, out gap, out height);
@@ -235,7 +313,7 @@ namespace LitePdfViewer
             var content = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
             content.SetText(text);
             try { Clipboard.SetContent(content); }
-            catch (Exception) { ToolTipService.SetToolTip(selectedTextPage.Chrome, "复制失败，请重试"); }
+            catch (Exception) { ToolTipService.SetToolTip(selectedTextPage.Chrome, L.Get("CopyFailed")); }
         }
 
         private void SelectAllPageText(PageView view)
@@ -250,33 +328,33 @@ namespace LitePdfViewer
 
         private void ShowTextMenu(PageView view, RightTappedRoutedEventArgs e)
         {
-            if (currentInkTool != InkTool.None) return;
+            if (currentInkTool != InkTool.None || selectedInkPage == view) return;
             var point = e.GetPosition(view.SelectionLayer);
             var hit = HitGlyph(view, point, false);
             if (hit >= 0 && (selectedTextPage != view || hit < Math.Min(selectionAnchor, selectionEnd) || hit > Math.Max(selectionAnchor, selectionEnd))) SelectWord(view, hit);
             if (selectedTextPage != null && selectedTextPage != view) ClearTextSelection();
             var hasSelection = selectedTextPage == view && selectionAnchor >= 0;
             var menu = new MenuFlyout();
-            AddTextCommand(menu, "复制 (Ctrl+C)", hasSelection, CopySelectedText);
-            AddTextCommand(menu, "高亮选中文字", hasSelection && view.HighlightsLoaded, () => HighlightSelection(view));
-            AddTextCommand(menu, "全选本页文字 (Ctrl+A)", view.Glyphs != null && view.Glyphs.Count > 0, () => SelectAllPageText(view));
+            AddTextCommand(menu, L.Get("CopyCommand"), hasSelection, CopySelectedText);
+            AddTextCommand(menu, L.Get("HighlightSelection"), hasSelection && view.HighlightsLoaded, () => HighlightSelection(view));
+            AddTextCommand(menu, L.Get("SelectAllPage"), view.Glyphs != null && view.Glyphs.Count > 0, () => SelectAllPageText(view));
             var highlight = FindHighlight(view, point);
             if (highlight != null)
             {
-                AddTextCommand(menu, "删除此高亮", true, () =>
+                AddTextCommand(menu, L.Get("DeleteHighlight"), true, () =>
                 {
                     view.Highlights.Remove(highlight);
-                    view.UndoKinds.Clear();
+                    view.UndoKinds.Clear(); view.InkMoves.Clear();
                     MarkPageDirty(view);
                     RedrawTextLayers(view);
                 });
             }
-            AddTextCommand(menu, "取消选择 (Esc)", hasSelection, ClearTextSelection);
+            AddTextCommand(menu, L.Get("Deselect"), hasSelection, ClearTextSelection);
             if (view.Glyphs == null || view.Glyphs.Count == 0)
             {
                 menu.Items.Add(new MenuFlyoutSeparator());
-                menu.Items.Add(new MenuFlyoutItem { Text = view.TextFailed ? "文字层加载失败" :
-                    view.Glyphs == null ? "正在加载文字…" : "本页没有可选择的文字", IsEnabled = false });
+                menu.Items.Add(new MenuFlyoutItem { Text = view.TextFailed ? L.Get("TextLayerFailed") :
+                    view.Glyphs == null ? L.Get("LoadingText") : L.Get("NoSelectableText"), IsEnabled = false });
             }
             if (textMenu != null) textMenu.Hide();
             textMenu = menu;
@@ -304,13 +382,14 @@ namespace LitePdfViewer
             return null;
         }
 
+        private static Point QuadPoint(TextQuad q, int i) { return i == 0 ? q.A : i == 1 ? q.B : i == 2 ? q.D : q.C; }
+
         private static bool ContainsQuad(TextQuad q, Point p)
         {
-            var points = new[] { q.A, q.B, q.D, q.C };
             double sign = 0;
             for (var i = 0; i < 4; i++)
             {
-                var a = points[i]; var b = points[(i + 1) % 4];
+                var a = QuadPoint(q, i); var b = QuadPoint(q, (i + 1) % 4);
                 var cross = (b.X - a.X) * (p.Y - a.Y) - (b.Y - a.Y) * (p.X - a.X);
                 if (Math.Abs(cross) < 1e-12) continue;
                 if (sign != 0 && sign * cross < 0) return false;
@@ -321,7 +400,7 @@ namespace LitePdfViewer
 
         private List<TextQuad> SelectionQuads(PageView view)
         {
-            if (selectedTextPage != view || view.Glyphs == null) return new List<TextQuad>();
+            if (selectedTextPage != view || view.Glyphs == null || selectionAnchor < 0 || selectionEnd < 0) return new List<TextQuad>();
             return BuildTextQuads(view.Glyphs, Math.Min(selectionAnchor, selectionEnd), Math.Max(selectionAnchor, selectionEnd),
                 view.LayoutWidth, view.LayoutHeight);
         }
@@ -386,7 +465,7 @@ namespace LitePdfViewer
             var highlight = new TextHighlight { Color = highlighterColor };
             highlight.Quads.AddRange(quads);
             view.Highlights.Add(highlight);
-            view.UndoKinds.Add(true);
+            view.UndoKinds.Add(1);
             MarkPageDirty(view);
             ClearTextSelection();
             RedrawTextLayers(view);
@@ -414,6 +493,12 @@ namespace LitePdfViewer
             view.SelectionLayer.Children.Clear();
             if (IsSearchSelection()) return;
             PaintQuads(view.SelectionLayer, view, SelectionQuads(view), Color.FromArgb(255, 0, 120, 215), 0.3);
+            if (selectedTextPage == view && view.Glyphs != null && selectionAnchor >= 0 && selectionPointer == null)
+            {
+                var first = Math.Min(selectionAnchor, selectionEnd); var last = Math.Max(selectionAnchor, selectionEnd);
+                AddTextHandle(view, view.Glyphs[first].BottomLeft, first, last);
+                AddTextHandle(view, view.Glyphs[last].BottomRight, last, first);
+            }
         }
 
         private static void PaintQuads(Canvas canvas, PageView view, List<TextQuad> quads, Color color, double opacity)
