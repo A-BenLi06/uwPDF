@@ -44,6 +44,9 @@ namespace LitePdfViewer
         private const double PageBorderThickness = 1;
         private object pendingLayoutAnchor;
         private object selectedTextPage;
+        private object selectedInkPage;
+        private uint? inkGesturePointer;
+        private void DrawInkSelection(object view) { }
         private uint? selectionPointer;
         private void RedrawSelectionPages() { }
         private bool fitPageToViewport;

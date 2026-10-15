@@ -1070,3 +1070,37 @@ hashes are historical and do not describe the final application packages.
   The main project's AnyCPU design-time native reference maps to x86 while
   real x64 remains x64. MSBuild 14 design probes pass for both, and production
   x64 Debug builds retain only the existing Share deprecation warnings.
+
+### Pen lasso and affine editing (2026-10-15)
+
+- Fixed the overlay's mouse-left-button filter excluding pen tip/barrel contacts.
+  Explicit lasso now has one XAML capture owner, with the underlying InkPresenter
+  hit testing/input disabled for that tool. Drawing tools retain the native
+  LeaveUnprocessed barrel route; hover/eraser/touch never start a lasso.
+- Followed Microsoft's UWP ScrollViewer pen-interaction guidance: disable System
+  manipulation on the content and selection layer during the gesture, then
+  restore the previous content mode on release, cancel, lost capture, tool change
+  or save. Touch document panning remains available outside selection gestures.
+  Reference: https://learn.microsoft.com/en-us/uwp/api/windows.ui.xaml.controls.scrollviewer#pen-interaction
+- Added an oriented blue outline with a white halo, pale selection fill, eight
+  28-DIP hit targets with 10-DIP visible grips, and a separate 24-DIP rotation
+  grip using Microsoft's MDL2 Rotate glyph. Grip sizes remain stable at document
+  zoom. The minimum frame leaves room to move thin strokes between the grips.
+- Corners scale proportionally, edges stretch, and the rotation grip rotates the
+  group around its center. Shift snaps rotation to 15-degree increments. Move,
+  resize and rotate compose from the gesture's original native PointTransforms;
+  positive bounded scales prevent collapsing/flipping the frame. One gesture is
+  one undo action; a tap adds none. Esc cancels a live transform and Ctrl+Z undoes
+  a selected transform. All four UI languages include the handle names/help.
+- Native in-process x64 QA exercises group lasso, eight resize/stretch directions,
+  shrink, 90-degree rotation, move/scale after rotation, positive-scale limits,
+  unchanged outside ink, exact cancellation/undo and fixed grip sizes at
+  64/100/400%. Native hit testing reaches the rotation grip. Save and snapshot
+  restore preserve the composed stroke transform; PDF rendering checks its ink
+  footprint against the transformed native bounds. Existing OCR, cross-page
+  selection and save-recovery regressions also pass. Production x64 Debug builds
+  retain the two pre-existing Share deprecation warnings.
+- These are in-process application/native API tests, without desktop automation
+  or synthetic hardware events. Actual Surface pen tip/barrel capture and touch
+  panning still require device acceptance. RenderTargetBitmap previews inspect
+  the XAML selection chrome; native InkCanvas ink is checked through PDF rendering.

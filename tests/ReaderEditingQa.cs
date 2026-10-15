@@ -38,6 +38,15 @@ namespace LitePdfViewer
                 SetInkTool(InkTool.Pen);
                 QaEditingAssert(view.InkLayer.InkPresenter.InputProcessingConfiguration.RightDragAction == InkInputRightDragAction.LeaveUnprocessed, "Native barrel routing");
                 SetInkTool(InkTool.InkSelect);
+                QaEditingAssert(!view.InkLayer.IsHitTestVisible && view.InkLayer.InkPresenter.InputDeviceTypes==Windows.UI.Core.CoreInputDeviceTypes.None,
+                    "Explicit lasso has no competing native pen capture");
+                QaEditingAssert(AcceptInkSelectionPointer(Windows.Devices.Input.PointerDeviceType.Pen,true,false,false,false) &&
+                    AcceptInkSelectionPointer(Windows.Devices.Input.PointerDeviceType.Pen,true,false,true,false) &&
+                    AcceptInkSelectionPointer(Windows.Devices.Input.PointerDeviceType.Mouse,false,true,false,false) &&
+                    !AcceptInkSelectionPointer(Windows.Devices.Input.PointerDeviceType.Touch,true,true,false,false) &&
+                    !AcceptInkSelectionPointer(Windows.Devices.Input.PointerDeviceType.Pen,false,false,false,false) &&
+                    !AcceptInkSelectionPointer(Windows.Devices.Input.PointerDeviceType.Pen,true,false,false,true),
+                    "Pen tip, barrel and cursor routing; hover, eraser and touch rejection");
                 QaEditingAssert(view.InkSelectionLayer.Background != null && InkSelectButton.IsEnabled,
                     "Mouse selection has an exposed toolbar button and a full-page hit target");
                 var emptyPoint = view.InkSelectionLayer.TransformToVisual(null).TransformPoint(new Point(280,100));
@@ -55,10 +64,14 @@ namespace LitePdfViewer
                 var outsideInk=builder.CreateStroke(new[]{new Point(200,240),new Point(220,240)});
                 view.Strokes.AddStroke(outsideInk);
                 BeginInkGesture(view,new Point(80,170),88);
+                QaEditingAssert(PageFrame.ManipulationMode==Windows.UI.Xaml.Input.ManipulationModes.None &&
+                    view.InkSelectionLayer.ManipulationMode==Windows.UI.Xaml.Input.ManipulationModes.None,"Pen lasso cannot be stolen by ScrollViewer panning");
                 foreach(var point in new[]{new Point(250,170),new Point(250,210),new Point(160,210),new Point(160,270),new Point(80,270)})
                     UpdateInkGesture(view,point,88);
                 QaEditingAssert(inkLasso!=null && inkLasso.Points.Count>=6,"Freehand path is visible during cursor/pen selection");
                 FinishInkGesture(view,new Point(80,180),88);
+                QaEditingAssert(inkViewportManipulation==null && view.InkSelectionLayer.ManipulationMode==Windows.UI.Xaml.Input.ManipulationModes.System,
+                    "Finishing lasso restores touch document panning");
                 QaEditingAssert(stroke.Selected && !outsideInk.Selected && inkLasso==null,
                     "Native concave lasso excludes ink inside its bounding rectangle but outside the loop; open end closes on release");
                 stroke.Selected=false; outsideInk.Selected=true; view.Strokes.DeleteSelected(); ClearInkSelection();
@@ -67,7 +80,9 @@ namespace LitePdfViewer
                 var originalTransform = stroke.PointTransform;
                 QaLassoInk(view, 90);
                 QaEditingAssert(stroke.Selected && selectedInkPage == view, "Freehand ellipse selects native ink");
-                QaEditingAssert(inkSelectionRectangle.Height * DocumentScroller.ZoomFactor >= 12, "Thin ink has a usable selection target");
+                QaEditingAssert(InkSelectionFrameBounds().Height * DocumentScroller.ZoomFactor >= 55.9, "Thin ink has space between resize grips for moving");
+                await QaInkTransformsAsync(view, stroke, builder, output, report);
+                QaLassoInk(view, 96);
                 var bounds = inkSelectionBounds; var start = new Point(bounds.X + bounds.Width / 2, bounds.Y - 3 / DocumentScroller.ZoomFactor);
                 BeginInkGesture(view, start, 91); FinishInkGesture(view, new Point(start.X + 38, start.Y + 29), 91);
                 QaEditingAssert(Math.Abs(stroke.PointTransform.M31 - originalTransform.M31 - 38) < .01, "Moved ink transform");
@@ -81,6 +96,9 @@ namespace LitePdfViewer
                 QaLassoInk(view, 94);
                 bounds = inkSelectionBounds; start = new Point(bounds.X + 10, bounds.Y + 1);
                 BeginInkGesture(view, start, 95); FinishInkGesture(view, new Point(start.X + 38, start.Y + 29), 95);
+                QaResizeSelectedInk(view, 4, 1.4, 97);
+                QaRotateSelectedInk(view, Math.PI/6, 98);
+                await Task.Delay(100); await QaEditingBitmapAsync(MainChrome,output,"ink-selection-transformed.png");
                 var moved = stroke.PointTransform;
                 await SaveCurrentAnnotationsAsync();
                 var annotations = await GetAnnotationFolderAsync(); var annotationPath = annotations.Path;
@@ -97,6 +115,7 @@ namespace LitePdfViewer
                 var originalPdf = await QaSnapshotPageAsync(await baseline.Folder.GetFileAsync("document.pdf"));
                 var savedPdf = await QaSnapshotPageAsync(await first.Folder.GetFileAsync("document.pdf"));
                 QaEditingAssert(!Windows.Security.Cryptography.CryptographicBuffer.Compare(originalPdf, savedPdf), "Native snapshot preview renders embedded ink appearance");
+                QaVerifyInkAppearance(originalPdf,savedPdf,stroke.BoundingRect,view.LayoutWidth,view.LayoutHeight);
                 var savedStrokes = new InkStrokeContainer();
                 using (var input = await (await annotations.GetFileAsync(GetInkFileName(0))).OpenSequentialReadAsync()) await savedStrokes.LoadAsync(input);
                 QaEditingAssert(savedStrokes.GetStrokes().Count == 1 && savedStrokes.GetStrokes()[0].PointTransform == moved, "Saved move remains editable");
@@ -240,6 +259,109 @@ namespace LitePdfViewer
             QaEditingAssert(pageViews[0].Highlights.Count>0 && pageViews[1].Highlights.Count>0,"Saved cross-page highlights were not restored as editable annotations");
             report.AppendLine("PASS: native forward/reverse four-page copy, selection survives endpoint virtualization, stable XAML pool through 500 drag updates (Gen0 collections="+(gcAfter-gcBefore)+"), accelerating edge scroll crosses pages, two-page highlight save/reload.");
         }
+        private void QaResizeSelectedInk(PageView view, int handle, double factor, uint pointer)
+        {
+            var frame=InkSelectionFrameBounds();
+            var anchor=InkRectPoint(frame,1-InkHandleX[handle],1-InkHandleY[handle]);
+            var start=InkRectPoint(frame,InkHandleX[handle],InkHandleY[handle]);
+            var end=new Point(anchor.X+(start.X-anchor.X)*factor,anchor.Y+(start.Y-anchor.Y)*factor);
+            var transform=inkSelectionTransform;
+            BeginInkGesture(view,inkHandlePositions[handle],pointer);
+            QaEditingAssert((int)inkGesturePart==handle,"Resize grip hit "+handle);
+            FinishInkGesture(view,InkTransformPoint(end,transform),pointer);
+        }
+        private void QaRotateSelectedInk(PageView view,double angle,uint pointer)
+        {
+            var center=InkTransformPoint(InkRectPoint(inkSelectionBounds,.5,.5),inkSelectionTransform);
+            var start=inkHandlePositions[8]; var dx=start.X-center.X; var dy=start.Y-center.Y;
+            BeginInkGesture(view,start,pointer);
+            QaEditingAssert(inkGesturePart==InkSelectionPart.Rotate,"Rotation grip hit");
+            FinishInkGesture(view,new Point(center.X+dx*Math.Cos(angle)-dy*Math.Sin(angle),center.Y+dx*Math.Sin(angle)+dy*Math.Cos(angle)),pointer);
+        }
+        private async Task QaInkTransformsAsync(PageView view,InkStroke stroke,InkStrokeBuilder builder,StorageFolder output,System.Text.StringBuilder report)
+        {
+            SetInkTool(InkTool.InkSelect);
+            var second=builder.CreateStroke(new[]{new Point(120,180),new Point(180,205)});
+            var outside=builder.CreateStroke(new[]{new Point(350,350),new Point(400,380)});
+            view.Strokes.AddStroke(second); view.Strokes.AddStroke(outside);
+            var original=stroke.PointTransform; var other=second.PointTransform;
+            foreach(var zoom in new[]{.64f,1f,4f})
+            {
+                SetZoom(zoom,false); await Task.Delay(300); QaLassoInk(view,300);
+                QaEditingAssert(stroke.Selected && second.Selected && !outside.Selected,"Group lasso at "+zoom);
+                QaEditingAssert(inkSelectionHandles.Length==9 && inkSelectionHandles.All(h=>Math.Abs(h.Width*zoom-28)<.01),"Screen-sized grips at "+zoom);
+                var center=InkRectPoint(inkSelectionBounds,.5,.5);
+                QaEditingAssert(HitInkSelection(center)==InkSelectionPart.Move,"Thin ink interior remains a move target at "+zoom);
+                var before=view.UndoKinds.Count;
+                BeginInkGesture(view,center,301); FinishInkGesture(view,center,301);
+                QaEditingAssert(view.UndoKinds.Count==before && stroke.PointTransform==original,"Tap does not create an undo record");
+                for(var i=0;i<9;i++) QaEditingAssert(HitInkSelection(inkHandlePositions[i])==(InkSelectionPart)i,"Unambiguous grip "+i+" at "+zoom);
+                if(zoom==1)
+                {
+                    view.Host.UpdateLayout();
+                    var hostPoint=inkSelectionHandles[8].TransformToVisual(null).TransformPoint(new Point(14/zoom,14/zoom));
+                    QaEditingAssert(VisualTreeHelper.FindElementsInHostCoordinates(hostPoint,view.Host).Contains(inkSelectionHandles[8]),"Native rotation grip hit testing");
+                    await QaEditingBitmapAsync(MainChrome,output,"ink-selection-handles.png");
+                }
+                for(var i=0;i<8;i++)
+                {
+                    if(selectedInkPage==null) QaLassoInk(view,302);
+                    QaResizeSelectedInk(view,i,1.35,303);
+                    QaEditingAssert(stroke.PointTransform==second.PointTransform && outside.PointTransform==System.Numerics.Matrix3x2.Identity,"Group transform leaves unselected ink unchanged");
+                    var matrix=stroke.PointTransform;
+                    QaEditingAssert(Math.Abs(matrix.M11-(i==1||i==5 ? 1 : 1.35))<.002 && Math.Abs(matrix.M22-(i==3||i==7 ? 1 : 1.35))<.002,"Corner/edge scaling matrix "+i);
+                    UndoButton_Click(null,null);
+                    QaEditingAssert(stroke.PointTransform==original && second.PointTransform==other,"Resize undo restores both strokes exactly");
+                }
+                QaLassoInk(view,304); QaResizeSelectedInk(view,4,.6,305);
+                QaEditingAssert(Math.Abs(stroke.PointTransform.M11-.6)<.002,"Shrinking ink");
+                UndoButton_Click(null,null);
+                QaLassoInk(view,306); QaRotateSelectedInk(view,Math.PI/2,307);
+                var rotated=stroke.PointTransform;
+                QaEditingAssert(Math.Abs(rotated.M11)<.002 && Math.Abs(rotated.M12-1)<.002 && rotated==second.PointTransform,"Native 90 degree group rotation");
+                center=InkTransformPoint(InkRectPoint(inkSelectionBounds,.5,.5),inkSelectionTransform);
+                BeginInkGesture(view,center,308); FinishInkGesture(view,new Point(center.X+23,center.Y+11),308);
+                QaEditingAssert(Math.Abs(stroke.PointTransform.M31-rotated.M31-23)<.002 && Math.Abs(stroke.PointTransform.M32-rotated.M32-11)<.002,"Move after rotation");
+                UndoButton_Click(null,null); UndoButton_Click(null,null);
+                QaEditingAssert(stroke.PointTransform==original && second.PointTransform==other,"Independent move and rotation undo records");
+                QaLassoInk(view,309); QaRotateSelectedInk(view,.4,310);
+                var frameBefore=inkSelectionTransform; var beforeCancel=stroke.PointTransform;
+                var grip=inkHandlePositions[4]; BeginInkGesture(view,grip,311); UpdateInkGesture(view,new Point(grip.X+35,grip.Y+24),311);
+                QaEditingAssert(HandleInkSelectionKey(Windows.System.VirtualKey.Escape,false) && selectedInkPage==view &&
+                    stroke.PointTransform==beforeCancel && inkSelectionTransform==frameBefore && inkViewportManipulation==null,
+                    "Escape cancels transformed drag and restores touch panning");
+                QaResizeSelectedInk(view,4,1.2,312);
+                QaEditingAssert(stroke.PointTransform!=beforeCancel && second.PointTransform==stroke.PointTransform,"Scaling an already rotated group");
+                UndoButton_Click(null,null); UndoButton_Click(null,null);
+                QaEditingAssert(stroke.PointTransform==original,"Undo composed transforms exactly");
+                QaLassoInk(view,313); var gripBefore=inkHandlePositions[4];
+                BeginInkGesture(view,gripBefore,314); UpdateInkGesture(view,new Point(-2000,-2000),314);
+                QaEditingAssert(!double.IsNaN(stroke.PointTransform.M11) && stroke.PointTransform.GetDeterminant()>0,"Crossing resize anchor never flips or collapses ink");
+                CancelInkGesture();
+                QaEditingAssert(stroke.PointTransform==original && second.PointTransform==other && inkViewportManipulation==null,"Capture loss cancels resize atomically");
+                ClearInkSelection();
+            }
+            second.Selected=outside.Selected=true; stroke.Selected=false; view.Strokes.DeleteSelected();
+            SetZoom(1,false); await Task.Delay(300);
+            report.AppendLine("PASS: pen/barrel acceptance and exclusive XAML routing; native group move, 8 resize/stretch grips, shrink, 90-degree rotation, move/scale after rotation at 64/100/400%; fixed screen grip sizes, cancellation and exact undo; outside ink untouched. Physical Surface pen still requires device acceptance.");
+        }
+        private static void QaVerifyInkAppearance(IBuffer baseline,IBuffer saved,Rect bounds,double pageWidth,double pageHeight)
+        {
+            var oldPixels=new byte[baseline.Length]; var pixels=new byte[saved.Length];
+            QaEditingAssert(baseline.Length==300*420*4 && saved.Length==baseline.Length,"Normalized snapshot pixel dimensions");
+            using(var reader=DataReader.FromBuffer(baseline)) reader.ReadBytes(oldPixels);
+            using(var reader=DataReader.FromBuffer(saved)) reader.ReadBytes(pixels);
+            var left=300; var right=-1; var top=420; var bottom=-1;
+            for(var y=0;y<420;y++) for(var x=0;x<300;x++)
+            {
+                var p=(y*300+x)*4;
+                if(Math.Abs(pixels[p]-oldPixels[p])+Math.Abs(pixels[p+1]-oldPixels[p+1])+Math.Abs(pixels[p+2]-oldPixels[p+2])<40) continue;
+                left=Math.Min(left,x); right=Math.Max(right,x); top=Math.Min(top,y); bottom=Math.Max(bottom,y);
+            }
+            QaEditingAssert(right>=left && Math.Abs(left-bounds.X/pageWidth*300)<4 && Math.Abs((right+1)-bounds.Right/pageWidth*300)<4 &&
+                Math.Abs(top-bounds.Y/pageHeight*420)<4 && Math.Abs((bottom+1)-bounds.Bottom/pageHeight*420)<4,
+                "Rendered PDF appearance matches moved/scaled/rotated native stroke bounds: "+left+","+top+".."+right+","+bottom+" vs "+bounds);
+        }
         private static async Task<IBuffer> QaSnapshotPageAsync(StorageFile file)
         {
             var pdf = await PdfDocument.LoadFromFileAsync(file);
@@ -248,7 +370,8 @@ namespace LitePdfViewer
             {
                 await page.RenderToStreamAsync(stream, new PdfPageRenderOptions { DestinationWidth = 300, DestinationHeight = 420 });
                 stream.Seek(0); var decoder = await BitmapDecoder.CreateAsync(stream);
-                var pixels = await decoder.GetPixelDataAsync();
+                var pixels = await decoder.GetPixelDataAsync(BitmapPixelFormat.Bgra8,BitmapAlphaMode.Premultiplied,
+                    new BitmapTransform { ScaledWidth=300, ScaledHeight=420 },ExifOrientationMode.IgnoreExifOrientation,ColorManagementMode.DoNotColorManage);
                 return Windows.Security.Cryptography.CryptographicBuffer.CreateFromByteArray(pixels.DetachPixelData());
             }
         }

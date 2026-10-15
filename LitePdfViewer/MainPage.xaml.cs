@@ -1381,6 +1381,7 @@ namespace LitePdfViewer
 
             // Leave native text inputs (such as the zoom box) in control of their shortcuts.
             if (e.OriginalSource is TextBox || e.OriginalSource is PasswordBox) return;
+            if (HandleInkSelectionKey(e.Key, control)) { e.Handled = true; return; }
             if (control && e.Key == Windows.System.VirtualKey.C && selectedTextPage != null)
             {
                 e.Handled = true;
@@ -1739,6 +1740,7 @@ namespace LitePdfViewer
                 lastObservedZoom = zoom;
                 MarkZoomChanging();
                 if(selectedTextPage!=null && selectionPointer==null) RedrawSelectionPages();
+                if(selectedInkPage!=null && inkGesturePointer==null) DrawInkSelection(selectedInkPage);
             }
 
             if (!e.IsIntermediate && programmaticZoomTarget.HasValue && Math.Abs(zoom - programmaticZoomTarget.Value) < 0.005f)
@@ -2541,8 +2543,10 @@ namespace LitePdfViewer
 
         private void ConfigureInkCanvas(InkCanvas inkCanvas, InkDrawingAttributes attributes, bool ready)
         {
-            inkCanvas.IsHitTestVisible = ready && currentInkTool != InkTool.None;
-            if (!ready || currentInkTool == InkTool.None)
+            // The explicit lasso overlay owns both pen and mouse capture. Do not
+            // let an underlying InkPresenter compete for the same tip contact.
+            inkCanvas.IsHitTestVisible = ready && currentInkTool != InkTool.None && currentInkTool != InkTool.InkSelect;
+            if (!ready || currentInkTool == InkTool.None || currentInkTool == InkTool.InkSelect)
             {
                 inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
             }

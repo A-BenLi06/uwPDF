@@ -514,13 +514,13 @@
     <value>Selected ink</value>
   </data>
   <data name="InkSelectionHelp" xml:space="preserve">
-    <value>Drag to move ink; Undo restores its position</value>
+    <value>Drag inside to move; corners resize, edges stretch, and the round grip rotates. Shift snaps rotation to 15°. Esc cancels; Ctrl+Z undoes.</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Lasso select ink</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Lasso select ink (draw a loop with the mouse or hold the pen barrel button)</value>
+    <value>Lasso select ink (draw a loop with the pen or mouse; hold the pen barrel button while drawing to select temporarily)</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>More document tools</value>
@@ -607,9 +607,18 @@
     <value>Lasso select</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>Draw a freehand loop with the mouse, or hold the pen barrel button. Release to select enclosed ink, then drag the selection to move it.</value>
+    <value>Choose Lasso and draw a loop with the pen or mouse, or hold the pen barrel button while drawing. Drag inside to move, corners to resize, edges to stretch, or the round grip to rotate.</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>This snapshot belongs to a different document.</value>
+  </data>
+  <data name="InkScaleHandle" xml:space="preserve">
+    <value>Resize ink (keep proportions)</value>
+  </data>
+  <data name="InkStretchHandle" xml:space="preserve">
+    <value>Stretch ink</value>
+  </data>
+  <data name="InkRotateHandle" xml:space="preserve">
+    <value>Rotate ink (Shift: 15° steps)</value>
   </data>
 </root>

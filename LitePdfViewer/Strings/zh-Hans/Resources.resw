@@ -514,13 +514,13 @@
     <value>选中的墨迹</value>
   </data>
   <data name="InkSelectionHelp" xml:space="preserve">
-    <value>拖动选框移动墨迹；撤销可恢复位置</value>
+    <value>拖动选区内部移动；角点等比缩放，边点拉伸，圆形手柄旋转。Shift 按 15° 旋转；Esc 取消；Ctrl+Z 撤销。</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>套索选择墨迹</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>套索选择墨迹（鼠标拖动或按住笔侧键画圈）</value>
+    <value>套索选择墨迹（用笔或鼠标画圈；书写时按住笔侧键可临时选择）</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>更多文档工具</value>
@@ -607,9 +607,18 @@
     <value>套索选择</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>用鼠标拖动，或按住笔侧键画圈；松开后选中圈内墨迹，再拖动选中的墨迹即可移动。</value>
+    <value>选择套索后，用笔或鼠标画圈；书写时也可按住笔侧键临时选择。拖动选区内部移动，角点等比缩放，边点拉伸，圆形手柄旋转。</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>此快照属于另一份文档，无法回退当前文件。</value>
+  </data>
+  <data name="InkScaleHandle" xml:space="preserve">
+    <value>等比缩放墨迹</value>
+  </data>
+  <data name="InkStretchHandle" xml:space="preserve">
+    <value>拉伸墨迹</value>
+  </data>
+  <data name="InkRotateHandle" xml:space="preserve">
+    <value>旋转墨迹（Shift：每次 15°）</value>
   </data>
 </root>

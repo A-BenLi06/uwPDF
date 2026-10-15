@@ -514,13 +514,13 @@
     <value>選択したインク</value>
   </data>
   <data name="InkSelectionHelp" xml:space="preserve">
-    <value>選択枠をドラッグして移動。元に戻すで位置を復元</value>
+    <value>選択範囲の内側で移動、角で縦横比を保って拡大縮小、辺で伸縮、丸いハンドルで回転。Shift：15°刻み、Esc：キャンセル、Ctrl+Z：元に戻す。</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>インクのなげなわ選択</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>なげなわ選択（マウスでドラッグ、またはペンのサイドボタンを押して囲む）</value>
+    <value>投げ縄選択（ペンかマウスで囲む。描画中はペンのサイドボタンで一時的に選択）</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>その他の文書ツール</value>
@@ -607,9 +607,18 @@
     <value>なげなわ選択</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>マウスでドラッグ、またはペンのサイドボタンを押しながら自由な形で囲みます。離すと内側のインクを選択し、選択部分をドラッグして移動できます。</value>
+    <value>投げ縄を選んでペンかマウスで囲みます。描画中はペンのサイドボタンでも選択できます。内側で移動、角で拡大縮小、辺で伸縮、丸いハンドルで回転します。</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>この履歴は別の文書のものです。</value>
+  </data>
+  <data name="InkScaleHandle" xml:space="preserve">
+    <value>インクの拡大縮小（縦横比を保持）</value>
+  </data>
+  <data name="InkStretchHandle" xml:space="preserve">
+    <value>インクの伸縮</value>
+  </data>
+  <data name="InkRotateHandle" xml:space="preserve">
+    <value>インクの回転（Shift：15°刻み）</value>
   </data>
 </root>

@@ -64,6 +64,7 @@ namespace LitePdfViewer
         private Task EnsurePageTextAsync(object page, ulong token) { return Task.FromResult(true); }
         private void SelectAllPageText(object page) { Selections++; }
         private void ClearTextSelection() { selectedTextPage=null; }
+        private bool HandleInkSelectionKey(VirtualKey key, bool control) { return false; }
         private void GoToPage(uint page) { Navigations++; pageIndex=page; }
         private void FitToWindow(bool animated) { Fits++; }
         private void SetZoom(float zoom, bool animated) { Zooms++; }

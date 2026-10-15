@@ -5,6 +5,7 @@
     <Compile Include="PdfSnapshotStore.cs" />
     <Compile Include="MainPage.Ocr.cs" />
     <Compile Include="MainPage.InkSelection.cs" />
+    <Compile Include="MainPage.InkSelectionVisuals.cs" />
     <Compile Include="MainPage.History.cs" />
     <Compile Include="MainPage.Text.cs" />
     <Compile Include="MainPage.TextInput.cs" />
