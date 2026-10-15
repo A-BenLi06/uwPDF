@@ -1,0 +1,87 @@
+using System;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
+
+namespace LitePdfViewer
+{
+    public sealed partial class MainPage
+    {
+        private DataTransferManager shareManager;
+        private StorageFile requestedShareFile;
+
+        private void InitializeSharing()
+        {
+            Loaded += (s, e) => RegisterSharing();
+            Unloaded += (s, e) =>
+            {
+                if (shareManager != null)
+                {
+                    shareManager.DataRequested -= ShareManager_DataRequested;
+                    shareManager = null;
+                }
+                requestedShareFile = null;
+            };
+        }
+
+        private void RegisterSharing()
+        {
+            if (shareManager != null) return;
+            shareManager = DataTransferManager.GetForCurrentView();
+            shareManager.DataRequested += ShareManager_DataRequested;
+        }
+
+        private async void ShareButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (document == null || currentFile == null) return;
+            try
+            {
+                var file = currentFile;
+                await SaveCurrentAnnotationsAsync();
+                if (file != currentFile) return;
+                RegisterSharing();
+                requestedShareFile = currentFile;
+                DataTransferManager.ShowShareUI();
+            }
+            catch (Exception ex)
+            {
+                requestedShareFile = null;
+                await new ContentDialog
+                {
+                    Title = L.Get("SharePanelError"),
+                    Content = ex.Message,
+                    PrimaryButtonText = L.Get("Ok")
+                }.ShowAsync();
+            }
+        }
+
+        private async void ShareManager_DataRequested(DataTransferManager sender, DataRequestedEventArgs args)
+        {
+            var file = requestedShareFile ?? currentFile;
+            requestedShareFile = null;
+            if (file == null)
+            {
+                args.Request.FailWithDisplayText(L.Get("OpenPdfFirst"));
+                return;
+            }
+
+            var deferral = args.Request.GetDeferral();
+            try
+            {
+                if (file == currentFile) await SaveCurrentAnnotationsAsync();
+                var data = args.Request.Data;
+                data.Properties.Title = file.Name;
+                data.Properties.Description = L.Get("SharedPdfDescription");
+                data.RequestedOperation = DataPackageOperation.Copy;
+                // Share the actual file with brokered read-only access, not its path.
+                data.SetStorageItems(new IStorageItem[] { file }, true);
+            }
+            catch (Exception)
+            {
+                args.Request.FailWithDisplayText(L.Get("ShareFailed"));
+            }
+            finally { deferral.Complete(); }
+        }
+    }
+}

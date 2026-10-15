@@ -1,0 +1,54 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Include="L.cs" />
+    <Compile Include="MainPage.Tiles.cs" />
+    <Compile Include="PdfOcrSource.cs" />
+    <Compile Include="PdfSnapshotStore.cs" />
+    <Compile Include="MainPage.Ocr.cs" />
+    <Compile Include="MainPage.InkSelection.cs" />
+    <Compile Include="MainPage.InkSelectionVisuals.cs" />
+    <Compile Include="MainPage.History.cs" />
+    <Compile Include="MainPage.Text.cs" />
+    <Compile Include="MainPage.TextInput.cs" />
+    <Compile Include="MainPage.Selection.cs" />
+    <Compile Include="PdfSelectionScroll.cs" />
+    <Compile Include="MainPage.Search.cs" />
+    <Compile Include="MainPage.Scrollbars.cs" />
+    <Compile Include="PdfRenderScheduler.cs" />
+    <Compile Include="PdfRasterQuality.cs" />
+    <Compile Include="MainPage.Display.cs" />
+    <Compile Include="PdfScrollActivity.cs" />
+    <Compile Include="PdfRasterRetirement.cs" />
+    <Compile Include="PdfMemoryBudget.cs" />
+    <Compile Include="MainPage.Memory.cs" />
+    <Compile Include="PdfViewportAnchor.cs" />
+    <Compile Include="MainPage.PageGeometry.cs" />
+    <Compile Include="MainPage.Save.cs" />
+    <Compile Include="MainPage.Share.cs" />
+    <Compile Include="MainPage.Print.cs" />
+    <Compile Include="PdfPrintLayout.cs" />
+    <Compile Include="MainPage.Window.cs" />
+    <Compile Include="MainPage.Rendering.cs" />
+    <Compile Include="MainPage.Thumbnails.cs" />
+    <Compile Include="PreviewSizing.cs" />
+    <Compile Include="PdfTextSource.cs" />
+    <Compile Include="PdfTextSearch.cs" />
+    <Compile Include="PdfPageRaster.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PRIResource Include="Strings\**\Resources.resw" />
+    <None Include="StoreIdentity.json" />
+    <None Include="Branding\LogoSource.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Properties\Default.rd.xml" />
+    <Content Include="Assets\*.png" />
+    <Content Include="TestAssets\SkimSample.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\artifacts\native-dependencies\licenses\*">
+      <Link>ThirdPartyLicenses\%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+</Project>

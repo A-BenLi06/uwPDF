@@ -1,0 +1,51 @@
+namespace PdfNative.Rendering
+{
+    runtimeclass PdfTextPage
+    {
+        PdfTextPage();
+        String Text{ get; set; };
+        Single[] Coordinates{ get; set; };
+    }
+
+    runtimeclass PdfTextDocument : Windows.Foundation.IClosable
+    {
+        static Windows.Foundation.IAsyncOperation<PdfTextDocument> OpenAsync(Windows.Storage.Streams.IRandomAccessStream stream);
+        Windows.Foundation.IAsyncOperation<PdfTextPage> ReadPageAsync(UInt32 pageIndex);
+        static Windows.Foundation.IAsyncAction ExportAsync(Windows.Storage.Streams.IRandomAccessStream input,
+            Windows.Storage.Streams.IRandomAccessStream output, String annotations);
+    }
+
+    runtimeclass PdfAnnotationWriter : Windows.Foundation.IClosable
+    {
+        static Windows.Foundation.IAsyncOperation<PdfAnnotationWriter> OpenAsync(Windows.Storage.Streams.IRandomAccessStream stream);
+        Windows.Foundation.IAsyncAction AppendAsync(String annotations);
+        Windows.Foundation.IAsyncOperation<Windows.Foundation.Size> ReadPageSizeAsync(UInt32 pageIndex);
+        Windows.Foundation.IAsyncAction WriteAsync(Windows.Storage.Streams.IRandomAccessStream stream);
+    }
+
+    runtimeclass PreviewDisplay
+    {
+        static Windows.Foundation.Size TryGetWorkArea(Windows.UI.ViewManagement.ApplicationView view);
+    }
+
+    runtimeclass InkOutlineExporter : Windows.Foundation.IClosable
+    {
+        static Windows.Foundation.IAsyncOperation<InkOutlineExporter> CreateAsync();
+        Windows.Foundation.IAsyncOperation<String> DescribeAsync(
+            Windows.UI.Input.Inking.InkStroke stroke, Double width, Double height);
+    }
+
+    runtimeclass PdfSurfaceRenderer
+    {
+        PdfSurfaceRenderer();
+        static Windows.Foundation.IAsyncOperation<PdfSurfaceRenderer> CreateAsync();
+        Boolean IsHardwareAccelerated{ get; };
+        Windows.UI.Xaml.Media.Imaging.SurfaceImageSource CreateSurface(Int32 width, Int32 height);
+        Windows.Foundation.IAsyncAction DrawAsync(
+            Windows.UI.Xaml.Media.Imaging.SurfaceImageSource surface,
+            Windows.Data.Pdf.PdfPage page, Int32 width, Int32 height,
+            Windows.Foundation.Rect sourceRect);
+        void CompleteDraw();
+        static void ReleaseSurface(Windows.UI.Xaml.Media.Imaging.SurfaceImageSource surface);
+    }
+}

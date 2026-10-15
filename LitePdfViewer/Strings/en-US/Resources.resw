@@ -1,0 +1,644 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="AnnotationTools" xml:space="preserve">
+    <value>Annotation tools</value>
+  </data>
+  <data name="AnnotationToolsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Annotation tools</value>
+  </data>
+  <data name="AnnotationToolsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show annotation tools</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>A lightweight PDF viewer with ink annotations and text highlighting.</value>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>uwPDF - Lite PDF Viewer</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ClearPage" xml:space="preserve">
+    <value>Clear page annotations</value>
+  </data>
+  <data name="ClearPageLabel1.Text" xml:space="preserve">
+    <value>Clear page annotations</value>
+  </data>
+  <data name="CloseSearch" xml:space="preserve">
+    <value>Close search</value>
+  </data>
+  <data name="CloseSearchButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Close search</value>
+  </data>
+  <data name="CloseSearchButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close (Esc)</value>
+  </data>
+  <data name="CloseThumbnails" xml:space="preserve">
+    <value>Close thumbnails</value>
+  </data>
+  <data name="CloseThumbnailsLabel1.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Close thumbnails</value>
+  </data>
+  <data name="CloseThumbnailsLabel1.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close thumbnails</value>
+  </data>
+  <data name="CloseTip" xml:space="preserve">
+    <value>Close (Esc)</value>
+  </data>
+  <data name="CollapseAnnotations" xml:space="preserve">
+    <value>Hide annotation tools and select text</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="ColorLabel1.Text" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="ColorLabel2.Text" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="ColorName" xml:space="preserve">
+    <value>Color {0}</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>Copy (Ctrl+C)</value>
+  </data>
+  <data name="CopyFailed" xml:space="preserve">
+    <value>Copy failed. Try again.</value>
+  </data>
+  <data name="CountingMatches" xml:space="preserve">
+    <value>Counting matches…</value>
+  </data>
+  <data name="DeleteHighlight" xml:space="preserve">
+    <value>Delete highlight</value>
+  </data>
+  <data name="Deselect" xml:space="preserve">
+    <value>Deselect (Esc)</value>
+  </data>
+  <data name="DontSave" xml:space="preserve">
+    <value>Don't save</value>
+  </data>
+  <data name="EmptyHint" xml:space="preserve">
+    <value>Open a PDF to read and annotate.</value>
+  </data>
+  <data name="EmptyHintLabel1.Text" xml:space="preserve">
+    <value>Open a PDF to read and annotate.</value>
+  </data>
+  <data name="Eraser" xml:space="preserve">
+    <value>Eraser</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="ExpandAnnotations" xml:space="preserve">
+    <value>Show annotation tools</value>
+  </data>
+  <data name="FindNextButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next match</value>
+  </data>
+  <data name="FindNextButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next (Enter)</value>
+  </data>
+  <data name="FindPdf" xml:space="preserve">
+    <value>Find PDF text</value>
+  </data>
+  <data name="FindPlaceholder" xml:space="preserve">
+    <value>Find text</value>
+  </data>
+  <data name="FindPreviousButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous match</value>
+  </data>
+  <data name="FindPreviousButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous (Shift+Enter)</value>
+  </data>
+  <data name="FitButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Fit page</value>
+  </data>
+  <data name="FitButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Fit page (0)</value>
+  </data>
+  <data name="FitPage" xml:space="preserve">
+    <value>Fit page</value>
+  </data>
+  <data name="FitPageTip" xml:space="preserve">
+    <value>Fit page (0)</value>
+  </data>
+  <data name="HighlightSelection" xml:space="preserve">
+    <value>Highlight selected text</value>
+  </data>
+  <data name="Highlighter" xml:space="preserve">
+    <value>Highlighter</value>
+  </data>
+  <data name="HighlighterSettings" xml:space="preserve">
+    <value>Highlighter settings</value>
+  </data>
+  <data name="HighlighterSettingsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Highlighter settings</value>
+  </data>
+  <data name="HighlighterSettingsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Highlighter color and size</value>
+  </data>
+  <data name="HighlighterSettingsTip" xml:space="preserve">
+    <value>Highlighter color and size</value>
+  </data>
+  <data name="HighlighterSize" xml:space="preserve">
+    <value>Highlighter size</value>
+  </data>
+  <data name="HighlighterSizeSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Highlighter size</value>
+  </data>
+  <data name="HighlighterTip" xml:space="preserve">
+    <value>Highlighter; click again for color and size</value>
+  </data>
+  <data name="InkMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More annotation options</value>
+  </data>
+  <data name="InkMoreButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>More annotation options</value>
+  </data>
+  <data name="LoadingText" xml:space="preserve">
+    <value>Loading text…</value>
+  </data>
+  <data name="MatchCount" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="MoreAnnotations" xml:space="preserve">
+    <value>More annotation options</value>
+  </data>
+  <data name="NextButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="NextButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>Next match</value>
+  </data>
+  <data name="NextMatchTip" xml:space="preserve">
+    <value>Next (Enter)</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="NoMatches" xml:space="preserve">
+    <value>No matches</value>
+  </data>
+  <data name="NoMatchesPartial" xml:space="preserve">
+    <value>No matches; text unavailable on {0} page(s)</value>
+  </data>
+  <data name="NoSelectableText" xml:space="preserve">
+    <value>No selectable text on this page</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="OpenButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Open PDF</value>
+  </data>
+  <data name="OpenButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open PDF (Ctrl+O)</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>Could not open PDF: {0}</value>
+  </data>
+  <data name="OpenPdf" xml:space="preserve">
+    <value>Open PDF</value>
+  </data>
+  <data name="OpenPdfCommand" xml:space="preserve">
+    <value>Open PDF…</value>
+  </data>
+  <data name="OpenPdfCommandLabel1.Content" xml:space="preserve">
+    <value>Open PDF…</value>
+  </data>
+  <data name="OpenPdfFirst" xml:space="preserve">
+    <value>Open a PDF file first.</value>
+  </data>
+  <data name="OpenPdfTip" xml:space="preserve">
+    <value>Open PDF (Ctrl+O)</value>
+  </data>
+  <data name="PageAccessible" xml:space="preserve">
+    <value>PDF page {0}</value>
+  </data>
+  <data name="PageSizeError" xml:space="preserve">
+    <value>Could not read the PDF page size.</value>
+  </data>
+  <data name="Pages" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="PagesLabel1.Text" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="PdfFileType" xml:space="preserve">
+    <value>PDF document</value>
+  </data>
+  <data name="Pen" xml:space="preserve">
+    <value>Pen</value>
+  </data>
+  <data name="PenSettings" xml:space="preserve">
+    <value>Pen settings</value>
+  </data>
+  <data name="PenSettingsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pen settings</value>
+  </data>
+  <data name="PenSettingsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Pen color and size</value>
+  </data>
+  <data name="PenSettingsTip" xml:space="preserve">
+    <value>Pen color and size</value>
+  </data>
+  <data name="PenSize" xml:space="preserve">
+    <value>Pen size</value>
+  </data>
+  <data name="PenSizeSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pen size</value>
+  </data>
+  <data name="PenTip" xml:space="preserve">
+    <value>Pen; click again for color and size</value>
+  </data>
+  <data name="PreviousButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="PreviousButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>Previous match</value>
+  </data>
+  <data name="PreviousMatchTip" xml:space="preserve">
+    <value>Previous (Shift+Enter)</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="RenderedPageAccessible" xml:space="preserve">
+    <value>Rendered PDF page {0}</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SaveAnnotations" xml:space="preserve">
+    <value>Save annotations</value>
+  </data>
+  <data name="SaveAnnotationsTip" xml:space="preserve">
+    <value>Save annotations (Ctrl+S)</value>
+  </data>
+  <data name="SaveButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Save annotations</value>
+  </data>
+  <data name="SaveButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Save annotations (Ctrl+S)</value>
+  </data>
+  <data name="SaveDirtyTip" xml:space="preserve">
+    <value>Save annotations (Ctrl+S) *</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
+  <data name="SavedFeedback" xml:space="preserve">
+    <value>Saved ✓</value>
+  </data>
+  <data name="SavedTip" xml:space="preserve">
+    <value>Saved (Ctrl+S)</value>
+  </data>
+  <data name="SearchButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Search PDF text</value>
+  </data>
+  <data name="SearchButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search (Ctrl+F)</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>Search failed: {0}</value>
+  </data>
+  <data name="SearchPdf" xml:space="preserve">
+    <value>Search PDF text</value>
+  </data>
+  <data name="SearchTextBox.PlaceholderText" xml:space="preserve">
+    <value>Find text</value>
+  </data>
+  <data name="SearchTextBox.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Find PDF text</value>
+  </data>
+  <data name="SearchTip" xml:space="preserve">
+    <value>Search (Ctrl+F)</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>Searching…</value>
+  </data>
+  <data name="SearchingPage" xml:space="preserve">
+    <value>Searching page {0}…</value>
+  </data>
+  <data name="SelectAllPage" xml:space="preserve">
+    <value>Select all text on this page (Ctrl+A)</value>
+  </data>
+  <data name="SelectText" xml:space="preserve">
+    <value>Select text</value>
+  </data>
+  <data name="SelectTextHelp" xml:space="preserve">
+    <value>Drag with the mouse to select text, or hold with a finger and drag the handles. The pen annotates.</value>
+  </data>
+  <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Share PDF</value>
+  </data>
+  <data name="ShareButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Share PDF (saves annotations)</value>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>Could not save or share this PDF. Reopen the file and try again.</value>
+  </data>
+  <data name="SharePanelError" xml:space="preserve">
+    <value>Could not open sharing</value>
+  </data>
+  <data name="SharePdf" xml:space="preserve">
+    <value>Share PDF</value>
+  </data>
+  <data name="ShareTip" xml:space="preserve">
+    <value>Share PDF (saves annotations)</value>
+  </data>
+  <data name="SharedPdfDescription" xml:space="preserve">
+    <value>PDF with saved annotations.</value>
+  </data>
+  <data name="SkippedPages" xml:space="preserve">
+    <value>; text unavailable on {0} page(s)</value>
+  </data>
+  <data name="StrokeSize" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="StrokeSizeLabel1.Text" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="StrokeSizeLabel2.Text" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="TextLayerFailed" xml:space="preserve">
+    <value>Could not load text</value>
+  </data>
+  <data name="TextLayerUnavailable" xml:space="preserve">
+    <value>Text unavailable; viewing and ink annotations still work</value>
+  </data>
+  <data name="ThumbnailAccessible" xml:space="preserve">
+    <value>Page thumbnail {0}</value>
+  </data>
+  <data name="Thumbnails" xml:space="preserve">
+    <value>Page thumbnails</value>
+  </data>
+  <data name="ThumbsToggle.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Page thumbnails</value>
+  </data>
+  <data name="ThumbsToggle.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Page thumbnails</value>
+  </data>
+  <data name="TopClearButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Clear page annotations</value>
+  </data>
+  <data name="TopEraserButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Eraser</value>
+  </data>
+  <data name="TopEraserButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Eraser</value>
+  </data>
+  <data name="TopHighlighterButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Highlighter</value>
+  </data>
+  <data name="TopHighlighterButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Highlighter; click again for color and size</value>
+  </data>
+  <data name="TopPenButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pen</value>
+  </data>
+  <data name="TopPenButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Pen; click again for color and size</value>
+  </data>
+  <data name="TopSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Select text</value>
+  </data>
+  <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Select text with mouse or touch; collapse annotation tools</value>
+  </data>
+  <data name="TopTouchWritingButton.Content" xml:space="preserve">
+    <value>Touch writing</value>
+  </data>
+  <data name="TopTouchWritingButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Touch writing</value>
+  </data>
+  <data name="TopUndoButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="TopUndoButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Undo (Ctrl+Z)</value>
+  </data>
+  <data name="TouchWriting" xml:space="preserve">
+    <value>Touch writing</value>
+  </data>
+  <data name="TouchWritingHelp" xml:space="preserve">
+    <value>When off, use fingers to scroll</value>
+  </data>
+  <data name="TouchWritingHelpLabel1.Text" xml:space="preserve">
+    <value>When off, use fingers to scroll</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="UndoTip" xml:space="preserve">
+    <value>Undo (Ctrl+Z)</value>
+  </data>
+  <data name="UnsavedPrompt" xml:space="preserve">
+    <value>This document has unsaved annotations. Save your changes?</value>
+  </data>
+  <data name="UnsavedTitle" xml:space="preserve">
+    <value>Unsaved changes</value>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="ZoomInButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="ZoomInButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zoom in (+)</value>
+  </data>
+  <data name="ZoomInTip" xml:space="preserve">
+    <value>Zoom in (+)</value>
+  </data>
+  <data name="ZoomInputOkButton.Content" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ZoomLevel" xml:space="preserve">
+    <value>Zoom level</value>
+  </data>
+  <data name="ZoomLevelTip" xml:space="preserve">
+    <value>Click to enter a zoom percentage</value>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="ZoomOutButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="ZoomOutButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zoom out (-)</value>
+  </data>
+  <data name="ZoomOutTip" xml:space="preserve">
+    <value>Zoom out (-)</value>
+  </data>
+  <data name="ZoomPercentButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom level</value>
+  </data>
+  <data name="ZoomPercentButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Click to enter a zoom percentage</value>
+  </data>
+  <data name="ZoomSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Zoom slider</value>
+  </data>
+  <data name="ZoomSlider.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Zoom slider</value>
+  </data>
+  <data name="SavedHighlightsUnavailable" xml:space="preserve">
+    <value>Could not read saved text highlights</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="InkSelection" xml:space="preserve">
+    <value>Selected ink</value>
+  </data>
+  <data name="InkSelectionHelp" xml:space="preserve">
+    <value>Drag inside to move; corners resize, edges stretch, and the round grip rotates. Shift snaps rotation to 15°. Esc cancels; Ctrl+Z undoes.</value>
+  </data>
+  <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Lasso select ink</value>
+  </data>
+  <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Lasso select ink (draw a loop with the pen or mouse; hold the pen barrel button while drawing to select temporarily)</value>
+  </data>
+  <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More document tools</value>
+  </data>
+  <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Save history and text recognition</value>
+  </data>
+  <data name="HistoryCommand.Text" xml:space="preserve">
+    <value>Save history…</value>
+  </data>
+  <data name="OcrCommand.Text" xml:space="preserve">
+    <value>Recognize text on this page…</value>
+  </data>
+  <data name="OcrTitle" xml:space="preserve">
+    <value>Windows text recognition</value>
+  </data>
+  <data name="OcrHelp" xml:space="preserve">
+    <value>Scanned pages are recognized automatically. Choose an installed language to recognize this page again. Results support selection and search, entirely on this device.</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>Recognition language</value>
+  </data>
+  <data name="OcrRecognize" xml:space="preserve">
+    <value>Recognize this page</value>
+  </data>
+  <data name="OcrWorking" xml:space="preserve">
+    <value>Recognizing…</value>
+  </data>
+  <data name="OcrCompleted" xml:space="preserve">
+    <value>Recognized {0} words. Close this dialog to select text.</value>
+  </data>
+  <data name="OcrFailed" xml:space="preserve">
+    <value>Recognition failed: {0}</value>
+  </data>
+  <data name="OcrMissingLanguages" xml:space="preserve">
+    <value>No Windows OCR language is installed. Add a language and its optical character recognition feature in Windows Settings &gt; Time &amp; language, then try again.</value>
+  </data>
+  <data name="OcrSelectionHelp" xml:space="preserve">
+    <value>Select recognized words; OCR results may need correction</value>
+  </data>
+  <data name="TextSelectionHandle" xml:space="preserve">
+    <value>Adjust text selection</value>
+  </data>
+  <data name="HistoryTitle" xml:space="preserve">
+    <value>Save history</value>
+  </data>
+  <data name="HistoryHelp" xml:space="preserve">
+    <value>Each save keeps the PDF and editable annotations. The original and recent versions are retained (up to 20 versions, normally within 512 MB).</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>Save annotations to create your first snapshots.</value>
+  </data>
+  <data name="HistoryRestore" xml:space="preserve">
+    <value>Restore this snapshot</value>
+  </data>
+  <data name="HistoryRestoreConfirm" xml:space="preserve">
+    <value>Pending edits will be saved first and the current version kept in history. The original file will then be restored to this snapshot, with annotations still editable.</value>
+  </data>
+  <data name="HistoryPageCount" xml:space="preserve">
+    <value>Page {0} of {1}</value>
+  </data>
+  <data name="HistoryPreviousPage" xml:space="preserve">
+    <value>Preview previous page</value>
+  </data>
+  <data name="HistoryNextPage" xml:space="preserve">
+    <value>Preview next page</value>
+  </data>
+  <data name="HistoryBaseline" xml:space="preserve">
+    <value>Original version before the first edit</value>
+  </data>
+  <data name="HistoryRescue" xml:space="preserve">
+    <value>Version kept automatically before a restore</value>
+  </data>
+  <data name="HistorySaved" xml:space="preserve">
+    <value>Saved PDF and editable annotations</value>
+  </data>
+  <data name="HistoryFailed" xml:space="preserve">
+    <value>Save history operation failed: {0}</value>
+  </data>
+  <data name="HistoryCaptureFailed" xml:space="preserve">
+    <value>The PDF was saved, but history could not be completed: {0}</value>
+  </data>
+  <data name="InkSelectLabel.Text" xml:space="preserve">
+    <value>Lasso select</value>
+  </data>
+  <data name="BarrelSelectionHelp.Text" xml:space="preserve">
+    <value>Choose Lasso and draw a loop with the pen or mouse, or hold the pen barrel button while drawing. Drag inside to move, corners to resize, edges to stretch, or the round grip to rotate.</value>
+  </data>
+  <data name="HistoryWrongDocument" xml:space="preserve">
+    <value>This snapshot belongs to a different document.</value>
+  </data>
+  <data name="InkScaleHandle" xml:space="preserve">
+    <value>Resize ink (keep proportions)</value>
+  </data>
+  <data name="InkStretchHandle" xml:space="preserve">
+    <value>Stretch ink</value>
+  </data>
+  <data name="InkRotateHandle" xml:space="preserve">
+    <value>Rotate ink (Shift: 15° steps)</value>
+  </data>
+  <data name="PrintCommand.Text" xml:space="preserve">
+    <value>Print… (Ctrl+P)</value>
+  </data>
+  <data name="PrintErrorTitle" xml:space="preserve">
+    <value>Unable to print</value>
+  </data>
+  <data name="PrintUnavailable" xml:space="preserve">
+    <value>Printing is not available on this device.</value>
+  </data>
+  <data name="PrintFailed" xml:space="preserve">
+    <value>The document could not be printed. Please try again.</value>
+  </data>
+  <data name="PrintPageRangeLabel" xml:space="preserve">
+    <value>Pages (blank = all, e.g. 1-3,5)</value>
+  </data>
+  <data name="PrintPageRangeError" xml:space="preserve">
+    <value>Enter valid page numbers, such as 1-3,5, within this document.</value>
+  </data>
+  <data name="TileRecentReading" xml:space="preserve"><value>Recently read</value></data>
+  <data name="TileReadingProgress" xml:space="preserve"><value>Page {0} / {1}</value></data>
+</root>

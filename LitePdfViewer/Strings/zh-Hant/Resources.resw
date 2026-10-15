@@ -1,0 +1,644 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="AnnotationTools" xml:space="preserve">
+    <value>註解工具</value>
+  </data>
+  <data name="AnnotationToolsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>註解工具</value>
+  </data>
+  <data name="AnnotationToolsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>展開註解工具</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>輕量 PDF 閱讀器，支援手寫註解與文字重點標記。</value>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>uwPDF - 輕量 PDF 閱讀器</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ClearPage" xml:space="preserve">
+    <value>清除此頁註解</value>
+  </data>
+  <data name="ClearPageLabel1.Text" xml:space="preserve">
+    <value>清除此頁註解</value>
+  </data>
+  <data name="CloseSearch" xml:space="preserve">
+    <value>關閉搜尋</value>
+  </data>
+  <data name="CloseSearchButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>關閉搜尋</value>
+  </data>
+  <data name="CloseSearchButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>關閉 (Esc)</value>
+  </data>
+  <data name="CloseThumbnails" xml:space="preserve">
+    <value>關閉縮圖</value>
+  </data>
+  <data name="CloseThumbnailsLabel1.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>關閉縮圖</value>
+  </data>
+  <data name="CloseThumbnailsLabel1.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>關閉縮圖</value>
+  </data>
+  <data name="CloseTip" xml:space="preserve">
+    <value>關閉 (Esc)</value>
+  </data>
+  <data name="CollapseAnnotations" xml:space="preserve">
+    <value>收合註解工具，返回文字選取</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>色彩</value>
+  </data>
+  <data name="ColorLabel1.Text" xml:space="preserve">
+    <value>色彩</value>
+  </data>
+  <data name="ColorLabel2.Text" xml:space="preserve">
+    <value>色彩</value>
+  </data>
+  <data name="ColorName" xml:space="preserve">
+    <value>色彩 {0}</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>複製 (Ctrl+C)</value>
+  </data>
+  <data name="CopyFailed" xml:space="preserve">
+    <value>複製失敗，請再試一次</value>
+  </data>
+  <data name="CountingMatches" xml:space="preserve">
+    <value>正在計算相符項目…</value>
+  </data>
+  <data name="DeleteHighlight" xml:space="preserve">
+    <value>刪除此重點標記</value>
+  </data>
+  <data name="Deselect" xml:space="preserve">
+    <value>取消選取 (Esc)</value>
+  </data>
+  <data name="DontSave" xml:space="preserve">
+    <value>不要儲存</value>
+  </data>
+  <data name="EmptyHint" xml:space="preserve">
+    <value>開啟 PDF，開始閱讀與註解。</value>
+  </data>
+  <data name="EmptyHintLabel1.Text" xml:space="preserve">
+    <value>開啟 PDF，開始閱讀與註解。</value>
+  </data>
+  <data name="Eraser" xml:space="preserve">
+    <value>橡皮擦</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>錯誤</value>
+  </data>
+  <data name="ExpandAnnotations" xml:space="preserve">
+    <value>展開註解工具</value>
+  </data>
+  <data name="FindNextButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>下一個相符項目</value>
+  </data>
+  <data name="FindNextButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>下一個 (Enter)</value>
+  </data>
+  <data name="FindPdf" xml:space="preserve">
+    <value>尋找 PDF 文字</value>
+  </data>
+  <data name="FindPlaceholder" xml:space="preserve">
+    <value>尋找文字</value>
+  </data>
+  <data name="FindPreviousButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>上一個相符項目</value>
+  </data>
+  <data name="FindPreviousButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>上一個 (Shift+Enter)</value>
+  </data>
+  <data name="FitButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>符合頁面</value>
+  </data>
+  <data name="FitButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>符合頁面 (0)</value>
+  </data>
+  <data name="FitPage" xml:space="preserve">
+    <value>符合頁面</value>
+  </data>
+  <data name="FitPageTip" xml:space="preserve">
+    <value>符合頁面 (0)</value>
+  </data>
+  <data name="HighlightSelection" xml:space="preserve">
+    <value>將選取文字標記重點</value>
+  </data>
+  <data name="Highlighter" xml:space="preserve">
+    <value>螢光筆</value>
+  </data>
+  <data name="HighlighterSettings" xml:space="preserve">
+    <value>螢光筆設定</value>
+  </data>
+  <data name="HighlighterSettingsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>螢光筆設定</value>
+  </data>
+  <data name="HighlighterSettingsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>螢光筆色彩與粗細</value>
+  </data>
+  <data name="HighlighterSettingsTip" xml:space="preserve">
+    <value>螢光筆色彩與粗細</value>
+  </data>
+  <data name="HighlighterSize" xml:space="preserve">
+    <value>螢光筆粗細</value>
+  </data>
+  <data name="HighlighterSizeSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>螢光筆粗細</value>
+  </data>
+  <data name="HighlighterTip" xml:space="preserve">
+    <value>螢光筆；再按一下設定色彩與粗細</value>
+  </data>
+  <data name="InkMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>更多註解選項</value>
+  </data>
+  <data name="InkMoreButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>更多註解選項</value>
+  </data>
+  <data name="LoadingText" xml:space="preserve">
+    <value>正在載入文字…</value>
+  </data>
+  <data name="MatchCount" xml:space="preserve">
+    <value>第{0}/{1}個</value>
+  </data>
+  <data name="MoreAnnotations" xml:space="preserve">
+    <value>更多註解選項</value>
+  </data>
+  <data name="NextButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>下一頁</value>
+  </data>
+  <data name="NextButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>下一頁</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>下一個相符項目</value>
+  </data>
+  <data name="NextMatchTip" xml:space="preserve">
+    <value>下一個 (Enter)</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>下一頁</value>
+  </data>
+  <data name="NoMatches" xml:space="preserve">
+    <value>沒有相符文字</value>
+  </data>
+  <data name="NoMatchesPartial" xml:space="preserve">
+    <value>找不到相符文字；{0} 頁無法讀取文字</value>
+  </data>
+  <data name="NoSelectableText" xml:space="preserve">
+    <value>此頁沒有可選取的文字</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="OpenButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>開啟 PDF</value>
+  </data>
+  <data name="OpenButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>開啟 PDF (Ctrl+O)</value>
+  </data>
+  <data name="OpenFailed" xml:space="preserve">
+    <value>無法開啟 PDF：{0}</value>
+  </data>
+  <data name="OpenPdf" xml:space="preserve">
+    <value>開啟 PDF</value>
+  </data>
+  <data name="OpenPdfCommand" xml:space="preserve">
+    <value>開啟 PDF…</value>
+  </data>
+  <data name="OpenPdfCommandLabel1.Content" xml:space="preserve">
+    <value>開啟 PDF…</value>
+  </data>
+  <data name="OpenPdfFirst" xml:space="preserve">
+    <value>請先開啟 PDF 檔案。</value>
+  </data>
+  <data name="OpenPdfTip" xml:space="preserve">
+    <value>開啟 PDF (Ctrl+O)</value>
+  </data>
+  <data name="PageAccessible" xml:space="preserve">
+    <value>PDF 第 {0} 頁</value>
+  </data>
+  <data name="PageSizeError" xml:space="preserve">
+    <value>無法讀取 PDF 頁面尺寸。</value>
+  </data>
+  <data name="Pages" xml:space="preserve">
+    <value>頁面</value>
+  </data>
+  <data name="PagesLabel1.Text" xml:space="preserve">
+    <value>頁面</value>
+  </data>
+  <data name="PdfFileType" xml:space="preserve">
+    <value>PDF 文件</value>
+  </data>
+  <data name="Pen" xml:space="preserve">
+    <value>畫筆</value>
+  </data>
+  <data name="PenSettings" xml:space="preserve">
+    <value>畫筆設定</value>
+  </data>
+  <data name="PenSettingsButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>畫筆設定</value>
+  </data>
+  <data name="PenSettingsButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>畫筆色彩與粗細</value>
+  </data>
+  <data name="PenSettingsTip" xml:space="preserve">
+    <value>畫筆色彩與粗細</value>
+  </data>
+  <data name="PenSize" xml:space="preserve">
+    <value>畫筆粗細</value>
+  </data>
+  <data name="PenSizeSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>畫筆粗細</value>
+  </data>
+  <data name="PenTip" xml:space="preserve">
+    <value>畫筆；再按一下設定色彩與粗細</value>
+  </data>
+  <data name="PreviousButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>上一頁</value>
+  </data>
+  <data name="PreviousButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>上一頁</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>上一個相符項目</value>
+  </data>
+  <data name="PreviousMatchTip" xml:space="preserve">
+    <value>上一個 (Shift+Enter)</value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>上一頁</value>
+  </data>
+  <data name="RenderedPageAccessible" xml:space="preserve">
+    <value>已轉譯的 PDF 第 {0} 頁</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>儲存</value>
+  </data>
+  <data name="SaveAnnotations" xml:space="preserve">
+    <value>儲存註解</value>
+  </data>
+  <data name="SaveAnnotationsTip" xml:space="preserve">
+    <value>儲存註解 (Ctrl+S)</value>
+  </data>
+  <data name="SaveButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>儲存註解</value>
+  </data>
+  <data name="SaveButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>儲存註解 (Ctrl+S)</value>
+  </data>
+  <data name="SaveDirtyTip" xml:space="preserve">
+    <value>儲存註解 (Ctrl+S) *</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>儲存失敗：{0}</value>
+  </data>
+  <data name="SavedFeedback" xml:space="preserve">
+    <value>已儲存 ✓</value>
+  </data>
+  <data name="SavedTip" xml:space="preserve">
+    <value>已儲存 (Ctrl+S)</value>
+  </data>
+  <data name="SearchButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>搜尋 PDF 文字</value>
+  </data>
+  <data name="SearchButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>搜尋 (Ctrl+F)</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>尋找失敗：{0}</value>
+  </data>
+  <data name="SearchPdf" xml:space="preserve">
+    <value>搜尋 PDF 文字</value>
+  </data>
+  <data name="SearchTextBox.PlaceholderText" xml:space="preserve">
+    <value>尋找文字</value>
+  </data>
+  <data name="SearchTextBox.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>尋找 PDF 文字</value>
+  </data>
+  <data name="SearchTip" xml:space="preserve">
+    <value>搜尋 (Ctrl+F)</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>正在尋找…</value>
+  </data>
+  <data name="SearchingPage" xml:space="preserve">
+    <value>正在尋找：第 {0} 頁</value>
+  </data>
+  <data name="SelectAllPage" xml:space="preserve">
+    <value>全選此頁文字 (Ctrl+A)</value>
+  </data>
+  <data name="SelectText" xml:space="preserve">
+    <value>選取文字</value>
+  </data>
+  <data name="SelectTextHelp" xml:space="preserve">
+    <value>滑鼠拖曳選取文字；手指長按選詞後拖曳控點。手寫筆用於註記。</value>
+  </data>
+  <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>分享 PDF</value>
+  </data>
+  <data name="ShareButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>分享 PDF（自動儲存註解）</value>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>無法儲存或分享此 PDF，請重新開啟檔案後再試。</value>
+  </data>
+  <data name="SharePanelError" xml:space="preserve">
+    <value>無法開啟分享面板</value>
+  </data>
+  <data name="SharePdf" xml:space="preserve">
+    <value>分享 PDF</value>
+  </data>
+  <data name="ShareTip" xml:space="preserve">
+    <value>分享 PDF（自動儲存註解）</value>
+  </data>
+  <data name="SharedPdfDescription" xml:space="preserve">
+    <value>包含已儲存註解的 PDF。</value>
+  </data>
+  <data name="SkippedPages" xml:space="preserve">
+    <value>；{0} 頁無法讀取文字</value>
+  </data>
+  <data name="StrokeSize" xml:space="preserve">
+    <value>粗細</value>
+  </data>
+  <data name="StrokeSizeLabel1.Text" xml:space="preserve">
+    <value>粗細</value>
+  </data>
+  <data name="StrokeSizeLabel2.Text" xml:space="preserve">
+    <value>粗細</value>
+  </data>
+  <data name="TextLayerFailed" xml:space="preserve">
+    <value>文字層載入失敗</value>
+  </data>
+  <data name="TextLayerUnavailable" xml:space="preserve">
+    <value>文字層載入失敗；仍可預覽及手寫註解</value>
+  </data>
+  <data name="ThumbnailAccessible" xml:space="preserve">
+    <value>第 {0} 頁縮圖</value>
+  </data>
+  <data name="Thumbnails" xml:space="preserve">
+    <value>頁面縮圖</value>
+  </data>
+  <data name="ThumbsToggle.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>頁面縮圖</value>
+  </data>
+  <data name="ThumbsToggle.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>頁面縮圖</value>
+  </data>
+  <data name="TopClearButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>清除此頁註解</value>
+  </data>
+  <data name="TopEraserButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>橡皮擦</value>
+  </data>
+  <data name="TopEraserButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>橡皮擦</value>
+  </data>
+  <data name="TopHighlighterButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>螢光筆</value>
+  </data>
+  <data name="TopHighlighterButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>螢光筆；再按一下設定色彩與粗細</value>
+  </data>
+  <data name="TopPenButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>畫筆</value>
+  </data>
+  <data name="TopPenButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>畫筆；再按一下設定色彩與粗細</value>
+  </data>
+  <data name="TopSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>選取文字</value>
+  </data>
+  <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>選取文字（滑鼠或手指，收起註記工具列）</value>
+  </data>
+  <data name="TopTouchWritingButton.Content" xml:space="preserve">
+    <value>觸控書寫</value>
+  </data>
+  <data name="TopTouchWritingButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>觸控書寫</value>
+  </data>
+  <data name="TopUndoButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>復原</value>
+  </data>
+  <data name="TopUndoButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>復原 (Ctrl+Z)</value>
+  </data>
+  <data name="TouchWriting" xml:space="preserve">
+    <value>觸控書寫</value>
+  </data>
+  <data name="TouchWritingHelp" xml:space="preserve">
+    <value>關閉時可用手指捲動</value>
+  </data>
+  <data name="TouchWritingHelpLabel1.Text" xml:space="preserve">
+    <value>關閉時可用手指捲動</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>復原</value>
+  </data>
+  <data name="UndoTip" xml:space="preserve">
+    <value>復原 (Ctrl+Z)</value>
+  </data>
+  <data name="UnsavedPrompt" xml:space="preserve">
+    <value>目前文件有尚未儲存的註解。要儲存變更嗎？</value>
+  </data>
+  <data name="UnsavedTitle" xml:space="preserve">
+    <value>尚未儲存的變更</value>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>放大</value>
+  </data>
+  <data name="ZoomInButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>放大</value>
+  </data>
+  <data name="ZoomInButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>放大 (+)</value>
+  </data>
+  <data name="ZoomInTip" xml:space="preserve">
+    <value>放大 (+)</value>
+  </data>
+  <data name="ZoomInputOkButton.Content" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="ZoomLevel" xml:space="preserve">
+    <value>縮放比例</value>
+  </data>
+  <data name="ZoomLevelTip" xml:space="preserve">
+    <value>按一下輸入精確縮放比例</value>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>縮小</value>
+  </data>
+  <data name="ZoomOutButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>縮小</value>
+  </data>
+  <data name="ZoomOutButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>縮小 (-)</value>
+  </data>
+  <data name="ZoomOutTip" xml:space="preserve">
+    <value>縮小 (-)</value>
+  </data>
+  <data name="ZoomPercentButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>縮放比例</value>
+  </data>
+  <data name="ZoomPercentButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>按一下輸入精確縮放比例</value>
+  </data>
+  <data name="ZoomSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>縮放滑桿</value>
+  </data>
+  <data name="ZoomSlider.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>縮放滑桿</value>
+  </data>
+  <data name="SavedHighlightsUnavailable" xml:space="preserve">
+    <value>無法讀取已儲存的重點標記</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="InkSelection" xml:space="preserve">
+    <value>選取的筆跡</value>
+  </data>
+  <data name="InkSelectionHelp" xml:space="preserve">
+    <value>拖曳選取範圍內部移動；角點等比例縮放，邊點拉伸，圓形控點旋轉。Shift 以 15° 旋轉；Esc 取消；Ctrl+Z 復原。</value>
+  </data>
+  <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>套索選取筆跡</value>
+  </data>
+  <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>套索選取筆跡（用筆或滑鼠畫圈；書寫時按住筆側鍵可暫時選取）</value>
+  </data>
+  <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>更多文件工具</value>
+  </data>
+  <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>修改記錄與文字辨識</value>
+  </data>
+  <data name="HistoryCommand.Text" xml:space="preserve">
+    <value>修改記錄…</value>
+  </data>
+  <data name="OcrCommand.Text" xml:space="preserve">
+    <value>辨識本頁文字…</value>
+  </data>
+  <data name="OcrTitle" xml:space="preserve">
+    <value>系統文字辨識</value>
+  </data>
+  <data name="OcrHelp" xml:space="preserve">
+    <value>掃描頁會自動嘗試辨識。也可選擇已安裝的語言，重新辨識本頁。辨識結果用於選字與搜尋，全程在本機完成。</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>辨識語言</value>
+  </data>
+  <data name="OcrRecognize" xml:space="preserve">
+    <value>辨識本頁</value>
+  </data>
+  <data name="OcrWorking" xml:space="preserve">
+    <value>正在辨識…</value>
+  </data>
+  <data name="OcrCompleted" xml:space="preserve">
+    <value>已辨識 {0} 個詞，可關閉此視窗並選字。</value>
+  </data>
+  <data name="OcrFailed" xml:space="preserve">
+    <value>辨識失敗：{0}</value>
+  </data>
+  <data name="OcrMissingLanguages" xml:space="preserve">
+    <value>Windows 尚未安裝 OCR 語言。請在系統設定的「時間與語言」中新增所需語言並安裝文字辨識功能，再重試。</value>
+  </data>
+  <data name="OcrSelectionHelp" xml:space="preserve">
+    <value>OCR 文字可逐詞選取，辨識結果可能需要校對</value>
+  </data>
+  <data name="TextSelectionHandle" xml:space="preserve">
+    <value>調整文字選取範圍</value>
+  </data>
+  <data name="HistoryTitle" xml:space="preserve">
+    <value>修改記錄</value>
+  </data>
+  <data name="HistoryHelp" xml:space="preserve">
+    <value>每次儲存都會留下 PDF 與可編輯註記快照。保留原始版本與最近記錄（最多 20 份，一般上限 512 MB）。</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>儲存註記後，這裡會顯示修改快照。</value>
+  </data>
+  <data name="HistoryRestore" xml:space="preserve">
+    <value>還原此快照</value>
+  </data>
+  <data name="HistoryRestoreConfirm" xml:space="preserve">
+    <value>目前尚未儲存的修改會先儲存，並保留還原前的版本。之後原始檔案將還原至此快照，註記仍可編輯。</value>
+  </data>
+  <data name="HistoryPageCount" xml:space="preserve">
+    <value>第 {0}/{1} 頁</value>
+  </data>
+  <data name="HistoryPreviousPage" xml:space="preserve">
+    <value>預覽上一頁</value>
+  </data>
+  <data name="HistoryNextPage" xml:space="preserve">
+    <value>預覽下一頁</value>
+  </data>
+  <data name="HistoryBaseline" xml:space="preserve">
+    <value>首次修改前的原始版本</value>
+  </data>
+  <data name="HistoryRescue" xml:space="preserve">
+    <value>還原前自動保留的版本</value>
+  </data>
+  <data name="HistorySaved" xml:space="preserve">
+    <value>已儲存的 PDF 與可編輯註記</value>
+  </data>
+  <data name="HistoryFailed" xml:space="preserve">
+    <value>修改記錄操作失敗：{0}</value>
+  </data>
+  <data name="HistoryCaptureFailed" xml:space="preserve">
+    <value>PDF 已儲存，但修改記錄未能完成：{0}</value>
+  </data>
+  <data name="InkSelectLabel.Text" xml:space="preserve">
+    <value>套索選取</value>
+  </data>
+  <data name="BarrelSelectionHelp.Text" xml:space="preserve">
+    <value>選擇套索後，用筆或滑鼠畫圈；書寫時也可按住筆側鍵暫時選取。拖曳選取範圍內部移動，角點等比例縮放，邊點拉伸，圓形控點旋轉。</value>
+  </data>
+  <data name="HistoryWrongDocument" xml:space="preserve">
+    <value>此快照屬於另一份文件，無法還原目前檔案。</value>
+  </data>
+  <data name="InkScaleHandle" xml:space="preserve">
+    <value>等比例縮放筆跡</value>
+  </data>
+  <data name="InkStretchHandle" xml:space="preserve">
+    <value>拉伸筆跡</value>
+  </data>
+  <data name="InkRotateHandle" xml:space="preserve">
+    <value>旋轉筆跡（Shift：每次 15°）</value>
+  </data>
+  <data name="PrintCommand.Text" xml:space="preserve">
+    <value>列印…（Ctrl+P）</value>
+  </data>
+  <data name="PrintErrorTitle" xml:space="preserve">
+    <value>無法列印</value>
+  </data>
+  <data name="PrintUnavailable" xml:space="preserve">
+    <value>此裝置不支援列印。</value>
+  </data>
+  <data name="PrintFailed" xml:space="preserve">
+    <value>文件列印失敗，請重試。</value>
+  </data>
+  <data name="PrintPageRangeLabel" xml:space="preserve">
+    <value>頁碼（留空為全部，如 1-3,5）</value>
+  </data>
+  <data name="PrintPageRangeError" xml:space="preserve">
+    <value>請輸入文件範圍內的有效頁碼，例如 1-3,5。</value>
+  </data>
+  <data name="TileRecentReading" xml:space="preserve"><value>最近閱讀</value></data>
+  <data name="TileReadingProgress" xml:space="preserve"><value>第 {0} / {1} 頁</value></data>
+</root>
