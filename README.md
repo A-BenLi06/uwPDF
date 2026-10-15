@@ -14,6 +14,10 @@
 
 uwPDF is a UWP/XAML application inspired by the original Microsoft Edge PDF experience and the compact presentation of macOS Quick Look. It focuses on reading, selecting text, and writing on PDFs with a pen or mouse.
 
+<p align="center">
+  <img src="docs/screenshots/sample-pdf-1.png" alt="uwPDF reading a PDF with page thumbnails and the floating reading controls" width="720" />
+</p>
+
 ## Core Highlights
 
 - **Native Windows components.** System PDF rendering, Windows Ink, native file picking, sharing, and printing.
@@ -58,6 +62,21 @@ GitHub downloads use the sideload identity `Ben.LitePdfViewerPreview`. The sourc
 - Search document text with highlighted matches, next/previous navigation, and wraparound.
 - Use offline Windows OCR for image-only pages, or recognize the current page with a selected installed recognition language. OCR provides text for selection and search; it does not add a searchable text layer to the saved PDF.
 
+| Open a document | Select and copy text |
+| :---: | :---: |
+| [![uwPDF home screen with the Open PDF button](docs/screenshots/home-screen.png)](docs/screenshots/home-screen.png) | [![PDF text selection with copy and highlight commands](docs/screenshots/pdf-text-select.png)](docs/screenshots/pdf-text-select.png) |
+
+| Find text | Choose an OCR language |
+| :---: | :---: |
+| [![Document search showing the current match and total match count](docs/screenshots/text-find-tool.png)](docs/screenshots/text-find-tool.png) | [![Windows text recognition dialog with an installed language selector](docs/screenshots/ocr.png)](docs/screenshots/ocr.png) |
+
+<details>
+<summary>See search on a scanned page after OCR</summary>
+
+![Search highlighting recognized text in a scanned sample letter](docs/screenshots/ocr-sample.png)
+
+</details>
+
 ### Annotations & Markup
 
 - Draw with a pen or mouse using Windows Ink; choose pen/highlighter colors and sizes, erase ink, and undo edits. Touch pans the document.
@@ -66,11 +85,19 @@ GitHub downloads use the sideload identity `Ben.LitePdfViewerPreview`. The sourc
 - Save editable ink and text highlights into the current PDF as standard annotations with appearance streams for other readers. uwPDF also keeps local editable annotation data.
 - Preview and restore local save-history snapshots. History is stored on the device and is not included when sharing the PDF.
 
+| Ink, highlights, and lasso transforms | Preview and restore save history |
+| :---: | :---: |
+| [![PDF highlights and freehand ink with lasso resize and rotation handles](docs/screenshots/pdf-annotating.png)](docs/screenshots/pdf-annotating.png) | [![Save history dialog with saved versions, page preview, and restore command](docs/screenshots/snapshot-and-recall.png)](docs/screenshots/snapshot-and-recall.png) |
+
 ### Sharing, Printing & Windows Integration
 
 - Share the PDF through the native Windows sharing interface after saving pending annotations.
 - Print with the native Windows print dialog, including page ranges. Printing includes pending ink/highlights without saving the original file.
 - On Windows 10, live tiles can show the most recently opened document's thumbnail, filename, page number, and reading progress. Small, medium, wide, and large tile assets are included.
+
+<p align="center">
+  <img src="docs/screenshots/uwp-share-api.png" alt="uwPDF sharing a PDF through the native Windows share interface" width="640" />
+</p>
 
 The current app does not provide tabs, detachable document windows, facing-page layouts, a bookmark tree, a presentation mode, text editing, underline/strikethrough tools, sticky notes, page reordering/extraction, split/merge tools, or image export.
 
