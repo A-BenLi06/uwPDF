@@ -2781,6 +2781,7 @@ namespace LitePdfViewer
 
         private void UpdateUi()
         {
+            ScheduleReadingTile();
             var hasDocument = document != null && pageViews.Count > 0;
             var hasPrevious = hasDocument && pageIndex > 0;
             var hasNext = hasDocument && pageIndex + 1 < document.PageCount;

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -639,4 +639,6 @@
   <data name="PrintPageRangeError" xml:space="preserve">
     <value>請輸入文件範圍內的有效頁碼，例如 1-3,5。</value>
   </data>
+  <data name="TileRecentReading" xml:space="preserve"><value>最近閱讀</value></data>
+  <data name="TileReadingProgress" xml:space="preserve"><value>第 {0} / {1} 頁</value></data>
 </root>

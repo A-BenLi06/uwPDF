@@ -1,6 +1,7 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Compile Include="L.cs" />
+    <Compile Include="MainPage.Tiles.cs" />
     <Compile Include="PdfOcrSource.cs" />
     <Compile Include="PdfSnapshotStore.cs" />
     <Compile Include="MainPage.Ocr.cs" />

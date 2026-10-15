@@ -1,4 +1,4 @@
-param([string]$SourcePath, [string]$OutputDirectory)
+﻿param([string]$SourcePath, [string]$OutputDirectory)
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path $PSScriptRoot -Parent
 if (!$SourcePath) { $SourcePath=Join-Path $repoRoot 'LitePdfViewer/Branding/LogoSource.png' }
@@ -42,9 +42,11 @@ try {
     }
     $definitions=@(
         @{Name='Square44x44Logo'; Width=44; Height=44; Fill=0.84},
-        @{Name='Square150x150Logo'; Width=150; Height=150; Fill=0.72},
+        @{Name='Square71x71Logo'; Width=71; Height=71; Fill=0.50},
+        @{Name='Square150x150Logo'; Width=150; Height=150; Fill=0.40},
+        @{Name='Square310x310Logo'; Width=310; Height=310; Fill=(75.0/310)},
         @{Name='StoreLogo'; Width=50; Height=50; Fill=0.90},
-        @{Name='Wide310x150Logo'; Width=310; Height=150; Fill=0.72},
+        @{Name='Wide310x150Logo'; Width=310; Height=150; Fill=0.50},
         @{Name='SplashScreen'; Width=620; Height=300; Fill=0.54}
     )
     foreach ($definition in $definitions) {
@@ -75,5 +77,5 @@ try {
             }
         }
     }
-    Write-Output "Generated 67 transparent PNG assets from original artwork; subject crop=$crop."
+    Write-Output "Generated 77 transparent PNG assets from original artwork; subject crop=$crop."
 } finally { $source.Dispose() }
