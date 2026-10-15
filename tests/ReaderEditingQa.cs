@@ -163,6 +163,8 @@ namespace LitePdfViewer
                 QaEditingAssert(view.SelectionLayer.Children.OfType<Grid>().Count() == 2 && view.SelectionLayer.Children.OfType<Grid>().All(h => h.ManipulationMode == Windows.UI.Xaml.Input.ManipulationModes.None), "Two screen-sized selection handles");
                 report.AppendLine("PASS: native text quad geometry at 64/80/100/160%, whitespace rejection and selection handles (pen input is annotation-only).");
                 ClearTextSelection();
+                await QaTouchSelectionMenuAsync(view,output,report);
+                await QaPrintSnapshotAsync(view,output,report);
 
                 var scanned = await output.GetFileAsync("scanned.pdf");
                 var languages = OcrEngine.AvailableRecognizerLanguages;
@@ -258,6 +260,90 @@ namespace LitePdfViewer
             await LoadInkAsync(pageViews[0]); await LoadInkAsync(pageViews[1]);
             QaEditingAssert(pageViews[0].Highlights.Count>0 && pageViews[1].Highlights.Count>0,"Saved cross-page highlights were not restored as editable annotations");
             report.AppendLine("PASS: native forward/reverse four-page copy, selection survives endpoint virtualization, stable XAML pool through 500 drag updates (Gen0 collections="+(gcAfter-gcBefore)+"), accelerating edge scroll crosses pages, two-page highlight save/reload.");
+        }
+        private async Task QaTouchSelectionMenuAsync(PageView view,StorageFolder output,System.Text.StringBuilder report)
+        {
+            SetInkTool(InkTool.None); SetZoom(1,false); await Task.Delay(250);
+            var index=view.Glyphs.FindIndex(g=>g.Width>0 && !string.IsNullOrWhiteSpace(g.Text));
+            var glyph=view.Glyphs[index];
+            var point=new Point((glyph.X+glyph.Width/2)*view.LayoutWidth,(glyph.Y+glyph.Height/2)*view.LayoutHeight);
+            await SelectTouchWordAsync(view,point,++textHoldRequest,activeRenderToken); await Task.Delay(200);
+            QaEditingAssert(textMenuOpen && textMenu!=null && ((MenuFlyoutItem)textMenu.Items[0]).IsEnabled && SelectedText().Length>1,
+                "Touch hold opens a native copy menu for the selected word");
+            ClearTextSelection(); await Task.Delay(200);
+            SelectAllPageText(view); var before=SelectedText(); var first=selectionAnchor; var last=selectionEnd;
+            await SelectTouchWordAsync(view,point,++textHoldRequest,activeRenderToken); await Task.Delay(200);
+            QaEditingAssert(textMenuOpen && SelectedText()==before && selectionAnchor==first && selectionEnd==last,
+                "Holding inside an extended selection preserves the whole selection");
+            await QaEditingBitmapAsync(MainChrome,output,"touch-selection-menu.png");
+            ClearTextSelection(); await Task.Delay(200);
+            selectedTextPage=view; selectionAnchor=selectionEnd=index; selectionEndPage=null;
+            var click=view.SelectionLayer.TransformToVisual(DocumentScroller).TransformPoint(point);
+            await CompleteTextDragAsync(click,textSelectionVersion,++selectionInteraction,activeRenderToken);
+            QaEditingAssert(textMenu==null,"A plain cursor click must not open a menu before double-click selection");
+            ClearTextSelection();
+            selectedTextPage=view; selectionAnchor=selectionEnd=index; selectionEndPage=null;
+            var end=view.Glyphs.FindLastIndex(g=>g.Width>0 && !string.IsNullOrWhiteSpace(g.Text));
+            var endGlyph=view.Glyphs[end]; var endPoint=new Point((endGlyph.X+endGlyph.Width*.5)*view.LayoutWidth,(endGlyph.Y+endGlyph.Height*.5)*view.LayoutHeight);
+            var viewport=view.SelectionLayer.TransformToVisual(DocumentScroller).TransformPoint(endPoint);
+            var version=textSelectionVersion;
+            await CompleteTextDragAsync(viewport,version,++selectionInteraction,activeRenderToken); await Task.Delay(200);
+            QaEditingAssert(selectionEnd==end && textSelectionVersion!=version && textMenuOpen && ((MenuFlyoutItem)textMenu.Items[0]).IsEnabled,
+                "Final drag endpoint revision does not suppress the automatic copy menu");
+            ClearTextSelection(); await Task.Delay(200);
+            await CompleteTextDragAsync(viewport,textSelectionVersion,selectionInteraction-1,activeRenderToken);
+            QaEditingAssert(textMenu==null && !textMenuOpen,"A stale release cannot reopen a cleared selection menu");
+            report.AppendLine("PASS: native flyout opens after touch word-selection and drag finalization, keeps an extended range when held, enables Copy, rejects stale release, and preserves touch-panning ownership; physical touch gesture recognition requires device acceptance.");
+        }
+        private async Task QaPrintSnapshotAsync(PageView view,StorageFolder output,System.Text.StringBuilder report)
+        {
+            ClearTextSelection();
+            var workspace=await GetAnnotationFolderAsync();
+            var savedInk=await workspace.GetFileAsync(GetInkFileName(view.Index)); var oldInk=await FileIO.ReadBufferAsync(savedInk);
+            var original=await FileIO.ReadBufferAsync(currentFile); var saves=(await PdfSnapshotStore.ListAsync(workspace)).Count;
+            var dirty=view.Dirty;
+            var builder=new InkStrokeBuilder(); builder.SetDefaultDrawingAttributes(CreateInkAttributes());
+            var stroke=builder.CreateStroke(new[]{new Point(100,300),new Point(220,325)});
+            view.Strokes.AddStroke(stroke); MarkPageDirty(view);
+            var session=await PreparePrintSessionAsync();
+            try
+            {
+                QaEditingAssert(session.Pdf.PageCount==1 && session.Pages.SequenceEqual(new[]{0}) && view.Dirty &&
+                    Windows.Security.Cryptography.CryptographicBuffer.Compare(original,await FileIO.ReadBufferAsync(currentFile)) &&
+                    Windows.Security.Cryptography.CryptographicBuffer.Compare(oldInk,await FileIO.ReadBufferAsync(savedInk)) &&
+                    (await PdfSnapshotStore.ListAsync(workspace)).Count==saves,"Printing must not save the original, overwrite workspace ink or create save history");
+                var baseline=await QaSnapshotPageAsync(currentFile);
+                var printFile=await session.Folder.GetFileAsync("document.pdf");
+                var printed=await QaSnapshotPageAsync(printFile);
+                QaVerifyInkAppearance(baseline,printed,stroke.BoundingRect,view.LayoutWidth,view.LayoutHeight);
+                var description=new Windows.Graphics.Printing.PrintPageDescription { PageSize=new Size(816,1056),ImageableRect=new Rect(24,36,756,972),DpiX=300,DpiY=300 };
+                using(var visual=await CreatePrintVisualAsync(session,0,description,96))
+                {
+                    AttachPrintVisual(visual);
+                    await Task.Delay(100);
+                    try
+                    {
+                        QaEditingAssert(Math.Abs(visual.Page.ActualWidth-816)<.01 && Math.Abs(visual.Page.ActualHeight-1056)<.01 && visual.Image.Source!=null &&
+                            Canvas.GetLeft(visual.Image)>=23.99 && Canvas.GetTop(visual.Image)>=35.99,"Native PDF print visual honors paper/imageable area: "+
+                            visual.Page.ActualWidth+"x"+visual.Page.ActualHeight+" at "+Canvas.GetLeft(visual.Image)+","+Canvas.GetTop(visual.Image)+" source="+(visual.Image.Source!=null));
+                        await QaEditingBitmapAsync(visual.Page,output,"native-print-preview.png");
+                    }
+                    finally { PrintCanvas.Children.Remove(visual.Page); }
+                }
+                if(IsPrintingSupported())
+                {
+                    RegisterPrinting();
+                    QaEditingAssert(printSource!=null && printDocument!=null && printManager!=null,"Native PrintManager/PrintDocument registration");
+                }
+            }
+            finally
+            {
+                await ClosePrintSessionAsync(session);
+                foreach(var ink in view.Strokes.GetStrokes()) ink.Selected=ink==stroke;
+                view.Strokes.DeleteSelected();
+                if(!dirty) ClearPageDirty(view);
+            }
+            report.AppendLine("PASS: UWP print registration/source, native PDF print rendering and printable-area layout; isolated print snapshot includes unsaved ink, preserves original/workspace/history/dirty state, and releases print visuals. No printer job or system-dialog automation was performed.");
         }
         private void QaResizeSelectedInk(PageView view, int handle, double factor, uint pointer)
         {

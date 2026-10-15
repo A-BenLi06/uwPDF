@@ -621,4 +621,22 @@
   <data name="InkRotateHandle" xml:space="preserve">
     <value>インクの回転（Shift：15°刻み）</value>
   </data>
+  <data name="PrintCommand.Text" xml:space="preserve">
+    <value>印刷…（Ctrl+P）</value>
+  </data>
+  <data name="PrintErrorTitle" xml:space="preserve">
+    <value>印刷できません</value>
+  </data>
+  <data name="PrintUnavailable" xml:space="preserve">
+    <value>このデバイスでは印刷を利用できません。</value>
+  </data>
+  <data name="PrintFailed" xml:space="preserve">
+    <value>文書を印刷できませんでした。もう一度お試しください。</value>
+  </data>
+  <data name="PrintPageRangeLabel" xml:space="preserve">
+    <value>ページ（空欄はすべて。例：1-3,5）</value>
+  </data>
+  <data name="PrintPageRangeError" xml:space="preserve">
+    <value>文書内の有効なページ番号を入力してください（例：1-3,5）。</value>
+  </data>
 </root>

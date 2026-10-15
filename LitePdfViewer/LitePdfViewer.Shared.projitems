@@ -24,6 +24,8 @@
     <Compile Include="MainPage.PageGeometry.cs" />
     <Compile Include="MainPage.Save.cs" />
     <Compile Include="MainPage.Share.cs" />
+    <Compile Include="MainPage.Print.cs" />
+    <Compile Include="PdfPrintLayout.cs" />
     <Compile Include="MainPage.Window.cs" />
     <Compile Include="MainPage.Rendering.cs" />
     <Compile Include="MainPage.Thumbnails.cs" />

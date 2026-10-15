@@ -7,7 +7,7 @@ using Windows.UI.Xaml.Input;
 
 namespace Windows.System
 {
-    public enum VirtualKey { Menu=18, Control=17, F=70, O=79, S=83, C=67, A=65,
+    public enum VirtualKey { Menu=18, Control=17, F=70, O=79, P=80, S=83, C=67, A=65,
         Escape=27, Space=32, PageDown=34, Right=39, Down=40, Back=8, PageUp=33,
         Left=37, Up=38, Home=36, End=35, Add=107, Subtract=109, Number0=48, NumberPad0=96 }
 }
@@ -46,7 +46,7 @@ namespace LitePdfViewer
         private ulong activeRenderToken;
         private enum InkTool { None }
         private InkTool currentInkTool;
-        public int Navigations, Searches, Saves, Opens, Copies, Selections, Fits, Zooms;
+        public int Navigations, Searches, Saves, Opens, Prints, Copies, Selections, Fits, Zooms;
         public uint Page { get { return pageIndex; } }
         public bool Send(VirtualKey key, bool alt=false, bool control=false, object original=null, bool alreadyHandled=false)
         {
@@ -58,6 +58,7 @@ namespace LitePdfViewer
         private bool HasUnsavedChanges() { return false; }
         private void ShowSearch() { Searches++; }
         private Task OpenViaPickerAsync() { Opens++; return Task.FromResult(true); }
+        private Task ShowPrintUiAsync() { Prints++; return Task.FromResult(true); }
         private Task SaveCurrentAnnotationsWithFeedbackAsync() { Saves++; return Task.FromResult(true); }
         private void CopySelectedText() { Copies++; }
         private object GetCurrentPageView() { return null; }
@@ -81,9 +82,9 @@ internal static class PdfKeyboardTests
             foreach(var key in new[] {VirtualKey.Space,VirtualKey.Right,VirtualKey.Down,VirtualKey.Home,VirtualKey.End,VirtualKey.Add,VirtualKey.Number0})
                 Check(!page.Send(key,alt:true),"Alt combination was marked handled: "+key);
             Check(page.Page==0 && page.Navigations==0 && page.Zooms==0 && page.Fits==0,"Alt window shortcuts changed the reading view");
-            foreach(var key in new[] {VirtualKey.F,VirtualKey.S,VirtualKey.O})
+            foreach(var key in new[] {VirtualKey.F,VirtualKey.S,VirtualKey.O,VirtualKey.P})
                 Check(!page.Send(key,alt:true,control:true),"Ctrl+Alt combination was consumed");
-            Check(page.Searches==0 && page.Saves==0 && page.Opens==0,"Alt combinations invoked document commands");
+            Check(page.Searches==0 && page.Saves==0 && page.Opens==0 && page.Prints==0,"Alt combinations invoked document commands");
             Check(page.Send(VirtualKey.Right,alreadyHandled:true) && page.Page==0 && page.Navigations==0,"A control-owned arrow key changed the reading page");
             Check(page.Send(VirtualKey.F,control:true,alreadyHandled:true) && page.Searches==0,"An already handled shortcut escaped its control");
             Check(page.Send(VirtualKey.Space) && page.Page==1,"Plain Space stopped advancing the page");
@@ -93,6 +94,8 @@ internal static class PdfKeyboardTests
             Check(page.Send(VirtualKey.F,control:true) && page.Searches==1,"Ctrl+F stopped opening search");
             Check(page.Send(VirtualKey.S,control:true) && page.Saves==1,"Ctrl+S stopped saving annotations");
             Check(page.Send(VirtualKey.O,control:true) && page.Opens==1,"Ctrl+O stopped opening the picker");
+            Check(page.Send(VirtualKey.P,control:true) && page.Prints==1,"Ctrl+P did not invoke native printing");
+            Check(page.Send(VirtualKey.P,control:true,alreadyHandled:true) && page.Prints==1,"Control-owned Ctrl+P escaped its input control");
             Check(!page.Send(VirtualKey.Space,original:new Windows.UI.Xaml.Controls.TextBox()) && page.Page==0,"TextBox Space escaped into page navigation");
             page.SelectText(); Check(page.Send(VirtualKey.C,control:true) && page.Copies==1,"Ctrl+C stopped copying selected text");
             Check(!page.Send(VirtualKey.C,alt:true,control:true) && page.Copies==1,"Ctrl+Alt+C copied selection unexpectedly");

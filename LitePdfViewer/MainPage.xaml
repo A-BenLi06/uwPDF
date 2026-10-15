@@ -391,6 +391,7 @@
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE712;" />
                         <Button.Flyout>
                             <MenuFlyout>
+                                <MenuFlyoutItem x:Uid="PrintCommand" x:Name="PrintCommand" Click="PrintCommand_Click" />
                                 <MenuFlyoutItem x:Uid="HistoryCommand" Click="HistoryButton_Click" />
                                 <MenuFlyoutItem x:Uid="OcrCommand" Click="OcrButton_Click" />
                             </MenuFlyout>
@@ -761,5 +762,7 @@
             </Grid>
         </Border>
 
+        <!-- Separate print visuals never affect the reader's layout or input. -->
+        <Canvas x:Name="PrintCanvas" Grid.RowSpan="2" Opacity="0" IsHitTestVisible="False" />
     </Grid>
 </Page>

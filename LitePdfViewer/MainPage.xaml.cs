@@ -148,6 +148,7 @@ namespace LitePdfViewer
             InitializeTextSelectionInput();
             InitializeNativeScrollBars();
             InitializeSharing();
+            InitializePrinting();
             try
             {
                 dpiScale = DisplayInformation.GetForCurrentView().RawPixelsPerViewPixel;
@@ -1357,6 +1358,13 @@ namespace LitePdfViewer
             {
                 e.Handled = true;
                 ShowSearch();
+                return;
+            }
+
+            if (control && e.Key == Windows.System.VirtualKey.P && document != null)
+            {
+                e.Handled = true;
+                await ShowPrintUiAsync();
                 return;
             }
 
@@ -2760,6 +2768,7 @@ namespace LitePdfViewer
             TopSelectButton.IsEnabled = hasDocument;
             AnnotationToolsButton.IsEnabled = hasDocument;
             ShareButton.IsEnabled = hasDocument;
+            PrintCommand.IsEnabled = hasDocument && !preparingPrint && printSession == null && IsPrintingSupported();
             TopPenButton.IsEnabled = hasDocument;
             PenSettingsButton.IsEnabled = hasDocument;
             TopHighlighterButton.IsEnabled = hasDocument;

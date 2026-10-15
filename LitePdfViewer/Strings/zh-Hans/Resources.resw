@@ -621,4 +621,22 @@
   <data name="InkRotateHandle" xml:space="preserve">
     <value>旋转墨迹（Shift：每次 15°）</value>
   </data>
+  <data name="PrintCommand.Text" xml:space="preserve">
+    <value>打印…（Ctrl+P）</value>
+  </data>
+  <data name="PrintErrorTitle" xml:space="preserve">
+    <value>无法打印</value>
+  </data>
+  <data name="PrintUnavailable" xml:space="preserve">
+    <value>此设备不支持打印。</value>
+  </data>
+  <data name="PrintFailed" xml:space="preserve">
+    <value>文档打印失败，请重试。</value>
+  </data>
+  <data name="PrintPageRangeLabel" xml:space="preserve">
+    <value>页码（留空为全部，如 1-3,5）</value>
+  </data>
+  <data name="PrintPageRangeError" xml:space="preserve">
+    <value>请输入文档范围内的有效页码，例如 1-3,5。</value>
+  </data>
 </root>

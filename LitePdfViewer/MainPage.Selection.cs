@@ -18,6 +18,9 @@ namespace LitePdfViewer
         private bool selectionUpdateBusy, selectionDragPending;
         private DateTime selectionLastTick, selectionEdgeSince;
         private int selectionScrollDirection;
+        private int selectionInteraction, textHoldRequest;
+        private bool selectionMenuOnRelease;
+        private ManipulationModes? textViewportManipulation;
         private PageView SelectionEndpoint { get { return selectionEndPage ?? selectedTextPage; } }
 
         private bool TryGetSelectionRange(PageView view, out int first, out int last)
@@ -47,24 +50,36 @@ namespace LitePdfViewer
 
         private void InitializeTextSelectionInput()
         {
-            DocumentScroller.PointerMoved += (s,e) =>
+            // ScrollViewer class handlers can mark captured touch events handled
+            // before ordinary event subscribers run. Keep owning the grip drag
+            // through its final release/cancel even in that case.
+            DocumentScroller.AddHandler(PointerMovedEvent,new PointerEventHandler((s,e) =>
             {
                 if (selectionPointer != e.Pointer.PointerId) return;
                 selectionViewportPoint = e.GetCurrentPoint(DocumentScroller).Position;
                 selectionDragPending = true; UpdateSelectionScroll(); e.Handled = true;
-            };
-            DocumentScroller.PointerReleased += (s,e) => { if (selectionPointer == e.Pointer.PointerId) EndTextDrag(selectedTextPage,e); };
-            DocumentScroller.PointerCanceled += (s,e) => { if (selectionPointer == e.Pointer.PointerId) EndTextDrag(selectedTextPage,e,true); };
-            DocumentScroller.PointerCaptureLost += (s,e) =>
+            }),true);
+            DocumentScroller.AddHandler(PointerReleasedEvent,new PointerEventHandler((s,e) => { if (selectionPointer == e.Pointer.PointerId) EndTextDrag(selectedTextPage,e); }),true);
+            DocumentScroller.AddHandler(PointerCanceledEvent,new PointerEventHandler((s,e) => { if (selectionPointer == e.Pointer.PointerId) EndTextDrag(selectedTextPage,e,true); }),true);
+            DocumentScroller.AddHandler(PointerCaptureLostEvent,new PointerEventHandler((s,e) =>
             {
                 if (selectionPointer != e.Pointer.PointerId) return;
-                selectionPointer = null; StopSelectionScroll(); RedrawSelectionPages();
-            };
+                selectionPointer = null; selectionInteraction++; StopSelectionScroll(); RestoreTextManipulation(); RedrawSelectionPages();
+            }),true);
         }
 
         private bool CaptureTextPointer(PointerRoutedEventArgs e)
         {
+            if(textMenu!=null) { textMenu.Hide(); textMenu=null; }
+            textMenuOpen=false;
             if (!DocumentScroller.CapturePointer(e.Pointer)) return false;
+            selectionMenuOnRelease=selectedTextPage!=null && selectionAnchor>=0;
+            selectionInteraction++;
+            if(e.Pointer.PointerDeviceType==Windows.Devices.Input.PointerDeviceType.Touch)
+            {
+                textViewportManipulation=PageFrame.ManipulationMode;
+                PageFrame.ManipulationMode &= ~ManipulationModes.System;
+            }
             selectionPointer = e.Pointer.PointerId;
             selectionViewportPoint = e.GetCurrentPoint(DocumentScroller).Position;
             selectionDragPending = true;
@@ -72,6 +87,59 @@ namespace LitePdfViewer
             selectionEdgeSince = DateTime.MinValue; selectionScrollDirection = 0;
             UpdateSelectionScroll();
             return true;
+        }
+
+        private void RestoreTextManipulation()
+        {
+            if(textViewportManipulation.HasValue) PageFrame.ManipulationMode=textViewportManipulation.Value;
+            textViewportManipulation=null;
+        }
+
+        private async void TextHolding(PageView view,HoldingRoutedEventArgs e)
+        {
+            if(e.PointerDeviceType!=Windows.Devices.Input.PointerDeviceType.Touch || currentInkTool!=InkTool.None) return;
+            e.Handled=true;
+            if(e.HoldingState==Windows.UI.Input.HoldingState.Canceled) { textHoldRequest++; return; }
+            if(e.HoldingState!=Windows.UI.Input.HoldingState.Started || selectionPointer!=null) return;
+            var request=++textHoldRequest;
+            try { await SelectTouchWordAsync(view,e.GetPosition(view.SelectionLayer),request,activeRenderToken); }
+            catch(Exception ex) { System.Diagnostics.Debug.WriteLine("Text hold: "+ex.Message); }
+        }
+
+        private async Task SelectTouchWordAsync(PageView view,Point point,int request,ulong token)
+        {
+            await EnsurePageTextAsync(view,token);
+            if(request!=textHoldRequest || token!=activeRenderToken || currentInkTool!=InkTool.None || view.SelectionLayer==null || selectionPointer!=null) return;
+            var hit=HitGlyph(view,point,true,12/DocumentScroller.ZoomFactor);
+            if(hit<0) return;
+            int first,last;
+            if(!TryGetSelectionRange(view,out first,out last) || hit<first || hit>last)
+            { ClearInkSelection(); SelectWord(view,hit); }
+            ShowSelectionMenu(view.SelectionLayer.TransformToVisual(DocumentScroller).TransformPoint(point));
+        }
+
+        private async Task CompleteTextDragAsync(Point viewport,int version,int interaction,ulong token)
+        {
+            await UpdateSelectionFromViewportAsync(viewport,version,token,true);
+            // Finalizing an endpoint can increment textSelectionVersion. Use the
+            // gesture identity, not the range revision, to reject stale releases.
+            if(interaction!=selectionInteraction || token!=activeRenderToken || selectionPointer!=null || currentInkTool!=InkTool.None) return;
+            RedrawSelectionPages();
+            // A plain mouse click must leave double-click word selection usable.
+            // Grip releases and actual extended selections open the touch menu.
+            if(selectionMenuOnRelease || selectedTextPage!=SelectionEndpoint || selectionAnchor!=selectionEnd) ShowSelectionMenu(viewport);
+        }
+
+        private void ShowSelectionMenu(Point viewport)
+        {
+            if(currentInkTool!=InkTool.None || selectionPointer!=null || selectedTextPage==null || selectionAnchor<0 || selectionEnd<0) return;
+            if(textMenuOpen) return;
+            var view=SelectionEndpoint;
+            viewport.X=Math.Max(8,Math.Min(DocumentScroller.ActualWidth-8,viewport.X));
+            viewport.Y=Math.Max(8,Math.Min(DocumentScroller.ActualHeight-8,viewport.Y));
+            // The endpoint may be virtualized after a cross-page drag. Anchor to
+            // the viewport so the touch menu stays reachable on screen.
+            OpenTextMenu(view,null,DocumentScroller,viewport);
         }
 
         private async Task EnsureSelectionTextAsync(PageView view, int version, ulong token)

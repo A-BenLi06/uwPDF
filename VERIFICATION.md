@@ -1104,3 +1104,45 @@ hashes are historical and do not describe the final application packages.
   or synthetic hardware events. Actual Surface pen tip/barrel capture and touch
   panning still require device acceptance. RenderTargetBitmap previews inspect
   the XAML selection chrome; native InkCanvas ink is checked through PDF rendering.
+
+### Touch selection menus and UWP printing (2026-10-15)
+
+- Touch-down preserves the current selection while awaiting a hold or document
+  pan. Holding selects a word and opens a native MenuFlyout immediately; holding
+  inside a multi-word/cross-page range preserves that range. The follow-up touch
+  RightTapped no longer selects a smaller word. Double-click word selection and
+  cursor right-click remain supported.
+- Drag release finalizes its endpoint before opening the same flyout. A gesture
+  identity rejects stale releases without incorrectly rejecting a final endpoint
+  that changes the selection revision. A plain cursor click does not open a
+  premature menu. Handle capture hides an old menu, temporarily suspends system
+  panning for touch, and restores it on release/cancel/lost capture. Captured
+  ScrollViewer events use handledEventsToo so native class handling cannot hide
+  the final release. Flyouts anchor to the visible viewport.
+- Reader More → Print and Ctrl+P use native PrintManager/PrintDocument contracts,
+  with native printer options and a validated range field compatible with the
+  project's Windows 10 14393 baseline. Printing creates a temporary annotated PDF
+  from a copy of saved sidecars plus dirty in-memory pages. It does not write the
+  original PDF/workspace, clear dirty flags or create history snapshots.
+- Preview uses a three-page image cache with pagination revision checks. Final
+  output renders, submits and releases each page in order. Fit preserves aspect
+  ratio, centers within asymmetric printer margins and bounds each raster to
+  twelve million pixels (96-dpi preview, output targeting 300 dpi). Print visuals
+  live in a separate invisible canvas and do not change the reader layout.
+- Production-method tests pass range parsing/order/deduplication/error handling,
+  portrait/landscape/large-paper geometry, pixel limits and Ctrl+P routing (including
+  handled keys/Alt guards). Four-language resource coverage passes with 209 keys.
+- Native x64 application tests verify open/enabled Copy flyouts after word holds
+  and selection finalization, preservation of extended selection, plain-click and
+  stale-release behavior; native print registration/source, printer-area layout,
+  PDF appearance including unsaved ink, unchanged original/workspace/history and
+  retained dirty state. RenderTargetBitmap confirms the printable XAML visual
+  includes document content and annotations. Existing ink/undo/save/restore, OCR
+  and cross-page selection regressions pass; production x64 Debug builds succeed.
+- No computer-use automation, injected hardware events, system-print-dialog
+  automation or printer submission was used. Actual touchscreen gesture delivery,
+  system dialog/printer options and a physical/virtual printer job require manual
+  acceptance. API lifecycle references: Microsoft's UWP Printing sample and
+  ColoringBook's asynchronous PhotoPrintHelper:
+  https://github.com/microsoft/Windows-universal-samples/tree/main/Samples/Printing/cs
+  https://github.com/microsoft/Windows-appsample-coloringbook/blob/master/ColoringBook/Components/PhotoPrintHelper.cs

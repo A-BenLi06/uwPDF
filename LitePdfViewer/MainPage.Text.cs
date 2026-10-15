@@ -25,6 +25,7 @@ namespace LitePdfViewer
         private int selectionAnchor = -1, selectionEnd = -1;
         private uint? selectionPointer;
         private MenuFlyout textMenu;
+        private bool textMenuOpen;
         private DispatcherTimer selectionScrollTimer;
         private Point selectionViewportPoint;
         private static readonly Windows.UI.Core.CoreCursor TextCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.IBeam, 0);
@@ -66,23 +67,14 @@ namespace LitePdfViewer
             {
                 if (e.PointerDeviceType != Windows.Devices.Input.PointerDeviceType.Pen) ShowTextMenu(view, e);
             };
-            view.SelectionLayer.Holding += async (s, e) =>
-            {
-                if (e.PointerDeviceType != Windows.Devices.Input.PointerDeviceType.Touch ||
-                    e.HoldingState != Windows.UI.Input.HoldingState.Started || currentInkTool != InkTool.None) return;
-                var position = e.GetPosition(view.SelectionLayer); var token = activeRenderToken;
-                e.Handled = true;
-                await EnsurePageTextAsync(view, token);
-                if (token != activeRenderToken || view.SelectionLayer == null || currentInkTool != InkTool.None) return;
-                var hit = HitGlyph(view, position, false);
-                if (hit >= 0) SelectWord(view, hit);
-            };
+            view.SelectionLayer.Holding += (s, e) => TextHolding(view, e);
             view.SelectionLayer.DoubleTapped += (s, e) =>
             {
                 if (e.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Pen || currentInkTool != InkTool.None) return;
                 var hit = HitGlyph(view, e.GetPosition(view.SelectionLayer), false);
                 if (hit < 0) return;
                 SelectWord(view, hit);
+                ShowSelectionMenu(view.SelectionLayer.TransformToVisual(DocumentScroller).TransformPoint(e.GetPosition(view.SelectionLayer)));
                 e.Handled = true;
             };
             RedrawTextLayers(view);
@@ -124,7 +116,13 @@ namespace LitePdfViewer
         private async void TextPointerPressed(PageView view, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(view.SelectionLayer);
-            if (currentInkTool != InkTool.None || point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch) return;
+            if (currentInkTool != InkTool.None) return;
+            if (point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch)
+            {
+                // Touch down starts a potential hold or pan, never a new short
+                // selection. A touch grip owns its own captured drag instead.
+                textHoldRequest++; return;
+            }
             if (point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Pen)
             { ActivatePenInput(); return; }
             if (!point.Properties.IsLeftButtonPressed) return;
@@ -157,6 +155,7 @@ namespace LitePdfViewer
             if (selectionAnchor < 0) return;
             var hit = HitGlyph(view,point,true);
             if (hit < 0 || (SelectionEndpoint == view && selectionEnd == hit)) return;
+            selectionMenuOnRelease=true;
             selectionEndPage = view; selectionEnd = hit; textSelectionVersion++; RedrawSelectionPages();
         }
         private void UpdateSelectionScroll()
@@ -182,11 +181,12 @@ namespace LitePdfViewer
             if (canceled) { ClearTextSelection(); e.Handled=true; return; }
             var viewport=e.GetCurrentPoint(DocumentScroller).Position;
             var version=textSelectionVersion; var token=activeRenderToken;
+            var interaction=selectionInteraction;
             selectionPointer=null; StopSelectionScroll();
             DocumentScroller.ReleasePointerCapture(e.Pointer); e.Handled=true;
-            try { await UpdateSelectionFromViewportAsync(viewport,version,token,true); }
+            RestoreTextManipulation();
+            try { await CompleteTextDragAsync(viewport,version,interaction,token); }
             catch(Exception ex) { System.Diagnostics.Debug.WriteLine("Selection release: "+ex.Message); }
-            if(version==textSelectionVersion) RedrawSelectionPages();
         }
 
         private static int HitGlyph(PageView view, Point point, bool nearest, double maximumDistance = double.PositiveInfinity)
@@ -251,7 +251,11 @@ namespace LitePdfViewer
 
         private void ClearTextSelection()
         {
+            textHoldRequest++; selectionInteraction++;
+            selectionMenuOnRelease=false;
+            RestoreTextManipulation();
             if(textMenu!=null) { textMenu.Hide(); textMenu=null; }
+            textMenuOpen=false;
             var old=selectedTextPage; var endpoint=SelectionEndpoint;
             textSelectionVersion++;
             if(selectionCancellation!=null) { selectionCancellation.Cancel(); selectionCancellation.Dispose(); selectionCancellation=null; }
@@ -303,17 +307,27 @@ namespace LitePdfViewer
         private void ShowTextMenu(PageView view, RightTappedRoutedEventArgs e)
         {
             if (currentInkTool != InkTool.None || selectedInkPage == view) return;
+            // Holding already selects/preserves the range and opens the flyout.
+            // UWP's follow-up touch RightTapped must not select a word again.
+            if (e.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch) { e.Handled=true; return; }
             var point = e.GetPosition(view.SelectionLayer);
             var hit = HitGlyph(view, point, false);
             int rangeFirst,rangeLast;
             var inSelection=TryGetSelectionRange(view,out rangeFirst,out rangeLast);
             if(hit>=0 && (!inSelection || hit<rangeFirst || hit>rangeLast)) SelectWord(view,hit);
+            OpenTextMenu(view,point,view.SelectionLayer,point);
+            e.Handled = true;
+        }
+
+        private void OpenTextMenu(PageView view, Point? highlightPoint, FrameworkElement target, Point point)
+        {
+            int rangeFirst,rangeLast;
             var hasSelection=TryGetSelectionRange(view,out rangeFirst,out rangeLast);
             var menu = new MenuFlyout();
             AddTextCommand(menu, L.Get("CopyCommand"), hasSelection, CopySelectedText);
             AddTextCommand(menu, L.Get("HighlightSelection"), hasSelection && view.HighlightsLoaded, () => HighlightSelection(view));
             AddTextCommand(menu, L.Get("SelectAllPage"), view.Glyphs != null && view.Glyphs.Count > 0, () => SelectAllPageText(view));
-            var highlight = FindHighlight(view, point);
+            var highlight = highlightPoint.HasValue ? FindHighlight(view, highlightPoint.Value) : null;
             if (highlight != null)
             {
                 AddTextCommand(menu, L.Get("DeleteHighlight"), true, () =>
@@ -332,9 +346,10 @@ namespace LitePdfViewer
                     view.Glyphs == null ? L.Get("LoadingText") : L.Get("NoSelectableText"), IsEnabled = false });
             }
             if (textMenu != null) textMenu.Hide();
-            textMenu = menu;
-            menu.ShowAt(view.SelectionLayer, point);
-            e.Handled = true;
+            textMenu = menu; textMenuOpen=false;
+            menu.Opened+=(s,e)=> { if(textMenu==menu) textMenuOpen=true; };
+            menu.Closed+=(s,e)=> { if(textMenu==menu) textMenuOpen=false; };
+            menu.ShowAt(target, point);
         }
 
         private static void AddTextCommand(MenuFlyout menu, string label, bool enabled, Action action)
@@ -640,13 +655,13 @@ namespace LitePdfViewer
             return annotations.Stringify();
         }
 
-        private async Task SavePageAnnotationsAsync(PageView view, bool clearDirty = true)
+        private async Task SavePageAnnotationsAsync(PageView view, bool clearDirty = true, StorageFolder targetFolder = null)
         {
             if (view.IsLoadingInk) return;
             var revision = view.Revision;
             var highlights = view.HighlightsLoaded ? SerializeHighlights(view) : null;
             var token = activeRenderToken;
-            var folder = await GetAnnotationFolderAsync();
+            var folder = targetFolder ?? await GetAnnotationFolderAsync();
             if (token != activeRenderToken) return;
             await SaveInkAsync(view, folder);
             if (highlights != null)

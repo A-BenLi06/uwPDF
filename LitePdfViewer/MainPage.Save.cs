@@ -43,14 +43,14 @@ namespace LitePdfViewer
             return item;
         }
 
-        private async Task AppendExportAnnotationsAsync(PdfAnnotationWriter writer, ulong token)
+        private async Task AppendExportAnnotationsAsync(PdfAnnotationWriter writer, ulong token, StorageFolder sourceFolder = null)
         {
             // Enumerate only actual annotation files.
             // Saving does not load every page into the viewer's caches.
             if (token != activeRenderToken) throw new OperationCanceledException();
             var layoutWidth = ComputeColumnWidth();
             if (token != activeRenderToken) throw new OperationCanceledException();
-            var folder = await GetAnnotationFolderAsync();
+            var folder = sourceFolder ?? await GetAnnotationFolderAsync();
             InkOutlineExporter outlineExporter = null;
             try
             {
@@ -144,7 +144,7 @@ namespace LitePdfViewer
             return items.Stringify();
         }
 
-        private async Task<StorageFile> WritePdfCopyAsync(StorageFile original, ulong token, bool includeAnnotations)
+        private async Task<StorageFile> WritePdfCopyAsync(StorageFile original, ulong token, bool includeAnnotations, StorageFolder sourceFolder = null)
         {
             StorageFile staging = null;
             try
@@ -155,7 +155,7 @@ namespace LitePdfViewer
                     try
                     {
                         await writer.AppendAsync(ClearEmbeddedAnnotations());
-                        if (includeAnnotations) await AppendExportAnnotationsAsync(writer, token);
+                        if (includeAnnotations) await AppendExportAnnotationsAsync(writer, token, sourceFolder);
                         if (token != activeRenderToken) throw new OperationCanceledException();
                         staging = await ApplicationData.Current.TemporaryFolder.CreateFileAsync("uwpdf-save-" + Guid.NewGuid().ToString("N") + ".pdf");
                         using (var output = await staging.OpenAsync(FileAccessMode.ReadWrite)) await writer.WriteAsync(output);
