@@ -21,6 +21,8 @@ namespace LitePdfViewer
             {
                 await LoadDocumentAsync(await folder.GetFileAsync("source.pdf"));
                 await Task.Delay(1200);
+                QaZoomAssert(!fitPageToViewport && Math.Abs(DocumentScroller.ZoomFactor-1)<.005 && ZoomLabel.Text=="100%",
+                    "Opening inherited whole-page fit instead of the readable 100% default");
                 var view=pageViews[0];
                 var expected=ComputeRenderTargetWidth(view);
                 for(var i=0;i<100 && (view.NeedsRender(expected) || !view.IsRendered);i++) await Task.Delay(40);
@@ -39,6 +41,18 @@ namespace LitePdfViewer
                 }
                 finally { view.Image.Source=view.Source; if(comparison!=null) comparison.Dispose(); }
                 report.AppendLine("PASS: visible default raster supersampled, low-resolution first preview refined, allocation remains bounded; native control renderings captured.");
+
+                foreach(var previous in new[]{.64f,.91f})
+                {
+                    SetZoom(previous,false); await Task.Delay(150);
+                    await LoadDocumentAsync(await folder.GetFileAsync("source.pdf")); await Task.Delay(450);
+                    QaZoomAssert(!fitPageToViewport && Math.Abs(DocumentScroller.ZoomFactor-1)<.005 && DocumentScroller.VerticalOffset<1,
+                        "Opening from "+previous+" failed to start directly at 100%");
+                    ScheduleRelayout(); await Task.Delay(450);
+                    QaZoomAssert(Math.Abs(DocumentScroller.ZoomFactor-1)<.005,"Late window/layout work changed initial zoom");
+                }
+                view=pageViews[0];
+                report.AppendLine("PASS: native opens from previous 64/91% reset to 100%, begin at page top and stay there through deferred window/layout updates.");
 
                 // A 768-pixel startup image used to be kept at a 900-pixel
                 // settled target because the 30% refinement threshold missed it.
@@ -114,8 +128,21 @@ namespace LitePdfViewer
                 QaZoomAssert(!view.NeedsRender(expected) && Math.Abs(DocumentScroller.ZoomFactor-originalZoom)<.005,"DPI change failed to refine without changing zoom");
                 RefreshDisplayScale(originalDpi);
                 report.AppendLine("PASS: display scale update rerenders to the new device-pixel target while preserving zoom.");
-                await LoadDocumentAsync(await folder.GetFileAsync("navigation.pdf"));
-                await Task.Delay(800);
+                var openingFrames=new List<float>();
+                EventHandler<object> openingFrame=(sender,args)=>
+                {
+                    if(currentFile!=null && currentFile.Name=="navigation.pdf" && document!=null && pageViews.Count>0 && pageViews[0].IsRendered)
+                        openingFrames.Add(DocumentScroller.ZoomFactor);
+                };
+                Windows.UI.Xaml.Media.CompositionTarget.Rendering+=openingFrame;
+                try { await LoadDocumentAsync(await folder.GetFileAsync("navigation.pdf")); await Task.Delay(800); }
+                finally { Windows.UI.Xaml.Media.CompositionTarget.Rendering-=openingFrame; }
+                QaZoomAssert(!fitPageToViewport && Math.Abs(DocumentScroller.ZoomFactor-1)<.005,"New document did not reset a previous fit: zoom="+
+                    DocumentScroller.ZoomFactor+", fit="+fitPageToViewport+", document="+(document!=null)+", title="+FileNameText.Text);
+                QaZoomAssert(openingFrames.Count>0 && openingFrames.TrueForAll(z=>Math.Abs(z-1)<.005),
+                    "Visible new-document frames flashed an old zoom: "+string.Join(",",openingFrames));
+                report.AppendLine("PASS: native composition frames of the newly rendered PDF remain at 100% while opening from fit.");
+                FitToWindow(false); await Task.Delay(350);
                 var navigationFrames=0;
                 EventHandler<ScrollViewerViewChangedEventArgs> navigationChanged=(sender,args)=> { if(args.IsIntermediate) navigationFrames++; };
                 DocumentScroller.ViewChanged+=navigationChanged;

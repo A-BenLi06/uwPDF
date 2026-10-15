@@ -9,6 +9,7 @@ function Extract-ZoomMethod([string]$Start, [string]$End) {
     return $source.Substring($first, $last - $first)
 }
 $methods = (Extract-ZoomMethod 'private void UpdatePageCentering()' 'private void CreatePagePlaceholders(') +
+    (Extract-ZoomMethod 'private void ResetInitialView()' 'private void SetZoom(float newZoom)') +
     (Extract-ZoomMethod 'private void SetZoom(float newZoom, bool animated)' 'private void ZoomSlider_ValueChanged(') +
     (Extract-ZoomMethod 'private void DocumentScroller_ViewChanged(' '// Scrollbar/layout changes can affect fit')
 $outputRoot = Join-Path $repoRoot 'artifacts/native-tests/zoom'

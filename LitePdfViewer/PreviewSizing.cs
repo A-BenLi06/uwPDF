@@ -21,9 +21,11 @@ namespace LitePdfViewer
 
             var fixedWidth = HorizontalPadding + (thumbnails ? ThumbnailRail : 0);
             var fixedHeight = TopChrome + VerticalPadding;
-            var scale = Math.Max(0, Math.Min(1, Math.Min((maxWidth - fixedWidth) / pageWidth, (maxHeight - fixedHeight) / pageHeight)));
-            return new PreviewSize { Width = Math.Min(maxWidth, pageWidth * scale + fixedWidth),
-                Height = Math.Min(maxHeight, pageHeight * scale + fixedHeight), Scale = scale };
+            // Window bounds and document zoom are independent. A tall page may
+            // need vertical scrolling at 100%; its height must not also narrow
+            // the window and unnecessarily clip the readable page width.
+            return new PreviewSize { Width = Math.Min(maxWidth, pageWidth + fixedWidth),
+                Height = Math.Min(maxHeight, pageHeight + fixedHeight), Scale = 1 };
         }
 
         private static bool Valid(double value) { return value > 0 && !double.IsNaN(value) && !double.IsInfinity(value); }

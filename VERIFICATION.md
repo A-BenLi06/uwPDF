@@ -1146,3 +1146,35 @@ hashes are historical and do not describe the final application packages.
   ColoringBook's asynchronous PhotoPrintHelper:
   https://github.com/microsoft/Windows-universal-samples/tree/main/Samples/Printing/cs
   https://github.com/microsoft/Windows-appsample-coloringbook/blob/master/ColoringBook/Components/PhotoPrintHelper.cs
+
+### Stable initial reading zoom (2026-10-15)
+
+- New files start at 100% with whole-page fit disabled. Opening resets the page
+  position and previous slider/fit limits once. Window sizing and PDF zoom are
+  independent: width follows natural page width plus chrome, while height clamps
+  separately to the work area. Tall pages scroll vertically instead of shrinking
+  both the page and its window. Explicit fit and subsequent manual zoom remain.
+- Native regression reproduced a rejected initial ChangeView when replacing a
+  fitted document before the new Canvas extent reached layout. Pending startup
+  ownership now retries only after that extent is ready and ends at 100%.
+  Pointer/wheel/direct manipulation, slider/buttons, explicit fit and page
+  navigation cancel it, so a late initialization cannot override user input.
+- Test-Zoom.ps1 exercises the actual startup/zoom methods from prior 64/91/400%
+  views, previous fit limits, stale slider work, rejected startup requests,
+  deferred extent readiness and manual zoom winning over startup completion.
+  Test-PreviewSizing.ps1 covers 1920x1200 at 150% and 2736x1824 at 200% using their
+  logical work areas, plus small/large displays and portrait/landscape/tall pages.
+  These geometry checks do not emulate the two physical displays.
+- Test-PreviewStartup.ps1 passes first-paint independence, deferred layout,
+  stale-file/resize ownership, manual window/zoom precedence and probe cleanup.
+  Test-PageGeometry.ps1 retains mixed-page reading-position behavior.
+- Native x64 Debug QA passes 100% opens from 64/91% and from whole-page fit,
+  including composition-frame samples after the new PDF has rendered: all
+  sampled visible new-document frames stay at 100%. Delayed layout does not
+  change the scale. Explicit fit, pointerless native zoom, rapid retargeting,
+  mixed-size page navigation animation, DPI raster refinement and bounded 400%
+  rendering regressions pass. The local native run used 125% display scaling;
+  ThinkPad/Surface hardware behavior remains a device acceptance check.
+- Build/test hooks were removed and the production x64 Debug package rebuilt.
+  Pre-existing tile/logo/manifest/localization edits and the local project lock
+  rewrite are outside this change and are preserved without staging them.

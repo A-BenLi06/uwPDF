@@ -12,16 +12,20 @@ namespace LitePdfViewer
 {
     public sealed class ZoomTimer { public bool Running; public void Stop() { Running=false; } }
     public sealed class ZoomFrame { public double Width = double.NaN; }
+    public sealed class ZoomSliderStub { public double Minimum; }
+    public sealed class ZoomCanvasStub { public double Height=1000, ActualHeight=1000; }
     public sealed class ZoomScroller
     {
         public float ZoomFactor = 1, MinZoomFactor = .25f, MaxZoomFactor = 4;
         public double ViewportWidth = 800, ViewportHeight = 600, VerticalOffset = 500, HorizontalOffset;
         public int Requests;
         public bool AnimationDisabled;
+        public bool RejectChanges;
         public Action OnFrame;
         public bool ChangeView(double? x, double? y, float? zoom, bool disableAnimation)
         {
             Requests++;
+            if(RejectChanges) return false;
             AnimationDisabled = disableAnimation;
             var initial = ZoomFactor;
             var target = zoom ?? initial;
@@ -40,6 +44,10 @@ namespace LitePdfViewer
         private readonly List<object> pageViews = new List<object> { new object() };
         private readonly ZoomScroller DocumentScroller = new ZoomScroller();
         private readonly ZoomFrame PageFrame = new ZoomFrame();
+        private readonly ZoomSliderStub ZoomSlider = new ZoomSliderStub();
+        private readonly ZoomCanvasStub PageStack = new ZoomCanvasStub();
+        private bool initialReadingViewPending;
+        private bool isUpdatingZoomSlider;
         private double lastColumnWidth = 612;
         private const double PageBorderThickness = 1;
         private object pendingLayoutAnchor;
@@ -72,6 +80,34 @@ namespace LitePdfViewer
         {
             UpdatePageCentering();
             Check(PageFrame.Width == 614, "Natural width was not initialized from Auto/NaN.");
+            foreach(var viewport in new[]{new[]{1920d/1.5,1200d/1.5},new[]{2736d/2,1824d/2},new[]{500d,320d}})
+            foreach(var previous in new[]{.64f,.91f,4f})
+            {
+                DocumentScroller.ViewportWidth=viewport[0]; DocumentScroller.ViewportHeight=viewport[1];
+                DocumentScroller.ZoomFactor=previous; DocumentScroller.VerticalOffset=400;
+                DocumentScroller.MinZoomFactor=.08f; fitPageToViewport=true;
+                pendingSliderZoom=.64f; sliderZoomTimer.Running=true;
+                var before=DocumentScroller.Requests;
+                ResetInitialView();
+                Check(DocumentScroller.ZoomFactor==1 && !fitPageToViewport && DocumentScroller.Requests==before+1 &&
+                    DocumentScroller.AnimationDisabled && DocumentScroller.VerticalOffset==0 && DocumentScroller.HorizontalOffset==0,
+                    "Opening did not reset directly to a stable 100% at the document start.");
+                Check(pendingSliderZoom==null && !sliderZoomTimer.Running && DocumentScroller.MinZoomFactor==.25f &&
+                    ZoomSlider.Minimum==25 && !isUpdatingZoomSlider,"Previous fit/slider state leaked into a newly opened document.");
+                TryApplyInitialView();
+                Check(!initialReadingViewPending,"A settled initial view retained startup ownership");
+            }
+            DocumentScroller.ZoomFactor=.64f; DocumentScroller.RejectChanges=true; PageStack.ActualHeight=0;
+            ResetInitialView(); var blocked=DocumentScroller.Requests;
+            TryApplyInitialView();
+            Check(initialReadingViewPending && DocumentScroller.ZoomFactor==.64f && DocumentScroller.Requests==blocked,
+                "Rejected startup zoom spun while the old extent was still in layout");
+            PageStack.ActualHeight=PageStack.Height; DocumentScroller.RejectChanges=false;
+            TryApplyInitialView(); TryApplyInitialView();
+            Check(!initialReadingViewPending && DocumentScroller.ZoomFactor==1,"Rejected startup zoom was not retried after layout");
+            initialReadingViewPending=true; SetZoom(.8f,false); TryApplyInitialView();
+            Check(!initialReadingViewPending && DocumentScroller.ZoomFactor==.8f,"Startup completion overwrote user zoom");
+            DocumentScroller.ViewportWidth=800; DocumentScroller.ViewportHeight=600;
             pendingLayoutAnchor = new object();
             fitPageToViewport = true;
             SetZoom(.9f, false);
@@ -153,7 +189,7 @@ internal static class PdfZoomTests
         try
         {
             new LitePdfViewer.MainPage().CheckZooms();
-            Console.WriteLine("PASS: production zoom preserves the content extent and reading anchor, submits one view change, honors zoom limits, rejects stale slider work and distinguishes touchpad zoom from programmatic fit.");
+            Console.WriteLine("PASS: opening resets directly to 100% across ThinkPad/Surface logical viewports and previous 64/91/400% views; manual zoom preserves content/anchor, limits and native fit ownership.");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }

@@ -331,7 +331,7 @@ namespace LitePdfViewer
                 SetThumbsVisible(thumbsRequested, false);
                 // Set the initial reading position before any asynchronous work
                 // gives the user a chance to scroll or select a different page.
-                FitToWindow(false);
+                ResetInitialView();
                 ScheduleRelayout();
                 Focus(FocusState.Programmatic);
                 UpdateUi();
@@ -354,9 +354,8 @@ namespace LitePdfViewer
                 var ignoredProbe = ProbeAspectsAsync(renderToken);
                 await previewSizing;
                 if (renderToken != activeRenderToken) return;
-                // The first fit used the launch viewport. Finish the deferred
-                // layout after the intrinsic window resize has settled, keeping
-                // the reading anchor and any user-selected zoom mode intact.
+                // Window sizing changes the available reading area, not the
+                // initial 100% scale or a zoom chosen while sizing was pending.
                 RebuildLayout();
             }
             catch (Exception ex)
@@ -618,6 +617,8 @@ namespace LitePdfViewer
                 return;
             }
 
+            TryApplyInitialView();
+
             var columnWidth = ComputeColumnWidth();
             if (Math.Abs(columnWidth - lastColumnWidth) < 1.5)
             {
@@ -842,6 +843,7 @@ namespace LitePdfViewer
 
         private void ResetPageViews()
         {
+            initialReadingViewPending = false;
             ReleaseRetiredRenderSurfaces();
             pendingLayoutAnchor = null;
             fitReferencePage = 0;
@@ -1464,6 +1466,7 @@ namespace LitePdfViewer
 
         private void GoToPage(uint nextIndex)
         {
+            initialReadingViewPending = false;
             if (document == null || nextIndex >= document.PageCount)
             {
                 return;
@@ -1484,6 +1487,7 @@ namespace LitePdfViewer
 
         private void FitToWindow(bool animated)
         {
+            initialReadingViewPending = false;
             CancelPendingSliderZoom();
             pendingLayoutAnchor = null;
             fitPageToViewport = true;
@@ -1512,6 +1516,36 @@ namespace LitePdfViewer
             FitToWindow(true);
         }
 
+        private bool initialReadingViewPending;
+        private void ResetInitialView()
+        {
+            CancelPendingSliderZoom();
+            pendingLayoutAnchor = null;
+            // Opening a file is a reading operation. Whole-page fit is explicit;
+            // otherwise a tall page or delayed window resize shrinks text again.
+            fitPageToViewport = false;
+            initialReadingViewPending = true;
+            DocumentScroller.MinZoomFactor = 0.25f;
+            isUpdatingZoomSlider = true;
+            try { ZoomSlider.Minimum = 25; }
+            finally { isUpdatingZoomSlider = false; }
+            UpdatePageCentering();
+            MarkZoomChanging();
+            RequestZoomChange(0, 0, 1, true);
+            UpdateZoomControls();
+        }
+
+        private void TryApplyInitialView()
+        {
+            if (!initialReadingViewPending || document == null || pageViews.Count == 0) return;
+            // The replacement Canvas may still have the previous file's extent.
+            // Retry after layout rather than keeping a rejected startup request.
+            if (Math.Abs(PageStack.ActualHeight - PageStack.Height) > 0.5) return;
+            if (Math.Abs(DocumentScroller.ZoomFactor - 1) < 0.005f)
+            { initialReadingViewPending = false; return; }
+            RequestZoomChange(0, 0, 1, true);
+        }
+
         private void SetZoom(float newZoom)
         {
             SetZoom(newZoom, true);
@@ -1519,6 +1553,7 @@ namespace LitePdfViewer
 
         private void SetZoom(float newZoom, bool animated)
         {
+            initialReadingViewPending = false;
             CancelPendingSliderZoom();
             pendingLayoutAnchor = null;
             fitPageToViewport = false;
@@ -1560,6 +1595,9 @@ namespace LitePdfViewer
 
         private void ObserveNativeZoom(float next, float final)
         {
+            // Startup can publish views from the replaced content. Explicit
+            // input cancels startup ownership before reaching this observer.
+            if (initialReadingViewPending) return;
             if (Math.Abs(next - lastObservedZoom) <= 0.001f && Math.Abs(final - lastObservedZoom) <= 0.001f) return;
             if (programmaticZoomTarget.HasValue && Math.Abs(final - programmaticZoomTarget.Value) <= 0.005f) return;
             fitPageToViewport = false;
@@ -1579,6 +1617,8 @@ namespace LitePdfViewer
             {
                 return;
             }
+
+            initialReadingViewPending = false;
 
             // ValueChanged fires for every pixel of a drag; coalesce to ~30 Hz so the
             // ScrollViewer and page layout are not hammered with intermediate zooms.
@@ -1773,6 +1813,8 @@ namespace LitePdfViewer
             {
                 return;
             }
+
+            TryApplyInitialView();
 
             RestoreLayoutAnchor();
             UpdateSearchFocus();

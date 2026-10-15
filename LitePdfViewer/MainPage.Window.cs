@@ -29,7 +29,7 @@ namespace LitePdfViewer
         private bool applyingPreviewSize;
         private ulong applyingPreviewSizeToken;
         private Task<Size> pendingWorkAreaRead;
-        private bool fitPageToViewport = true;
+        private bool fitPageToViewport;
         private bool? thumbnailPreference;
         private DispatcherTimer hudIdleTimer;
         private Storyboard hudFade;
@@ -135,6 +135,7 @@ namespace LitePdfViewer
 
             DocumentScroller.DirectManipulationStarted += (s, e) =>
             {
+                initialReadingViewPending = false;
                 pendingLayoutAnchor = null;
                 scrollActivity.BeginGesture();
             };
@@ -144,9 +145,10 @@ namespace LitePdfViewer
                 WakeRenderer();
             };
             DocumentScroller.AddHandler(PointerPressedEvent,
-                new PointerEventHandler((s, e) => { pendingLayoutAnchor = null; }), true);
+                new PointerEventHandler((s, e) => { initialReadingViewPending = false; pendingLayoutAnchor = null; }), true);
             DocumentScroller.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((s, e) =>
             {
+                initialReadingViewPending = false;
                 pendingLayoutAnchor = null;
                 scrollActivity.NoteWheel(DateTime.UtcNow);
                 if ((e.KeyModifiers & VirtualKeyModifiers.Control) != 0) fitPageToViewport = false;

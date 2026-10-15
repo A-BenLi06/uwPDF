@@ -132,6 +132,8 @@ namespace LitePdfViewer
         private Task<Size> pendingWorkAreaRead;
         private bool? thumbnailPreference;
         private PdfTextSource textSource;
+        private readonly HashSet<uint> forcedOcrPages=new HashSet<uint>();
+        private PdfTextSource CreateTextSource(StorageFile file) { return new PdfTextSource(file); }
         private readonly DummyElement ThumbsToggle = new DummyElement();
         private readonly DummyElement FileNameText = new DummyElement();
         private readonly DummyElement EmptyState = new DummyElement();
@@ -142,9 +144,9 @@ namespace LitePdfViewer
         public readonly List<ulong> GeometryTokens = new List<ulong>();
         public readonly List<string> RenderFiles = new List<string>();
         public readonly Dictionary<string, TaskCompletionSource<bool>> RenderGates = new Dictionary<string, TaskCompletionSource<bool>>();
-        public int FitCalls, FocusCalls, Updates, ReadingPage, FinalLayoutCalls;
+        public int FitCalls, InitialViewCalls, FocusCalls, Updates, ReadingPage, FinalLayoutCalls;
         public double Zoom = .67;
-        private bool fitPageToViewport = true;
+        private bool fitPageToViewport;
         public bool Applying { get { return applyingPreviewSize; } }
         public bool Initialized { get { return previewSizeInitialized; } }
         public bool HasDocument { get { return document != null; } }
@@ -165,6 +167,7 @@ namespace LitePdfViewer
         private void SetThumbsVisible(bool value, bool animated) { }
         private void UpdateUi() { ++Updates; }
         private void FitToWindow(bool animated) { ++FitCalls; ReadingPage = 0; }
+        private void ResetInitialView() { ++InitialViewCalls; ReadingPage=0; Zoom=1; fitPageToViewport=false; }
         private void ScheduleRelayout() { }
         private void RebuildLayout() { ++FinalLayoutCalls; if (fitPageToViewport) Zoom = 1; }
         private bool Focus(FocusState state) { ++FocusCalls; return true; }
@@ -233,8 +236,8 @@ internal static class PdfPreviewStartupTests
         Check(page.RenderFiles.Count == 1 && page.WorkerTokens.Count == 1 && !open.IsCompleted,
             "First page and visible worker waited for window sizing.");
         dispatch.SetResult(true); await open;
-        Check(page.FinalLayoutCalls == 1 && page.Zoom == 1,
-            "The final window viewport was not refitted after automatic sizing.");
+        Check(page.FinalLayoutCalls == 1 && page.Zoom == 1 && page.FitCalls==0 && page.InitialViewCalls==1,
+            "Deferred automatic window sizing changed the initial 100% reading scale.");
 
         Reset(true); page = new LitePdfViewer.MainPage(); dispatch = new TaskCompletionSource<bool>(); page.Dispatcher.Gates.Enqueue(dispatch);
         open = page.Open(File("custom-zoom")); page.CustomZoom(.5); page.ReadingPage = 1;
@@ -259,7 +262,7 @@ internal static class PdfPreviewStartupTests
         Reset(); var page = new LitePdfViewer.MainPage(); var render = new TaskCompletionSource<bool>(); page.RenderGates["A"] = render;
         var a = page.Open(File("A")); page.ReadingPage = 8;
         render.SetResult(true); await Until(() => page.WorkerTokens.Count == 1);
-        Check(page.ReadingPage == 8 && page.FitCalls == 1, "First-page completion reset an existing reading position.");
+        Check(page.ReadingPage == 8 && page.FitCalls == 0 && page.InitialViewCalls==1, "First-page completion reset an existing reading position.");
         WebView.Created[0].FinishNavigation(); await a;
 
         Reset(true); page = new LitePdfViewer.MainPage(); render = new TaskCompletionSource<bool>(); page.RenderGates["old"] = render;
@@ -308,7 +311,7 @@ internal static class PdfPreviewStartupTests
         {
             foreach (Func<Task> test in new Func<Task>[] { CheckNativeSizingDoesNotBlockPaint, CheckSharedLegacyProbe, CheckStaleFirstPageAndReadingPosition, CheckManualSizeAndOwnership, CheckFailureIsolationAndFreshProbe })
                 using (var context = new UiContext()) { Console.WriteLine(test.Method.Name); context.Run(test); }
-            Console.WriteLine("PASS: production preview startup, first paint/worker independence, final refit, stale-file/resize races, user zoom/reading position, manual size, single probe and cleanup"); return 0;
+            Console.WriteLine("PASS: production startup keeps 100% through deferred layout, first paint/worker independence, stale-file/resize races, user zoom/reading position, manual size, single probe and cleanup"); return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error.Message); return 1; }
     }
