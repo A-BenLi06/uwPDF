@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI.Xaml.Controls;
@@ -93,8 +93,8 @@ namespace LitePdfViewer
             for (var i = first; i <= last && i < pageViews.Count; i++)
             {
                 var view = pageViews[i];
-                var scale = view.LayoutWidth * dpiScale * DocumentScroller.ZoomFactor;
-                if (DocumentScroller.ZoomFactor < 1.25 || view.RenderedWidth >= scale * 0.85)
+                var scale = ComputeDesiredRenderWidth(view, DocumentScroller.ZoomFactor);
+                if (!PdfRasterQuality.NeedsRefinement(view.RenderedWidth, scale))
                 {
                     ReleasePageDetail(view);
                     continue;
@@ -120,9 +120,9 @@ namespace LitePdfViewer
                     !IsScrollSettled() || !IsZoomSettled()) return;
                 var region = VisiblePageRegion(view, 64 / DocumentScroller.ZoomFactor);
                 if (region.Width <= 0 || region.Height <= 0) return;
-                var scale = view.LayoutWidth * dpiScale * DocumentScroller.ZoomFactor;
+                var scale = ComputeDesiredRenderWidth(view, DocumentScroller.ZoomFactor);
                 var width = scale * region.Width;
-                var height = view.LayoutHeight * dpiScale * DocumentScroller.ZoomFactor * region.Height;
+                var height = scale * view.Aspect * region.Height;
                 int first, last;
                 GetVisiblePageRange(out first, out last);
                 // Reserve a bounded portion for detail; account for the fallback's

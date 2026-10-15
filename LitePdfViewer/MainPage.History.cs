@@ -107,6 +107,7 @@ namespace LitePdfViewer
             var file = currentFile;
             var index = pageIndex;
             var zoom = DocumentScroller.ZoomFactor;
+            var wasFit = fitPageToViewport;
             var x = DocumentScroller.HorizontalOffset; var y = DocumentScroller.VerticalOffset;
             Exception failure = null;
             try
@@ -121,7 +122,8 @@ namespace LitePdfViewer
                     if (document != null)
                     {
                         pageIndex = Math.Min(index, document.PageCount - 1);
-                        DocumentScroller.ChangeView(x, y, zoom, true);
+                        fitPageToViewport = wasFit;
+                        RequestZoomChange(x, y, zoom, true);
                     }
                 }
             }

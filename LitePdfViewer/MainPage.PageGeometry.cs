@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -115,8 +115,7 @@ namespace LitePdfViewer
             }
             UpdatePageCentering();
             MarkZoomChanging();
-            pointerZoomGesture = false;
-            DocumentScroller.ChangeView(0, top * zoom, zoom, true);
+            RequestZoomChange(0, top * zoom, zoom, true);
         }
     }
 }

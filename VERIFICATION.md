@@ -1,4 +1,4 @@
-# uwPDF acceptance status
+﻿# uwPDF acceptance status
 
 ## Local x64 test package 1.0.10.0 — 2026-10-14
 
@@ -953,3 +953,31 @@ hashes are historical and do not describe the final application packages.
   operation and pen selection feel still require hardware acceptance. The
   tests do not claim physical input coverage. No test launch/compile hook is
   left in production source and the test package is not automatically installed.
+
+
+## 2026-10-15 — precision touchpad zoom and default raster sharpness
+
+- Replaced the `PointerPressed` zoom-source heuristic with tracked native
+  `ChangeView` goals and `ViewChanging.NextView/FinalView` observations. This
+  handles precision touchpads that never raise XAML pointer presses, native
+  final callbacks after gesture completion, and user interruption of fit.
+  New explicit zoom/fit requests cancel queued slider values. Snapshot restore
+  retains the previous fit/manual mode while restoring zoom.
+- Visible pages target 1.5× device-pixel sampling; the per-page refinement
+  threshold is now 5% with an 8-pixel rounding dead band. Native x64 QA verified
+  an otherwise retained 768-pixel image upgrades to a 900-pixel settled target.
+  Full-page/detail pixel limits and the adaptive shared cache remain enforced;
+  memory pressure disables oversampling. DPI notifications refresh render
+  targets while preserving the requested zoom.
+- `scripts/Test-ZoomQuality.ps1` passed native pointerless zoom remaining at
+  125% through final events and delayed relayout, preserved explicit fit,
+  canceled stale slider callbacks, animated 64/80/100/125/160/200% targets,
+  rapid retarget followed by fit, default raster sizing and DPI refinement.
+  The script records native control bitmap comparisons and reports under
+  `artifacts/zoom-quality-qa`, restores temporary launch/project hooks and
+  finishes with a production Debug build/layout. It uses no computer use,
+  external UI automation or synthetic pointer input. Physical precision-
+  touchpad hardware operation remains user acceptance.
+- Production-source zoom, raster policy, render scheduler/loop, memory
+  pressure/recovery, animated search and text/OCR worker regressions passed;
+  all four localization catalogs still contain 200 corresponding entries.

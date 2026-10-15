@@ -17,6 +17,8 @@
     <Compile Include="MainPage.Search.cs" />
     <Compile Include="MainPage.Scrollbars.cs" />
     <Compile Include="PdfRenderScheduler.cs" />
+    <Compile Include="PdfRasterQuality.cs" />
+    <Compile Include="MainPage.Display.cs" />
     <Compile Include="PdfScrollActivity.cs" />
     <Compile Include="PdfRasterRetirement.cs" />
     <Compile Include="PdfMemoryBudget.cs" />

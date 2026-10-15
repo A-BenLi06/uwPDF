@@ -9,7 +9,7 @@
   <Identity
     Name="BenLi06.uwPDF-LitePDFViewer"
     Publisher="CN=FC1FF585-22D6-4DFB-97E0-9D22B6842CC6"
-    Version="1.0.11.0" />
+    Version="1.0.12.0" />
 
   <mp:PhoneIdentity
     PhoneProductId="4d2e1c0f-2f5b-4e24-b3ff-7ebae7db7bc0"

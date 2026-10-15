@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 #if CPPWINRT_RENDERER
 using PreviewDisplay = PdfNative.Rendering.PreviewDisplay;
@@ -136,11 +136,10 @@ namespace LitePdfViewer
             DocumentScroller.DirectManipulationCompleted += (s, e) =>
             {
                 scrollActivity.EndGesture();
-                pointerZoomGesture = false;
                 WakeRenderer();
             };
             DocumentScroller.AddHandler(PointerPressedEvent,
-                new PointerEventHandler((s, e) => { pendingLayoutAnchor = null; pointerZoomGesture = true; }), true);
+                new PointerEventHandler((s, e) => { pendingLayoutAnchor = null; }), true);
             DocumentScroller.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((s, e) =>
             {
                 pendingLayoutAnchor = null;

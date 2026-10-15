@@ -113,6 +113,7 @@ namespace LitePdfViewer
         private uint pageIndex;
         private ulong activeRenderToken;
         private double dpiScale = 1;
+        private float? programmaticZoomTarget;
         private double lastColumnWidth;
 
         private InkTool currentInkTool = InkTool.None;
@@ -124,7 +125,6 @@ namespace LitePdfViewer
         private bool isUpdatingZoomSlider;
         private DateTime zoomSettledAt = DateTime.MinValue;
         private float lastObservedZoom = 1f;
-        private bool pointerZoomGesture;
         private float? pendingSliderZoom;
         private DispatcherTimer sliderZoomTimer;
         private bool thumbsRequested;
@@ -146,8 +146,8 @@ namespace LitePdfViewer
                 QueueMemoryUpdate();
                 WakeRenderer();
             };
-            Loaded += (sender, args) => StartMemoryMonitoring();
-            Unloaded += (sender, args) => { StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
+            Loaded += (sender, args) => { StartMemoryMonitoring(); StartDisplayMonitoring(); };
+            Unloaded += (sender, args) => { StopDisplayMonitoring(); StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
             InitializePreviewWindow();
             InitializeReaderChrome();
             InitializeNativeScrollBars();
@@ -846,6 +846,7 @@ namespace LitePdfViewer
             ReleaseRetiredRenderSurfaces();
             pendingLayoutAnchor = null;
             fitReferencePage = 0;
+            CancelPendingSliderZoom(); programmaticZoomTarget = null;
             ClearTextSelection();
             ClearInkSelection();
             if (textSource != null) { textSource.Dispose(); textSource = null; }
@@ -1062,6 +1063,12 @@ namespace LitePdfViewer
             return DateTime.UtcNow >= zoomSettledAt && pendingSliderZoom == null;
         }
 
+        private double ComputeDesiredRenderWidth(PageView view, double zoom)
+        {
+            var quality = !memoryConstrained && IsPageVisible(view.Index) ? PdfRasterQuality.VisibleScale : 1;
+            return view.LayoutWidth * dpiScale * zoom * quality;
+        }
+
         private double ComputeRenderTargetWidth(PageView view)
         {
             // 1:1 device pixels at the current zoom; re-renders automatically when the
@@ -1072,7 +1079,7 @@ namespace LitePdfViewer
                 zoom = DocumentScroller.ZoomFactor;
             }
 
-            var target = view.LayoutWidth * dpiScale * zoom;
+            var target = ComputeDesiredRenderWidth(view, zoom);
             var aspect = view.Aspect > 0 ? view.Aspect : 1.4142;
             var pixelBudget = RenderPixelBudget(view);
             var pixelCap = Math.Sqrt(pixelBudget / aspect);
@@ -1464,8 +1471,8 @@ namespace LitePdfViewer
 
         private void FitToWindow(bool animated)
         {
+            CancelPendingSliderZoom();
             pendingLayoutAnchor = null;
-            pointerZoomGesture = false;
             fitPageToViewport = true;
             var fitIndex = pageIndex;
             fitReferencePage = fitIndex;
@@ -1474,7 +1481,7 @@ namespace LitePdfViewer
             var zoom = FitZoom(view);
             UpdatePageCentering();
             MarkZoomChanging();
-            DocumentScroller.ChangeView(0f, (float)TopOfPage(fitIndex, zoom), zoom, !animated);
+            RequestZoomChange(0f, (float)TopOfPage(fitIndex, zoom), zoom, !animated);
         }
 
         private void ZoomInButton_Click(object sender, RoutedEventArgs e)
@@ -1499,12 +1506,13 @@ namespace LitePdfViewer
 
         private void SetZoom(float newZoom, bool animated)
         {
+            CancelPendingSliderZoom();
             pendingLayoutAnchor = null;
-            pointerZoomGesture = false;
             fitPageToViewport = false;
             newZoom = (float)Math.Max(DocumentScroller.MinZoomFactor, Math.Min(DocumentScroller.MaxZoomFactor, newZoom));
             var oldZoom = DocumentScroller.ZoomFactor;
-            if (Math.Abs(newZoom - oldZoom) < 0.005f)
+            if (Math.Abs(newZoom - oldZoom) < 0.005f &&
+                (!programmaticZoomTarget.HasValue || Math.Abs(programmaticZoomTarget.Value - newZoom) < 0.005f))
             {
                 return;
             }
@@ -1520,7 +1528,36 @@ namespace LitePdfViewer
             var targetOffsetY = (float)Math.Max(0, centerY * newZoom - viewportHeight / 2);
 
             MarkZoomChanging();
-            DocumentScroller.ChangeView(targetOffsetX, targetOffsetY, newZoom, !animated);
+            RequestZoomChange(targetOffsetX, targetOffsetY, newZoom, !animated);
+        }
+
+        private void RequestZoomChange(double x, double y, float zoom, bool disableAnimation)
+        {
+            // Precision touchpad gestures have no XAML PointerPressed event.
+            // Track native ChangeView goals instead of guessing input device type.
+            programmaticZoomTarget = zoom;
+            if (!DocumentScroller.ChangeView(x, y, zoom, disableAnimation)) programmaticZoomTarget = null;
+        }
+
+        private void CancelPendingSliderZoom()
+        {
+            pendingSliderZoom = null;
+            if (sliderZoomTimer != null) sliderZoomTimer.Stop();
+        }
+
+        private void ObserveNativeZoom(float next, float final)
+        {
+            if (Math.Abs(next - lastObservedZoom) <= 0.001f && Math.Abs(final - lastObservedZoom) <= 0.001f) return;
+            if (programmaticZoomTarget.HasValue && Math.Abs(final - programmaticZoomTarget.Value) <= 0.005f) return;
+            fitPageToViewport = false;
+            pendingLayoutAnchor = null;
+            programmaticZoomTarget = null;
+            CancelPendingSliderZoom();
+        }
+
+        private void DocumentScroller_ViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
+        {
+            ObserveNativeZoom(e.NextView.ZoomFactor, e.FinalView.ZoomFactor);
         }
 
         private void ZoomSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -1532,6 +1569,7 @@ namespace LitePdfViewer
 
             // ValueChanged fires for every pixel of a drag; coalesce to ~30 Hz so the
             // ScrollViewer and page layout are not hammered with intermediate zooms.
+            fitPageToViewport = false; pendingLayoutAnchor = null;
             pendingSliderZoom = (float)(e.NewValue / 100.0);
             MarkZoomChanging();
             if (sliderZoomTimer == null)
@@ -1638,7 +1676,7 @@ namespace LitePdfViewer
                 ZoomLabel.Text = text;
             }
 
-            if (ZoomSlider != null && Math.Abs(ZoomSlider.Value - percent) >= 1)
+            if (ZoomSlider != null && pendingSliderZoom == null && Math.Abs(ZoomSlider.Value - percent) >= 1)
             {
                 isUpdatingZoomSlider = true;
                 try
@@ -1687,16 +1725,18 @@ namespace LitePdfViewer
             var zoom = DocumentScroller.ZoomFactor;
             scrollActivity.Observe(DocumentScroller.HorizontalOffset, DocumentScroller.VerticalOffset,
                 e.IsIntermediate, DateTime.UtcNow);
-            // Native ChangeView animations also raise DirectManipulationStarted.
-            // Only pointer-driven zoom should cancel the user's fit-page mode.
-            if (scrollActivity.IsDirectManipulationActive && pointerZoomGesture && Math.Abs(zoom - lastObservedZoom) > 0.001f)
-                fitPageToViewport = false;
+            // ViewChanging normally identifies a user zoom before it lands.
+            // Keep a final-event fallback for coalesced native gesture callbacks.
+            if (Math.Abs(zoom - lastObservedZoom) > 0.001f && !programmaticZoomTarget.HasValue)
+                ObserveNativeZoom(zoom, zoom);
             if (Math.Abs(zoom - lastObservedZoom) > 0.001f)
             {
                 lastObservedZoom = zoom;
                 MarkZoomChanging();
             }
 
+            if (!e.IsIntermediate && programmaticZoomTarget.HasValue && Math.Abs(zoom - programmaticZoomTarget.Value) < 0.005f)
+                programmaticZoomTarget = null;
             UpdatePageCentering();
             UpdateCurrentPageFromScroll();
             RestoreVisiblePages();
@@ -2805,7 +2845,7 @@ namespace LitePdfViewer
                     return true;
                 }
 
-                return targetWidth - RenderedWidth > Math.Max(96, targetWidth * 0.3);
+                return PdfRasterQuality.NeedsRefinement(RenderedWidth, targetWidth);
             }
         }
 

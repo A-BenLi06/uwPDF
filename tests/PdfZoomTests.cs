@@ -1,13 +1,16 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Windows.UI.Xaml.Controls
 {
     public sealed class ScrollViewerViewChangedEventArgs { public bool IsIntermediate; }
+    public sealed class ScrollViewerView { public float ZoomFactor; }
+    public sealed class ScrollViewerViewChangingEventArgs { public ScrollViewerView NextView, FinalView; }
 }
 
 namespace LitePdfViewer
 {
+    public sealed class ZoomTimer { public bool Running; public void Stop() { Running=false; } }
     public sealed class ZoomFrame { public double Width = double.NaN; }
     public sealed class ZoomScroller
     {
@@ -41,7 +44,8 @@ namespace LitePdfViewer
         private const double PageBorderThickness = 1;
         private object pendingLayoutAnchor;
         private bool fitPageToViewport;
-        private bool pointerZoomGesture;
+        private float? programmaticZoomTarget, pendingSliderZoom;
+        private ZoomTimer sliderZoomTimer = new ZoomTimer();
         private int changing;
         private float lastObservedZoom = 1;
         private readonly object document = new object();
@@ -63,9 +67,8 @@ namespace LitePdfViewer
             Check(PageFrame.Width == 614, "Natural width was not initialized from Auto/NaN.");
             pendingLayoutAnchor = new object();
             fitPageToViewport = true;
-            pointerZoomGesture = true;
             SetZoom(.9f, false);
-            Check(pendingLayoutAnchor == null && !fitPageToViewport && !pointerZoomGesture,
+            Check(pendingLayoutAnchor == null && !fitPageToViewport,
                 "Manual zoom kept a stale layout anchor, fit mode, or pointer gesture.");
             DocumentScroller.OnFrame = () =>
             {
@@ -98,19 +101,40 @@ namespace LitePdfViewer
             SetZoom(4, true);
             Check(DocumentScroller.Requests == count, "Unchanged zoom restarted animation.");
             Check(changing > 0, "Zoom did not notify the render scheduler.");
-            // DirectManipulationStarted is also raised by native programmatic
-            // animation. Fit should only end when actual pointer zoom occurs.
-            scrollActivity.BeginGesture();
-            fitPageToViewport = true;
-            pointerZoomGesture = false;
-            DocumentScroller.ZoomFactor = .9f;
-            DocumentScroller_ViewChanged(null, new Windows.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs { IsIntermediate = true });
-            Check(fitPageToViewport, "A programmatic native zoom cancelled fit mode.");
-            pointerZoomGesture = true;
-            DocumentScroller.ZoomFactor = .8f;
-            DocumentScroller_ViewChanged(null, new Windows.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs { IsIntermediate = true });
-            Check(!fitPageToViewport, "A pointer zoom failed to leave fit mode.");
-            scrollActivity.EndGesture();
+            // A queued slider intent must not override a newer zoom button/fit.
+            pendingSliderZoom=.8f; sliderZoomTimer.Running=true;
+            SetZoom(1.25f,true);
+            Check(pendingSliderZoom==null && !sliderZoomTimer.Running,"Stale slider work remained queued after manual zoom");
+            // Precision touchpad zoom does not raise PointerPressed and may
+            // publish its final view after DirectManipulationCompleted.
+            programmaticZoomTarget=null; fitPageToViewport=true;
+            DocumentScroller_ViewChanging(null,new Windows.UI.Xaml.Controls.ScrollViewerViewChangingEventArgs {
+                NextView=new Windows.UI.Xaml.Controls.ScrollViewerView { ZoomFactor=1.3f },
+                FinalView=new Windows.UI.Xaml.Controls.ScrollViewerView { ZoomFactor=1.5f } });
+            Check(!fitPageToViewport,"Touchpad zoom without a pointer event retained fit mode");
+            programmaticZoomTarget=null; fitPageToViewport=true;
+            DocumentScroller.ZoomFactor=1.6f;
+            DocumentScroller_ViewChanged(null,new Windows.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs { IsIntermediate=false });
+            Check(!fitPageToViewport,"Coalesced final gesture view triggered fit snap-back");
+            fitPageToViewport=true; programmaticZoomTarget=.8f; lastObservedZoom=1.6f;
+            DocumentScroller_ViewChanging(null,new Windows.UI.Xaml.Controls.ScrollViewerViewChangingEventArgs {
+                NextView=new Windows.UI.Xaml.Controls.ScrollViewerView { ZoomFactor=1.4f },
+                FinalView=new Windows.UI.Xaml.Controls.ScrollViewerView { ZoomFactor=.8f } });
+            Check(fitPageToViewport,"A tracked programmatic fit was mistaken for user zoom");
+            DocumentScroller.ZoomFactor=.8f;
+            DocumentScroller_ViewChanged(null,new Windows.UI.Xaml.Controls.ScrollViewerViewChangedEventArgs { IsIntermediate=false });
+            Check(fitPageToViewport && programmaticZoomTarget==null,"Completed fit lost mode or retained its request marker");
+            fitPageToViewport=true; programmaticZoomTarget=.8f;
+            DocumentScroller_ViewChanging(null,new Windows.UI.Xaml.Controls.ScrollViewerViewChangingEventArgs {
+                NextView=new Windows.UI.Xaml.Controls.ScrollViewerView { ZoomFactor=.9f },
+                FinalView=new Windows.UI.Xaml.Controls.ScrollViewerView { ZoomFactor=1.1f } });
+            Check(!fitPageToViewport && programmaticZoomTarget==null,"Native gesture failed to override an in-flight fit");
+            // Retargeting to the currently displayed intermediate value must
+            // cancel the old goal rather than treating it as an idle no-op.
+            DocumentScroller.ZoomFactor=1; programmaticZoomTarget=2; count=DocumentScroller.Requests;
+            SetZoom(1,false);
+            Check(DocumentScroller.Requests==count+1 && programmaticZoomTarget==1,"Retarget at current zoom left old animation running");
+
         }
         private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
     }
@@ -122,7 +146,7 @@ internal static class PdfZoomTests
         try
         {
             new LitePdfViewer.MainPage().CheckZooms();
-            Console.WriteLine("PASS: production zoom preserves the content extent and reading anchor, submits one view change, honors zoom limits and slider animation mode.");
+            Console.WriteLine("PASS: production zoom preserves the content extent and reading anchor, submits one view change, honors zoom limits, rejects stale slider work and distinguishes touchpad zoom from programmatic fit.");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using LitePdfViewer;
@@ -60,6 +60,8 @@ namespace LitePdfViewer
             public Raster Raster, DetailRaster;
             public Strokes Strokes = new Strokes();
             public List<int> Highlights = new List<int> { 1 };
+            public List<int> UndoKinds = new List<int>();
+            public List<object> InkMoves = new List<object>();
             public object Source { get { return Raster == null ? null : Raster.Source; } }
         }
         sealed class ThumbnailItem { public Raster Raster = new Raster(); public bool IsRendered = true, RenderFailed = true; }
