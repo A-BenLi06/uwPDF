@@ -346,7 +346,7 @@
     <value>テキストを選択</value>
   </data>
   <data name="SelectTextHelp" xml:space="preserve">
-    <value>ドラッグしてテキストを選択し、右クリックでコピーまたはハイライト</value>
+    <value>マウスでドラッグして文字を選択。指で長押しした後、ハンドルをドラッグ。ペンは注釈に使用します。</value>
   </data>
   <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>PDF を共有</value>
@@ -424,7 +424,7 @@
     <value>テキストを選択</value>
   </data>
   <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>テキストを選択</value>
+    <value>文字を選択（マウス・タッチ、注釈ツールバーを閉じる）</value>
   </data>
   <data name="TopTouchWritingButton.Content" xml:space="preserve">
     <value>タッチで手書き</value>
@@ -517,10 +517,10 @@
     <value>選択枠をドラッグして移動。元に戻すで位置を復元</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>インクの範囲選択</value>
+    <value>インクのなげなわ選択</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>インクを選択（ペンのサイドボタンでも選択）</value>
+    <value>なげなわ選択（マウスでドラッグ、またはペンのサイドボタンを押して囲む）</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>その他の文書ツール</value>
@@ -604,10 +604,10 @@
     <value>PDF は保存されましたが、履歴を完了できませんでした：{0}</value>
   </data>
   <data name="InkSelectLabel.Text" xml:space="preserve">
-    <value>インクの範囲選択</value>
+    <value>なげなわ選択</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>ペンのサイドボタンを押しながら範囲選択し、選択したインクをドラッグして移動できます。</value>
+    <value>マウスでドラッグ、またはペンのサイドボタンを押しながら自由な形で囲みます。離すと内側のインクを選択し、選択部分をドラッグして移動できます。</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>この履歴は別の文書のものです。</value>

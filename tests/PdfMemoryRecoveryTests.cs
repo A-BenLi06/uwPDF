@@ -65,6 +65,8 @@ namespace LitePdfViewer
             public object Source { get { return Raster == null ? null : Raster.Source; } }
         }
         sealed class ThumbnailItem { public Raster Raster = new Raster(); public bool IsRendered = true, RenderFailed = true; }
+        sealed class Scroller { public double ZoomFactor = 1; }
+        readonly Scroller DocumentScroller = new Scroller();
         readonly List<PageView> pageViews = new List<PageView>();
         readonly HashSet<int> cachedPages = new HashSet<int>();
         readonly List<int> realizedPages = new List<int>();
@@ -221,6 +223,12 @@ namespace LitePdfViewer
             Require(page.FindNextRenderIndex() == 2, "Normal memory did not resume directional prefetch.");
             page.scrollSettled = true;
             Require(page.FindNextRenderIndex() == 0, "Normal memory did not resume settled prefetch.");
+            page.DocumentScroller.ZoomFactor = 4;
+            Require(page.FindNextRenderIndex() == -1, "High zoom selected unnecessary speculative full-page work.");
+            page.scrollSettled = false;
+            Require(page.FindNextRenderIndex() == -1, "High zoom selected directional speculative work while panning.");
+            page.pageViews[1].IsRendered = false;
+            Require(page.FindNextRenderIndex() == 1, "High zoom prevented a missing visible page from drawing.");
         }
         static void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
     }

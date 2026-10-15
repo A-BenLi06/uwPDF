@@ -981,3 +981,92 @@ hashes are historical and do not describe the final application packages.
 - Production-source zoom, raster policy, render scheduler/loop, memory
   pressure/recovery, animated search and text/OCR worker regressions passed;
   all four localization catalogs still contain 200 corresponding entries.
+
+
+## 2026-10-15 — high-zoom cost, native navigation and input modes
+
+- Above 125%, overview width is limited to 1024 pixels and speculative raster
+  work is suspended. The visible detail patch retains its 2 MP cap and a
+  quarter-viewport runway. Offscreen detail rasters and high-zoom presenters
+  are released; incoming CPU/GPU allocation is reserved by trimming before
+  drawing. Renderer wakeups use Low dispatcher priority so input runs first.
+  Default/fit text still uses the existing 1.5x device-pixel target.
+- Fixed fit-mode page navigation issuing an immediate FitToWindow(false)
+  before an animated scroll. Fit now submits a single animated view change
+  for zoom and page position. Native tests observed intermediate animation
+  frames through mixed page sizes and a cold image-heavy target page.
+- Windows Ink supports stroke selection and transforms within its API;
+  deletion is unnecessary. The Marquee button is directly on the annotation
+  toolbar. Its transparent XAML overlay receives primary mouse drags in
+  selection mode, while barrel input retains UnprocessedInput. Native ink
+  selection/move/cancel/undo, actual visual hit testing, and save/restore pass.
+- Text selection accepts mouse/cursor drag, touch hold-to-select, and touch
+  handle drags. Pen input is rejected by text and handle paths; pen hover in
+  the document restores the last drawing tool and opens the annotation card.
+  The text tool closes the card/flyouts. Touch inking is removed. Pen hover,
+  actual barrel-button routing, mouse drags and touchscreen feel still require
+  device acceptance; the native tests do not inject hardware input.
+- `Test-ZoomQuality.ps1 -PerformancePdf artifacts/native-tests/performance-600.pdf`
+  passed. On this x64 Debug run, the small fixture at 400% retained 13,869,428
+  raster bytes; eight short scrolls caused three additional render requests,
+  with none after settling. The 600-page/40-image fixture in pen mode reported
+  294,391,808 app bytes before zoom and 301,404,160 after settling at 400%.
+  Returning to fit and navigating a cold page reported 372,740,096 app bytes,
+  16,923,096 cached raster bytes and 22 native intermediate animation events.
+  These are fixture/device observations, not a total-process memory cap or
+  a physical frame-rate/CPU benchmark. PDF internals, XAML, ink and text have
+  allocations beyond the raster budget.
+- Production x64 Debug builds/layout restoration passed; test launch/compile
+  hooks are absent from production source. Production zoom, raster quality,
+  memory/scheduler, render-loop and search regressions pass; localization
+  validation retains 200 matching resources in each of the four catalogs.
+
+
+## 2026-10-15 — freehand ink lasso
+
+- Replaced rectangle construction with the actual freehand Polyline for both
+  mouse/cursor selection and pen barrel input. Both event routes consume
+  intermediate points in timestamp order. The temporary dashed line stays
+  screen-sized through zoom; release closes the path and passes it directly
+  to InkStrokeContainer.SelectWithPolyLine. Cancel removes the temporary path.
+- Native QA covers a concave loop excluding a stroke inside its bounding box
+  but outside its shape, an open path closing at release, circular selection,
+  cancel, move, undo, save and editable restore. Physical mouse/pen input still
+  requires device acceptance; the test calls production methods and native
+  containers without injecting desktop input.
+- The four localized tool labels and help now describe lasso selection.
+
+
+## 2026-10-15 — Surface diagnostics, quiet cancellation and cross-page text
+
+- Located the latest nonempty VS2015 report in the local Temp folder:
+  `Report.4A71B345-7A6E-4111-A5F6-2EB42667F826.diagsession`, saved at 16:42.
+  Its PID 6272 matches the supplied Surface screenshot. Windows tracerpt
+  decoded 6,639 ETL events without loss; raw data and a Chinese analysis are
+  preserved under `artifacts/surface-session`. The provider manifest is absent
+  locally: mapping metric 1 to private bytes, 2 to CPU percentage and events
+  7/8 to GC markers is an explicit interpretation of payloads and the VS graph.
+  Values show a 376.7 MiB peak and 188.6 MiB final sample, CPU-like samples
+  peaking at 95.83 and 133 paired GC-like intervals. This summary trace has no
+  allocation stacks, heap snapshots or CPU call stacks and cannot prove a leak.
+- Normal managed search/glyph/OCR cancellation returns a null result instead
+  of raising OperationCanceledException. Search checks it before publishing;
+  scroll cancellation and pending page-geometry work also exit quietly.
+  Production worker regression captures first-chance exceptions and verifies
+  no cancellation exceptions during bounded glyph expansion/search mapping.
+  Disposal and actual extraction failures retain their separate handling.
+- Selection uses page/glyph endpoints, document-owned capture and a 30 ms
+  coalescing timer. Autoscroll is elapsed-time based, accelerates with edge
+  distance/dwell, and continues while endpoint text is loading. Endpoint
+  glyphs survive presenter virtualization; intermediate pages load on demand
+  for copy/highlight and are released afterwards. Revision checks reject
+  asynchronous copy/highlight results after selection/file changes.
+- Native x64 tests passed forward/reverse four-page copy, endpoint
+  virtualization, edge scrolling across pages, and two-page highlight
+  save/reload with editable sidecars. After warmup, 500 updates reuse the same
+  Polygon/PointCollection/handle graph and observed zero Gen0 collections in
+  that loop. This does not claim post-change Surface hardware/GC measurements.
+- App/MainPage XAML and dependent code items now belong to each real project.
+  The main project's AnyCPU design-time native reference maps to x86 while
+  real x64 remains x64. MSBuild 14 design probes pass for both, and production
+  x64 Debug builds retain only the existing Share deprecation warnings.

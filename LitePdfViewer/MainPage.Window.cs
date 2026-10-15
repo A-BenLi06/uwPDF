@@ -51,6 +51,11 @@ namespace LitePdfViewer
                 hudFade.Begin();
             };
             MainChrome.AddHandler(PointerMovedEvent, new PointerEventHandler((s, e) => RevealHud()), true);
+            // A hovering pen switches the document before tip-down, so its first
+            // stroke reaches InkPresenter instead of the text-selection overlay.
+            DocumentScroller.AddHandler(PointerEnteredEvent, new PointerEventHandler(DocumentPenDetected), true);
+            DocumentScroller.AddHandler(PointerMovedEvent, new PointerEventHandler(DocumentPenDetected), true);
+            DocumentScroller.AddHandler(PointerPressedEvent, new PointerEventHandler(DocumentPenDetected), true);
             MainChrome.AddHandler(PointerPressedEvent, new PointerEventHandler((s, e) => RevealHud()), true);
             HudBar.SizeChanged += (s, e) => HudRevealZone.Width = e.NewSize.Width;
             HudRevealZone.PointerEntered += (s, e) => RevealHud();
@@ -259,11 +264,27 @@ namespace LitePdfViewer
         private void AnnotationToolsButton_Click(object sender, RoutedEventArgs e)
         {
             bool opening = AnnotationToolbar.Visibility != Visibility.Visible;
+            SetAnnotationToolbarOpen(opening);
+            if (!opening) SetInkTool(InkTool.None);
+        }
+
+        private InkTool lastPenTool = InkTool.Pen;
+        private void DocumentPenDetected(object sender, PointerRoutedEventArgs e)
+        {
+            if (e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Pen) ActivatePenInput();
+        }
+        private void ActivatePenInput()
+        {
+            if (document == null || savingPdf) return;
+            if (currentInkTool == InkTool.None) SetInkTool(lastPenTool);
+            if (AnnotationToolbar.Visibility != Visibility.Visible) SetAnnotationToolbarOpen(true);
+        }
+        private void SetAnnotationToolbarOpen(bool opening)
+        {
             AnnotationToolbar.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
             UpdateAnnotationToolbarLayout(ReaderToolbar.ActualWidth);
             AnnotationToolsButton.IsChecked = opening;
             ToolTipService.SetToolTip(AnnotationToolsButton, opening ? L.Get("CollapseAnnotations") : L.Get("ExpandAnnotations"));
-            if (!opening) SetInkTool(InkTool.None);
         }
     }
 }

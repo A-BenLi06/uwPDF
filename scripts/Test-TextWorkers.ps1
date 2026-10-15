@@ -14,10 +14,10 @@ switch ($NegativeControl) {
         $search=$search.Replace('var next = (searchHitIndex + (forward ? 1 : -1) + searchHits.Count) % searchHits.Count;',
             'var next = searchHits.FindIndex(candidate => candidate.Page == pageIndex);')
     }
-    'UiGlyphs' { $text=$text.Replace('await Task.Run(() => ConvertGlyphs(text, values, cancellation), cancellation)', 'ConvertGlyphs(text, values, cancellation)') }
+    'UiGlyphs' { $text=$text.Replace('await Task.Run(() => ConvertGlyphs(text, values, cancellation))', 'ConvertGlyphs(text, values, cancellation)') }
     'UiSearch' {
         $search=$search.Replace('return Task.Run(() =>','return Task.FromResult(((Func<List<SearchHit>>)(() =>')
-        $search=$search.Replace('            }, cancellation);','            }))());')
+        $search=$search.Replace('            });','            }))());')
     }
     'StaleSearch' {
         $search=$search.Replace('if (version != searchVersion || token != activeRenderToken) return;', '')
@@ -25,11 +25,17 @@ switch ($NegativeControl) {
 }
 $selectionSource=(Get-Content (Join-Path $repoRoot 'LitePdfViewer/MainPage.Text.cs') -Raw -Encoding UTF8).Replace("`r`n","`n")
 $copyStart=$selectionSource.IndexOf('        private string SelectedText()')
-$copyEnd=$selectionSource.IndexOf('        private void CopySelectedText()', $copyStart)
+$copyEnd=$selectionSource.IndexOf('        private async void CopySelectedText()', $copyStart)
 $spacingStart=$selectionSource.IndexOf('        private static void GlyphSpacing(')
 $spacingEnd=$selectionSource.IndexOf('        private void ClearTextSelection()', $spacingStart)
 if ($copyStart -lt 0 -or $copyEnd -lt 0 -or $spacingStart -lt 0 -or $spacingEnd -lt 0) { throw 'Selection method boundaries changed' }
 $search += $selectionSource.Substring($copyStart,$copyEnd-$copyStart) + $selectionSource.Substring($spacingStart,$spacingEnd-$spacingStart)
+$rangeSource=(Get-Content (Join-Path $repoRoot 'LitePdfViewer/MainPage.Selection.cs') -Raw -Encoding UTF8).Replace("`r`n","`n")
+$rangeStart=$rangeSource.IndexOf('        private bool TryGetSelectionRange(')
+$rangeEnd=$rangeSource.IndexOf('        private bool IsTextSelectionEndpoint(',$rangeStart)
+$appendStart=$rangeSource.IndexOf('        private static void AppendSelectedPageText(')
+$appendEnd=$rangeSource.IndexOf('        private async Task<string> SelectedTextAsync(',$appendStart)
+$search += $rangeSource.Substring($rangeStart,$rangeEnd-$rangeStart)+$rangeSource.Substring($appendStart,$appendEnd-$appendStart)
 $textPath=Join-Path $outputRoot "Text.$NegativeControl.production.cs"
 $searchPath=Join-Path $outputRoot "Search.$NegativeControl.production.cs"
 $text | Set-Content $textPath -Encoding UTF8

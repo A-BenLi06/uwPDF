@@ -23,3 +23,12 @@ write_pdf([b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [3 0 R] 
  b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 500 700] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
  b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
  stream(b'BT /F1 24 Tf 50 590 Td (Native text selection test) Tj 0 -50 Td (Move ink and restore saves) Tj ET\n')],root/'source.pdf')
+
+objects=[b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R] /Count 5 >>',b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+for number,label in enumerate(['PAGE_ONE','PAGE_TWO','PAGE_THREE','PAGE_FOUR','PAGE_FIVE']):
+    content=f'BT /F1 16 Tf 40 650 Td ({label} boundary) Tj ET\n'.encode()
+    for row in range(18):
+        content+=f'BT /F1 12 Tf 40 {610-row*27} Td (Selection row {row+1} on {label} 0123456789) Tj ET\n'.encode()
+    objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 500 700] /Resources << /Font << /F1 3 0 R >> >> /Contents {5+number*2} 0 R >>'.encode())
+    objects.append(stream(content))
+write_pdf(objects,root/'selection.pdf')

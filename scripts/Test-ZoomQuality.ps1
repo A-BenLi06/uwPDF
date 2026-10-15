@@ -1,4 +1,5 @@
-﻿# In-process native UWP tests; no desktop input or UI automation.
+﻿param([string]$PerformancePdf)
+# In-process native UWP tests; no desktop input or UI automation.
 $ErrorActionPreference='Stop'
 $editingRepo=Split-Path $PSScriptRoot -Parent
 $editingApp=Join-Path $editingRepo 'LitePdfViewer'
@@ -10,7 +11,10 @@ New-Item $editingOutput -ItemType Directory -Force | Out-Null
 New-Item $editingState -ItemType Directory -Force | Out-Null
 & python (Join-Path $editingRepo 'tests/GenerateZoomQualityFixture.py') $editingOutput
 if ($LASTEXITCODE) { throw 'Fixture generation failed.' }
-Copy-Item -LiteralPath (Join-Path $editingOutput 'source.pdf') -Destination (Join-Path $editingState 'source.pdf') -Force
+foreach ($editingFixture in @('source.pdf','navigation.pdf')) { Copy-Item -LiteralPath (Join-Path $editingOutput $editingFixture) -Destination (Join-Path $editingState $editingFixture) -Force }
+if ($PerformancePdf) {
+    Copy-Item -LiteralPath (Resolve-Path -LiteralPath $PerformancePdf) -Destination (Join-Path $editingState 'performance.pdf') -Force
+}
 $editingBackups=@{}
 $editingStartedPid=$null
 function Invoke-EditingBuild([string]$name) {
@@ -30,9 +34,10 @@ function Sync-EditingLayout {
 try {
     foreach ($editingName in @('App.xaml.cs','LitePdfViewer.Shared.projitems')) { $editingBackups[$editingName]=[IO.File]::ReadAllBytes((Join-Path $editingApp $editingName)) }
     $editingAppCode=[IO.File]::ReadAllText((Join-Path $editingApp 'App.xaml.cs'))
+    $editingHeavy=if ($PerformancePdf) { 'true' } else { 'false' }
     $editingMarker='            Window.Current.Activate();'
     if (-not $editingAppCode.Contains($editingMarker)) { throw 'Launch hook changed.' }
-    [IO.File]::WriteAllText((Join-Path $editingApp 'App.xaml.cs'),$editingAppCode.Replace($editingMarker,$editingMarker+"`r`n            if (launchArgs == `"zoom-quality-qa`") { page.RunZoomQualityQa(); return; }"))
+    [IO.File]::WriteAllText((Join-Path $editingApp 'App.xaml.cs'),$editingAppCode.Replace($editingMarker,$editingMarker+"`r`n            if (launchArgs == `"zoom-quality-qa`") { page.RunZoomQualityQa($editingHeavy); return; }"))
     $editingShared=[IO.File]::ReadAllText((Join-Path $editingApp 'LitePdfViewer.Shared.projitems'))
     [IO.File]::WriteAllText((Join-Path $editingApp 'LitePdfViewer.Shared.projitems'),$editingShared.Replace('<Compile Include="L.cs" />','<Compile Include="L.cs" />'+"`r`n    <Compile Include=`"..\tests\ZoomQualityQa.cs`" />"))
     Invoke-EditingBuild 'build.log'; Sync-EditingLayout

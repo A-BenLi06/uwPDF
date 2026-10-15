@@ -346,7 +346,7 @@
     <value>选择文字</value>
   </data>
   <data name="SelectTextHelp" xml:space="preserve">
-    <value>拖动选择文字，右键复制或高亮</value>
+    <value>鼠标拖动选择文字；手指长按选词后拖动手柄。笔用于批注。</value>
   </data>
   <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>分享 PDF</value>
@@ -424,7 +424,7 @@
     <value>选择文字</value>
   </data>
   <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>选择文字</value>
+    <value>选择文字（鼠标或手指，收起批注工具栏）</value>
   </data>
   <data name="TopTouchWritingButton.Content" xml:space="preserve">
     <value>触摸书写</value>
@@ -517,10 +517,10 @@
     <value>拖动选框移动墨迹；撤销可恢复位置</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>框选墨迹</value>
+    <value>套索选择墨迹</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>框选墨迹（按住笔侧键也可框选）</value>
+    <value>套索选择墨迹（鼠标拖动或按住笔侧键画圈）</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>更多文档工具</value>
@@ -604,10 +604,10 @@
     <value>PDF 已保存，但修改记录未能完成：{0}</value>
   </data>
   <data name="InkSelectLabel.Text" xml:space="preserve">
-    <value>框选墨迹</value>
+    <value>套索选择</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>按住笔侧键拖动可临时框选，选中后拖动即可移动。</value>
+    <value>用鼠标拖动，或按住笔侧键画圈；松开后选中圈内墨迹，再拖动选中的墨迹即可移动。</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>此快照属于另一份文档，无法回退当前文件。</value>

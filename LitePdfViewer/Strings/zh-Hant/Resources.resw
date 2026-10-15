@@ -346,7 +346,7 @@
     <value>選取文字</value>
   </data>
   <data name="SelectTextHelp" xml:space="preserve">
-    <value>拖曳選取文字，按右鍵複製或標記重點</value>
+    <value>滑鼠拖曳選取文字；手指長按選詞後拖曳控點。手寫筆用於註記。</value>
   </data>
   <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>分享 PDF</value>
@@ -424,7 +424,7 @@
     <value>選取文字</value>
   </data>
   <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>選取文字</value>
+    <value>選取文字（滑鼠或手指，收起註記工具列）</value>
   </data>
   <data name="TopTouchWritingButton.Content" xml:space="preserve">
     <value>觸控書寫</value>
@@ -517,10 +517,10 @@
     <value>拖曳選取框移動筆跡；復原可恢復位置</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>框選筆跡</value>
+    <value>套索選取筆跡</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>框選筆跡（按住筆側鍵也可框選）</value>
+    <value>套索選取筆跡（滑鼠拖曳或按住筆側鍵畫圈）</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>更多文件工具</value>
@@ -604,10 +604,10 @@
     <value>PDF 已儲存，但修改記錄未能完成：{0}</value>
   </data>
   <data name="InkSelectLabel.Text" xml:space="preserve">
-    <value>框選筆跡</value>
+    <value>套索選取</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>按住筆側鍵拖曳可暫時框選，選取後拖曳即可移動。</value>
+    <value>用滑鼠拖曳，或按住筆側鍵畫圈；放開後選取圈內筆跡，再拖曳選取的筆跡即可移動。</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>此快照屬於另一份文件，無法還原目前檔案。</value>

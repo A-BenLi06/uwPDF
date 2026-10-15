@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Controls;
@@ -47,8 +47,8 @@ internal static class PdfSearchScrollTests
             scrolling = page.Scroll(-40, cancellation.Token);
             Check(viewer.Target == 0, "Negative target was not clamped.");
             cancellation.Cancel();
-            try { scrolling.GetAwaiter().GetResult(); throw new Exception("Cancelled navigation completed."); }
-            catch (OperationCanceledException) { }
+            scrolling.GetAwaiter().GetResult();
+            Check(scrolling.Status==TaskStatus.RanToCompletion,"Normal cancellation should finish quietly.");
             Check(viewer.Listeners == 0, "Cancellation retained a listener.");
         }
         viewer.Accepted = false;

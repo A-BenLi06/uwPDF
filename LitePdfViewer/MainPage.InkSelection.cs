@@ -21,6 +21,7 @@ namespace LitePdfViewer
         private bool inkGestureMoving;
         private InkMoveUndo pendingInkMove;
         private Rectangle inkSelectionRectangle;
+        private Polyline inkLasso;
         private sealed class InkMoveUndo
         {
             public readonly List<InkStroke> Strokes = new List<InkStroke>();
@@ -31,12 +32,22 @@ namespace LitePdfViewer
             }
         }
 
-        private void InkSelectButton_Click(object sender, RoutedEventArgs e) { SetInkTool(InkTool.InkSelect); InkMoreButton.Flyout.Hide(); }
+        private void InkSelectButton_Click(object sender, RoutedEventArgs e) { SetInkTool(InkTool.InkSelect); }
+        private void UpdateInkSelectionInput(PageView view)
+        {
+            if (view.InkSelectionLayer == null) return;
+            // A transparent background receives primary mouse input anywhere
+            // on the page. The ordinary pen path stays in UnprocessedInput.
+            view.InkSelectionLayer.Background = currentInkTool == InkTool.InkSelect
+                ? new SolidColorBrush(Colors.Transparent) : null;
+            view.InkSelectionLayer.ManipulationMode = ManipulationModes.System;
+        }
         private void AttachInkSelection(PageView view)
         {
             var layer = new Canvas();
             view.InkSelectionLayer = layer;
             view.Host.Children.Add(layer);
+            UpdateInkSelectionInput(view);
             var input = view.InkLayer.InkPresenter.UnprocessedInput;
             input.PointerPressed += (s, e) =>
             {
@@ -44,7 +55,7 @@ namespace LitePdfViewer
                     !view.InkLoaded || view.IsLoadingInk) return;
                 BeginInkGesture(view, e.CurrentPoint.Position, e.CurrentPoint.PointerId);
             };
-            input.PointerMoved += (s, e) => UpdateInkGesture(view, e.CurrentPoint.Position, e.CurrentPoint.PointerId);
+            input.PointerMoved += (s, e) => UpdateInkGesturePoints(view, e.GetIntermediatePoints(), e.CurrentPoint.PointerId);
             input.PointerReleased += (s, e) => FinishInkGesture(view, e.CurrentPoint.Position, e.CurrentPoint.PointerId);
             input.PointerLost += (s, e) => { if (selectedInkPage == view && inkGesturePointer == e.CurrentPoint.PointerId) CancelInkGesture(); };
             view.InkLayer.InkPresenter.StrokeInput.StrokeStarted += (s, e) => ClearInkSelection();
@@ -52,14 +63,20 @@ namespace LitePdfViewer
             {
                 var point = e.GetCurrentPoint(layer);
                 if (point.PointerDevice.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch || !point.Properties.IsLeftButtonPressed) return;
-                if (!layer.CapturePointer(e.Pointer)) return;
+                if (currentInkTool != InkTool.InkSelect && !InkSelectionContains(point.Position)) return;
+                if (!view.InkLoaded || view.IsLoadingInk || savingPdf || inkGesturePointer != null) return;
+                // Starting a new lasso clears the previous selection and its
+                // captures. Capture only afterwards, so that cleanup cannot release
+                // the new mouse drag before it has started.
                 BeginInkGesture(view, point.Position, e.Pointer.PointerId);
+                if (!layer.CapturePointer(e.Pointer)) { CancelInkGesture(); return; }
                 e.Handled = true;
             };
             layer.PointerMoved += (s, e) =>
             {
                 if (inkGesturePointer != e.Pointer.PointerId) return;
-                UpdateInkGesture(view, e.GetCurrentPoint(layer).Position, e.Pointer.PointerId); e.Handled = true;
+                UpdateInkGesturePoints(view, e.GetIntermediatePoints(layer), e.Pointer.PointerId);
+                e.Handled = true;
             };
             layer.PointerReleased += (s, e) =>
             {
@@ -84,12 +101,43 @@ namespace LitePdfViewer
                 foreach (var stroke in view.Strokes.GetStrokes()) if (stroke.Selected)
                 { pendingInkMove.Strokes.Add(stroke); pendingInkMove.Transforms.Add(stroke.PointTransform); }
             }
-            else DrawInkSelection(view, new Rect(point, point), false);
+            else
+            {
+                inkLasso = new Polyline
+                {
+                    Stroke = new SolidColorBrush(Color.FromArgb(255, 0, 120, 215)),
+                    StrokeThickness = 1 / DocumentScroller.ZoomFactor,
+                    StrokeDashArray = new DoubleCollection { 4, 3 },
+                    StrokeLineJoin = PenLineJoin.Round,
+                    IsHitTestVisible = false
+                };
+                inkLasso.Points.Add(point);
+                view.InkSelectionLayer.Children.Add(inkLasso);
+            }
+        }
+        private void UpdateInkGesturePoints(PageView view, IList<Windows.UI.Input.PointerPoint> points, uint pointer)
+        {
+            if (selectedInkPage != view || inkGesturePointer != pointer || points.Count == 0) return;
+            // Use timestamp order for both XAML and InkPresenter histories. Fast
+            // mouse and pen loops must retain their bends between UI callbacks.
+            var reverse = points[0].Timestamp > points[points.Count - 1].Timestamp;
+            if (inkGestureMoving)
+                UpdateInkGesture(view, points[reverse ? 0 : points.Count - 1].Position, pointer);
+            else
+                for (var i = 0; i < points.Count; i++)
+                    UpdateInkGesture(view, points[reverse ? points.Count - 1 - i : i].Position, pointer);
         }
         private void UpdateInkGesture(PageView view, Point point, uint pointer)
         {
             if (selectedInkPage != view || inkGesturePointer != pointer) return;
-            if (!inkGestureMoving) { DrawInkSelection(view, new Rect(inkGestureStart, point), false); return; }
+            if (!inkGestureMoving)
+            {
+                var last = inkLasso.Points[inkLasso.Points.Count - 1];
+                var lassoDx = point.X - last.X; var lassoDy = point.Y - last.Y;
+                var spacing = 1.5 / DocumentScroller.ZoomFactor;
+                if (lassoDx * lassoDx + lassoDy * lassoDy >= spacing * spacing) inkLasso.Points.Add(point);
+                return;
+            }
             var dx = Math.Max(-inkSelectionBounds.X, Math.Min(view.LayoutWidth - inkSelectionBounds.Right, point.X - inkGestureStart.X));
             var dy = Math.Max(-inkSelectionBounds.Y, Math.Min(view.LayoutHeight - inkSelectionBounds.Bottom, point.Y - inkGestureStart.Y));
             for (var i = 0; i < pendingInkMove.Strokes.Count; i++)
@@ -119,10 +167,14 @@ namespace LitePdfViewer
             }
             else
             {
-                var r = new Rect(inkGestureStart, point);
-                if (r.Width * DocumentScroller.ZoomFactor < 3 || r.Height * DocumentScroller.ZoomFactor < 3) { ClearInkSelection(); return; }
-                inkSelectionBounds = view.Strokes.SelectWithPolyLine(new[] {
-                    new Point(r.X, r.Y), new Point(r.Right, r.Y), new Point(r.Right, r.Bottom), new Point(r.X, r.Bottom), new Point(r.X, r.Y) });
+                // Close the actual freehand path, including when the pointer was
+                // released a little short of the first point. Never replace it
+                // with its bounding rectangle: concave loops must stay concave.
+                inkLasso.Points.Add(point);
+                if (inkLasso.Points.Count < 4) { ClearInkSelection(); return; }
+                inkLasso.Points.Add(inkLasso.Points[0]);
+                inkSelectionBounds = view.Strokes.SelectWithPolyLine(inkLasso.Points);
+                RemoveInkLasso();
             }
             DrawInkSelection(view, inkSelectionBounds, true);
         }
@@ -134,7 +186,7 @@ namespace LitePdfViewer
         }
         private bool InkSelectionContains(Point point)
         {
-            if (inkSelectionBounds.IsEmpty) return false;
+            if (inkSelectionBounds.IsEmpty || inkSelectionBounds.Width <= 0 || inkSelectionBounds.Height <= 0) return false;
             var padding = 6 / DocumentScroller.ZoomFactor;
             return new Rect(inkSelectionBounds.X - padding, inkSelectionBounds.Y - padding,
                 inkSelectionBounds.Width + 2 * padding, inkSelectionBounds.Height + 2 * padding).Contains(point);
@@ -167,7 +219,14 @@ namespace LitePdfViewer
         {
             if (pendingInkMove != null) pendingInkMove.Restore();
             pendingInkMove = null; inkGesturePointer = null;
+            RemoveInkLasso();
             if (selectedInkPage != null) DrawInkSelection(selectedInkPage, inkSelectionBounds, true);
+        }
+        private void RemoveInkLasso()
+        {
+            if (inkLasso != null && selectedInkPage != null && selectedInkPage.InkSelectionLayer != null)
+                selectedInkPage.InkSelectionLayer.Children.Remove(inkLasso);
+            inkLasso = null;
         }
         private void ClearInkSelection()
         {

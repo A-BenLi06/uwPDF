@@ -118,7 +118,10 @@ namespace LitePdfViewer
             {
                 if (memoryConstrained || !PageStillWanted(view.Index, token) || !view.IsRealized ||
                     !IsScrollSettled() || !IsZoomSettled()) return;
-                var region = VisiblePageRegion(view, 64 / DocumentScroller.ZoomFactor);
+                // A quarter-viewport runway avoids redrawing for every small
+                // settled scroll, while its allocation still obeys the pixel cap.
+                var runway = Math.Min(256, Math.Max(96, DocumentScroller.ViewportHeight * 0.25));
+                var region = VisiblePageRegion(view, runway / DocumentScroller.ZoomFactor);
                 if (region.Width <= 0 || region.Height <= 0) return;
                 var scale = ComputeDesiredRenderWidth(view, DocumentScroller.ZoomFactor);
                 var width = scale * region.Width;
@@ -129,6 +132,7 @@ namespace LitePdfViewer
                 // CPU and GPU copies as well. No full-page 400%-scale allocation.
                 var maxPixels = Math.Min(2000000, activeBitmapCacheBudget / 8.0 * 0.25 / Math.Max(1, last - first + 1));
                 var shrink = Math.Min(1, Math.Sqrt(maxPixels / (width * height)));
+                TrimBitmapCache(view, view.BitmapBytes + (long)(width * shrink) * (long)(height * shrink) * 8);
                 using (var page = document.GetPage(view.Index))
                 {
                     var size = page.Size;
@@ -182,7 +186,7 @@ namespace LitePdfViewer
             renderWakeQueued = true;
             // Run after the input/layout callback has finished. Completing a TCS
             // inline can otherwise re-enter the scheduler halfway through a jump.
-            var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
             {
                 renderWakeQueued = false;
                 var previous = renderWake;

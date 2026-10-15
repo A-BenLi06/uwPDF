@@ -346,7 +346,7 @@
     <value>Select text</value>
   </data>
   <data name="SelectTextHelp" xml:space="preserve">
-    <value>Drag to select text; right-click to copy or highlight</value>
+    <value>Drag with the mouse to select text, or hold with a finger and drag the handles. The pen annotates.</value>
   </data>
   <data name="ShareButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Share PDF</value>
@@ -424,7 +424,7 @@
     <value>Select text</value>
   </data>
   <data name="TopSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Select text</value>
+    <value>Select text with mouse or touch; collapse annotation tools</value>
   </data>
   <data name="TopTouchWritingButton.Content" xml:space="preserve">
     <value>Touch writing</value>
@@ -517,10 +517,10 @@
     <value>Drag to move ink; Undo restores its position</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Select ink</value>
+    <value>Lasso select ink</value>
   </data>
   <data name="InkSelectButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Select ink (or hold the pen barrel button)</value>
+    <value>Lasso select ink (draw a loop with the mouse or hold the pen barrel button)</value>
   </data>
   <data name="ReaderMoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>More document tools</value>
@@ -604,10 +604,10 @@
     <value>The PDF was saved, but history could not be completed: {0}</value>
   </data>
   <data name="InkSelectLabel.Text" xml:space="preserve">
-    <value>Select ink</value>
+    <value>Lasso select</value>
   </data>
   <data name="BarrelSelectionHelp.Text" xml:space="preserve">
-    <value>Hold the pen barrel button to select an area, then drag selected ink to move it.</value>
+    <value>Draw a freehand loop with the mouse, or hold the pen barrel button. Release to select enclosed ink, then drag the selection to move it.</value>
   </data>
   <data name="HistoryWrongDocument" xml:space="preserve">
     <value>This snapshot belongs to a different document.</value>

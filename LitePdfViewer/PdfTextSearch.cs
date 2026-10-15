@@ -31,6 +31,7 @@ namespace LitePdfViewer
             bool forward, out PdfSearchMatch wrapped, CancellationToken cancellation = default(CancellationToken))
         {
             var matches = FindAll(glyphs, query, cancellation);
+            if (matches == null) { wrapped = PdfSearchMatch.Missing; return wrapped; }
             wrapped = matches.Count == 0 ? PdfSearchMatch.Missing : matches[forward ? 0 : matches.Count - 1];
             var result = PdfSearchMatch.Missing;
             foreach (var candidate in matches)
@@ -47,7 +48,7 @@ namespace LitePdfViewer
         public static List<PdfSearchMatch> FindAll(IReadOnlyList<string> glyphs, string query,
             CancellationToken cancellation = default(CancellationToken))
         {
-            cancellation.ThrowIfCancellationRequested();
+            if (cancellation.IsCancellationRequested) return null;
             var matches = new List<PdfSearchMatch>();
             query = NormalizeQuery(query);
             if (query.Length == 0) return matches;
@@ -55,7 +56,7 @@ namespace LitePdfViewer
             var map = new List<int>();
             for (var g = 0; g < glyphs.Count; g++)
             {
-                if ((g & 255) == 0) cancellation.ThrowIfCancellationRequested();
+                if ((g & 255) == 0 && cancellation.IsCancellationRequested) return null;
                 foreach (var ch in glyphs[g])
                 {
                     if (char.IsWhiteSpace(ch))
@@ -70,7 +71,7 @@ namespace LitePdfViewer
             var content = text.ToString();
             for (var at = 0; at <= content.Length - query.Length;)
             {
-                cancellation.ThrowIfCancellationRequested();
+                if (cancellation.IsCancellationRequested) return null;
                 var match = content.IndexOf(query, at, StringComparison.OrdinalIgnoreCase);
                 if (match < 0) break;
                 var candidate = new PdfSearchMatch { First = map[match], Last = map[match + query.Length - 1] };
@@ -78,7 +79,7 @@ namespace LitePdfViewer
                 // Overlapping matches are valid ("ana" occurs twice in "banana").
                 at = match + 1;
             }
-            cancellation.ThrowIfCancellationRequested();
+            if (cancellation.IsCancellationRequested) return null;
             return matches;
         }
     }

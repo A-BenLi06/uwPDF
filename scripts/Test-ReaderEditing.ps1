@@ -1,4 +1,4 @@
-# In-process native UWP tests; no desktop input or UI automation.
+﻿# In-process native UWP tests; no desktop input or UI automation.
 $ErrorActionPreference='Stop'
 $editingRepo=Split-Path $PSScriptRoot -Parent
 $editingApp=Join-Path $editingRepo 'LitePdfViewer'
@@ -21,7 +21,7 @@ try {
 } finally { $editingFont.Dispose(); $editingGraphics.Dispose(); $editingBitmap.Dispose() }
 & python (Join-Path $editingRepo 'tests/GenerateReaderEditingFixtures.py') $editingOutput
 if ($LASTEXITCODE) { throw 'Fixture generation failed.' }
-foreach ($editingName in @('source.pdf','scanned.pdf')) { Copy-Item -LiteralPath (Join-Path $editingOutput $editingName) -Destination (Join-Path $editingState $editingName) -Force }
+foreach ($editingName in @('source.pdf','scanned.pdf','selection.pdf')) { Copy-Item -LiteralPath (Join-Path $editingOutput $editingName) -Destination (Join-Path $editingState $editingName) -Force }
 $editingBackups=@{}
 $editingStartedPid=$null
 function Invoke-EditingBuild([string]$name) {

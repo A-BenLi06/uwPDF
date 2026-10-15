@@ -13,7 +13,7 @@ namespace LitePdfViewer
 {
     public sealed partial class MainPage
     {
-        public async void RunZoomQualityQa()
+        public async void RunZoomQualityQa(bool runHeavy)
         {
             var folder=await ApplicationData.Current.LocalFolder.GetFolderAsync("zoom-quality-qa");
             var report=new System.Text.StringBuilder();
@@ -75,6 +75,38 @@ namespace LitePdfViewer
                 SetZoom(2,true); await Task.Delay(35); SetZoom(.8f,true); await Task.Delay(35); FitToWindow(true); await Task.Delay(1100);
                 QaZoomAssert(fitPageToViewport && Math.Abs(DocumentScroller.ZoomFactor-FitZoom(GetFitReferencePage(),false))<.005,"Rapid retarget followed by fit lost its final request");
                 report.AppendLine("PASS: native animated 64/80/100/125/160/200% zoom and rapid retargeting settle at the requested view.");
+                var usage100 = Windows.System.MemoryManager.AppMemoryUsage;
+                ulong peak400 = usage100;
+                var memorySampler = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                memorySampler.Tick += (sender,args) => { peak400 = Math.Max(peak400,Windows.System.MemoryManager.AppMemoryUsage); };
+                memorySampler.Start();
+                try
+                {
+                    SetZoom(4,true); await Task.Delay(1500);
+                    for(var i=0;i<100 && (view.NeedsRender(ComputeRenderTargetWidth(view)) || FindNextDetailPage()!=null);i++) await Task.Delay(50);
+                    QaZoomAssert(view.RenderedWidth<=1025,"400% retained a full-page high-resolution raster");
+                    QaZoomAssert(view.DetailRaster!=null,"400% has no visible detail patch");
+                    QaZoomAssert(view.DetailRaster.Bytes<=16000000,"400% patch exceeds bounded CPU/GPU allocation");
+                    var requests=rasterBackend.RenderRequestCount;
+                    await Task.Delay(1000);
+                    QaZoomAssert(rasterBackend.RenderRequestCount==requests,"Idle high zoom repeatedly renders capped resolution");
+                    for(var i=0;i<8;i++)
+                    {
+                        DocumentScroller.ChangeView(null,Math.Min(DocumentScroller.ScrollableHeight,i*110),null,false);
+                        await Task.Delay(220);
+                    }
+                    await Task.Delay(900);
+                    QaZoomAssert(cachedBitmapBytes+retiredRasters.Bytes<=activeBitmapCacheBudget,"400% exceeds retained raster budget");
+                    var afterScrollRequests=rasterBackend.RenderRequestCount;
+                    await Task.Delay(900);
+                    QaZoomAssert(rasterBackend.RenderRequestCount==afterScrollRequests,"Settled scroll entered a redraw loop");
+                    report.AppendLine("400%: usage-before="+usage100+", usage-settled="+Windows.System.MemoryManager.AppMemoryUsage+", peak="+peak400+", overview="+view.RenderedWidth+", raster-bytes="+cachedBitmapBytes+", scroll-renders="+(afterScrollRequests-requests));
+                }
+                finally { memorySampler.Stop(); }
+                FitToWindow(true); await Task.Delay(900);
+                report.AppendLine("After fit: usage="+Windows.System.MemoryManager.AppMemoryUsage+", raster-bytes="+cachedBitmapBytes);
+                report.AppendLine("PASS: native 400% uses bounded overview/detail, no idle redraw loop, scroll allocations stay within raster budget.");
+
                 var originalDpi=dpiScale; var originalZoom=DocumentScroller.ZoomFactor;
                 RefreshDisplayScale(originalDpi*1.5); await Task.Delay(900);
                 expected=ComputeRenderTargetWidth(view);
@@ -82,6 +114,56 @@ namespace LitePdfViewer
                 QaZoomAssert(!view.NeedsRender(expected) && Math.Abs(DocumentScroller.ZoomFactor-originalZoom)<.005,"DPI change failed to refine without changing zoom");
                 RefreshDisplayScale(originalDpi);
                 report.AppendLine("PASS: display scale update rerenders to the new device-pixel target while preserving zoom.");
+                await LoadDocumentAsync(await folder.GetFileAsync("navigation.pdf"));
+                await Task.Delay(800);
+                var navigationFrames=0;
+                EventHandler<ScrollViewerViewChangedEventArgs> navigationChanged=(sender,args)=> { if(args.IsIntermediate) navigationFrames++; };
+                DocumentScroller.ViewChanged+=navigationChanged;
+                try
+                {
+                    // Start with a cold target so renderer work competes with the
+                    // animation, then traverse a differently sized page and back.
+                    foreach(var targetPage in new uint[]{2,1,0})
+                    {
+                        navigationFrames=0;
+                        GoToPage(targetPage);
+                        await Task.Delay(1300);
+                        QaZoomAssert(navigationFrames>0,"Fit-page navigation lost native intermediate frames");
+                        QaZoomAssert(Math.Abs(DocumentScroller.VerticalOffset-Math.Min(DocumentScroller.ScrollableHeight,TopOfPage(targetPage,DocumentScroller.ZoomFactor)))<2,
+                            "Animated navigation did not reach requested page");
+                    }
+                }
+                finally { DocumentScroller.ViewChanged-=navigationChanged; }
+                report.AppendLine("PASS: cold-page fit navigation emits native animation frames through mixed page sizes.");
+                if(runHeavy)
+                {
+                    await LoadDocumentAsync(await folder.GetFileAsync("performance.pdf"));
+                    await Task.Delay(900);
+                    // Exercise native InkCanvas as well as raster surfaces at
+                    // 400%, on the image-heavy document used by the benchmark.
+                    ActivatePenInput();
+                    var inkView=pageViews[0]; await LoadInkAsync(inkView);
+                    var inkBuilder=new Windows.UI.Input.Inking.InkStrokeBuilder();
+                    inkView.Strokes.AddStroke(inkBuilder.CreateStroke(new[]{new Point(90,140),new Point(220,180)}));
+                    var heavyBefore=Windows.System.MemoryManager.AppMemoryUsage;
+                    SetZoom(4,true); await Task.Delay(1800);
+                    for(var i=0;i<100 && FindNextDetailPage()!=null;i++) await Task.Delay(50);
+                    var heavy400=Windows.System.MemoryManager.AppMemoryUsage;
+                    QaZoomAssert(inkView.RenderedWidth<=1025 && inkView.DetailRaster!=null,"Heavy 400% ink view did not use bounded raster layers");
+                    var heavyRequests=rasterBackend.RenderRequestCount;
+                    await Task.Delay(1200);
+                    QaZoomAssert(rasterBackend.RenderRequestCount==heavyRequests,"Heavy document continually redraws at rest");
+                    SetInkTool(InkTool.None); FitToWindow(true); await Task.Delay(800);
+                    var heavyFrames=0;
+                    EventHandler<ScrollViewerViewChangedEventArgs> heavyChanged=(sender,args)=> { if(args.IsIntermediate) heavyFrames++; };
+                    DocumentScroller.ViewChanged+=heavyChanged;
+                    try { GoToPage(3); await Task.Delay(1700); }
+                    finally { DocumentScroller.ViewChanged-=heavyChanged; }
+                    QaZoomAssert(heavyFrames>0,"Image-heavy cold page jump lost all animation frames");
+                    QaZoomAssert(realizedPages.Count<10,"High-zoom navigation accumulated InkCanvas controls");
+                    report.AppendLine("Heavy PDF: pages="+pageViews.Count+", usage-before="+heavyBefore+", usage-400-pen="+heavy400+", usage-after-fit="+Windows.System.MemoryManager.AppMemoryUsage+", raster-bytes="+cachedBitmapBytes+", navigation-frames="+heavyFrames);
+                    report.AppendLine("PASS: image-heavy PDF with ink at 400%, stable idle render count and cold-page native animation.");
+                }
                 report.AppendLine("PASS: zoom and raster quality QA completed. Physical precision-touchpad operation still requires device acceptance.");
             }
             catch(Exception ex) { report.AppendLine("FAIL: "+ex); }

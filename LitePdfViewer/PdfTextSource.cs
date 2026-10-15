@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -25,6 +25,14 @@ namespace LitePdfViewer
     // Windows.Data.Pdf remains the only page renderer.
     internal sealed class PdfTextSource : IDisposable
     {
+        // Common glyphs share immutable strings across pages/searches.
+        private static readonly string[] AsciiGlyphText = CreateAsciiGlyphText();
+        private static string[] CreateAsciiGlyphText()
+        {
+            var values=new string[128];
+            for(var i=0;i<values.Length;i++) values[i]=((char)i).ToString();
+            return values;
+        }
         private readonly StorageFile file;
         private readonly Func<uint, CancellationToken, Task<List<TextGlyph>>> fallback;
         private readonly Func<uint, bool> preferFallback;
@@ -53,38 +61,41 @@ namespace LitePdfViewer
             }
         }
 
+        // A null result denotes normal cancellation; callers must not publish it.
         public async Task<List<TextGlyph>> ReadPageAsync(uint index, CancellationToken cancellation = default(CancellationToken))
         {
-            await textGate.WaitAsync(cancellation);
+            await textGate.WaitAsync();
             try
             {
+                if (cancellation.IsCancellationRequested) return null;
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 if (fallback != null && preferFallback != null && preferFallback(index))
                 {
                     var recognized = await fallback(index, cancellation);
-                    cancellation.ThrowIfCancellationRequested();
+                    if (cancellation.IsCancellationRequested) return null;
                     if (disposed) throw new ObjectDisposedException("PdfTextSource");
                     return recognized;
                 }
                 if (initialization == null) initialization = InitializeAsync();
                 await initialization;
-                cancellation.ThrowIfCancellationRequested();
+                if (cancellation.IsCancellationRequested) return null;
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 var timer = Stopwatch.StartNew();
                 var page = await document.ReadPageAsync(index);
-                cancellation.ThrowIfCancellationRequested();
+                if (cancellation.IsCancellationRequested) return null;
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 var text = page.Text;
                 var values = page.Coordinates;
                 // The native operation can complete synchronously. Explicitly
                 // queue managed geometry expansion so cached/fast pages cannot
                 // allocate thousands of glyphs on the caller's UI thread.
-                var glyphs = await Task.Run(() => ConvertGlyphs(text, values, cancellation), cancellation);
-                cancellation.ThrowIfCancellationRequested();
+                var glyphs = await Task.Run(() => ConvertGlyphs(text, values, cancellation));
+                if (cancellation.IsCancellationRequested) return null;
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
+                if (glyphs == null) return null;
                 if (fallback != null && !glyphs.Exists(g => !string.IsNullOrWhiteSpace(g.Text)))
                     glyphs = await fallback(index, cancellation);
-                cancellation.ThrowIfCancellationRequested();
+                if (cancellation.IsCancellationRequested) return null;
                 if (disposed) throw new ObjectDisposedException("PdfTextSource");
                 Debug.WriteLine("PDF text: page " + (index + 1) + " " + glyphs.Count + " glyphs " + timer.ElapsedMilliseconds + "ms");
                 return glyphs;
@@ -97,7 +108,7 @@ namespace LitePdfViewer
             var glyphs = new List<TextGlyph>(text.Length);
             for (var i = 0; i < text.Length; i++)
             {
-                if ((glyphs.Count & 255) == 0) cancellation.ThrowIfCancellationRequested();
+                if ((glyphs.Count & 255) == 0 && cancellation.IsCancellationRequested) return null;
                 var p = i * 9;
                 var a = new Point(values[p], values[p + 1]);
                 var b = new Point(values[p + 2], values[p + 3]);
@@ -108,12 +119,12 @@ namespace LitePdfViewer
                 var right = Math.Max(Math.Max(a.X, b.X), Math.Max(c.X, d.X));
                 var bottom = Math.Max(Math.Max(a.Y, b.Y), Math.Max(c.Y, d.Y));
                 var units = char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]) ? 2 : 1;
-                glyphs.Add(new TextGlyph { Text = text.Substring(i, units), X = left, Y = top,
+                glyphs.Add(new TextGlyph { Text = units==1 && text[i]<AsciiGlyphText.Length ? AsciiGlyphText[text[i]] : text.Substring(i, units), X = left, Y = top,
                     Width = right - left, Height = bottom - top, Angle = values[p + 8],
                     TopLeft = a, TopRight = b, BottomLeft = c, BottomRight = d });
                 i += units - 1;
             }
-            cancellation.ThrowIfCancellationRequested();
+            if (cancellation.IsCancellationRequested) return null;
             return glyphs;
         }
 

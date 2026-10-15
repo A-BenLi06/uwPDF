@@ -31,10 +31,6 @@ namespace LitePdfViewer
         private const int RenderWindow = 2;
         private const int EvictWindow = 3;
         private const long BitmapCacheBudget = PdfMemoryBudget.MaximumBytes;
-        // Only pages this close to the current one get zoom-scaled resolution; the
-        // rest of the prefetch window stays at fit-width so zooming never multiplies
-        // memory across the whole window.
-        private const int HighResWindow = 1;
         private const double MaxRenderWidth = 2560;
         // Up to 16 MB of BGRA pixels plus a XAML surface, within the shared budget.
         private const double MaxRenderPixels = 4000000;
@@ -121,7 +117,6 @@ namespace LitePdfViewer
         private double penStrokeSize = 3;
         private Color highlighterColor = Color.FromArgb(255, 255, 241, 0); // #FFF100
         private double highlighterStrokeSize = 12;
-        private bool touchInkingEnabled;
         private bool isUpdatingZoomSlider;
         private DateTime zoomSettledAt = DateTime.MinValue;
         private float lastObservedZoom = 1f;
@@ -150,6 +145,7 @@ namespace LitePdfViewer
             Unloaded += (sender, args) => { StopDisplayMonitoring(); StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
             InitializePreviewWindow();
             InitializeReaderChrome();
+            InitializeTextSelectionInput();
             InitializeNativeScrollBars();
             InitializeSharing();
             try
@@ -760,10 +756,12 @@ namespace LitePdfViewer
             ReleasePageDetail(view);
             view.DetailImage = null;
             view.DetailLayer = null;
-            if (selectedTextPage == view) ClearTextSelection();
             if (selectedInkPage == view) ClearInkSelection();
             view.InkSelectionLayer = null;
-            view.Glyphs = null;
+            if(!IsTextSelectionEndpoint(view)) view.Glyphs=null;
+            view.SelectionPolygons=null; view.SelectionQuadsBuffer=null;
+            view.SelectionStartHandle=view.SelectionEndHandle=null;
+            view.PaintedSelectionFirst=view.PaintedSelectionLast=-2;
             view.HighlightLayer = null;
             view.SelectionLayer = null;
 
@@ -1003,7 +1001,9 @@ namespace LitePdfViewer
             var visible = PdfRenderScheduler.FindVisible(pageViews, first, last,
                 zoomSettled, needsVisibleRefinement);
             if (visible >= 0) return visible;
-            if (memoryConstrained) return -1;
+            // At high zoom almost all movement pans within one page. Rendering
+            // speculative neighbors burns CPU and memory without helping it.
+            if (memoryConstrained || DocumentScroller.ZoomFactor > 1.25) return -1;
             // Once visible pages are filled, prepare only the adjacent page in
             // the movement direction. Waiting for a complete fling to stop
             // makes every newly exposed image page pay its full cold render.
@@ -1052,8 +1052,12 @@ namespace LitePdfViewer
         private bool PageResolutionNeedsWork(PageView view, double target)
         {
             if (view.NeedsRender(target)) return true;
-            // Keep a sharper cached surface when a page leaves the viewport. Only
-            // shrink it if protected visible surfaces exceed the total budget.
+            // Drop oversized overview surfaces after entering detail mode or
+            // leaving the viewport, even when the OS still reports low pressure.
+            if (view.RenderedWidth > target * 1.3 &&
+                (DocumentScroller.ZoomFactor > 1.25 || !IsPageVisible(view.Index))) return true;
+            // Otherwise retain sharper surfaces unless the shared budget needs
+            // a smaller replacement for protected visible content.
             return cachedBitmapBytes > activeBitmapCacheBudget &&
                 view.RenderedWidth - target > Math.Max(96, target * 0.3);
         }
@@ -1071,15 +1075,11 @@ namespace LitePdfViewer
 
         private double ComputeRenderTargetWidth(PageView view)
         {
-            // 1:1 device pixels at the current zoom; re-renders automatically when the
-            // user zooms in beyond the cached resolution.
+            // High zoom uses a bounded overview plus a viewport-sized detail
+            // patch. Never allocate a 400% full page behind that patch.
             var zoom = Math.Min(1.0, DocumentScroller.ZoomFactor);
-            if (Math.Abs((int)view.Index - (int)pageIndex) <= HighResWindow)
-            {
-                zoom = DocumentScroller.ZoomFactor;
-            }
-
             var target = ComputeDesiredRenderWidth(view, zoom);
+            target = Math.Min(target, PdfRasterQuality.BaseWidthLimit(DocumentScroller.ZoomFactor, IsPageVisible(view.Index)));
             var aspect = view.Aspect > 0 ? view.Aspect : 1.4142;
             var pixelBudget = RenderPixelBudget(view);
             var pixelCap = Math.Sqrt(pixelBudget / aspect);
@@ -1129,6 +1129,9 @@ namespace LitePdfViewer
                         target = ComputeRenderTargetWidth(view);
                     }
                     var options = BuildRenderOptions(page, view, target);
+                    // Evict before allocating, rather than briefly retaining the
+                    // entire old cache alongside a new CPU/GPU surface.
+                    TrimBitmapCache(view, (long)options.DestinationWidth * options.DestinationHeight * 8 + view.BitmapBytes);
                     pending = await rasterBackend.RenderAsync(page, options.DestinationWidth,
                         options.DestinationHeight, new Rect());
 
@@ -1283,10 +1286,11 @@ namespace LitePdfViewer
         {
             int first, last;
             GetVisiblePageRange(out first, out last);
-            var window = memoryConstrained ? 0 : EvictWindow;
+            var window = memoryConstrained || DocumentScroller.ZoomFactor > 1.25 ? 0 : EvictWindow;
             for (var i = realizedPages.Count - 1; i >= 0; i--)
             {
                 var index = realizedPages[i];
+                if (index < first || index > last) ReleasePageDetail(pageViews[index]);
                 if (index >= first - window && index <= last + window)
                 {
                     continue;
@@ -1457,8 +1461,8 @@ namespace LitePdfViewer
             }
 
             pageIndex = nextIndex;
-            if (fitPageToViewport) FitToWindow(false);
-            ScrollToPage(nextIndex, true);
+            if (fitPageToViewport) FitToWindow(true);
+            else ScrollToPage(nextIndex, true);
             UpdateThumbnailSelection();
             EvictFarPages();
             UpdateUi();
@@ -1698,6 +1702,7 @@ namespace LitePdfViewer
                 return;
             }
 
+            if (animated) scrollActivity.NoteWheel(DateTime.UtcNow);
             DocumentScroller.ChangeView(null, (float)TopOfPage(index, DocumentScroller.ZoomFactor), null, !animated);
         }
 
@@ -1733,6 +1738,7 @@ namespace LitePdfViewer
             {
                 lastObservedZoom = zoom;
                 MarkZoomChanging();
+                if(selectedTextPage!=null && selectionPointer==null) RedrawSelectionPages();
             }
 
             if (!e.IsIntermediate && programmaticZoomTarget.HasValue && Math.Abs(zoom - programmaticZoomTarget.Value) < 0.005f)
@@ -1742,7 +1748,7 @@ namespace LitePdfViewer
             RestoreVisiblePages();
             UpdateZoomControls();
             UpdateSearchFocus();
-            if (!e.IsIntermediate) FollowCurrentThumbnail();
+            if (!e.IsIntermediate) { EvictFarPages(); FollowCurrentThumbnail(); }
             var reference = GetFitReferencePage();
             if (!e.IsIntermediate && fitPageToViewport && reference != null &&
                 Math.Abs(DocumentScroller.ZoomFactor - FitZoom(reference, false)) > 0.005f)
@@ -2382,12 +2388,6 @@ namespace LitePdfViewer
             return Color.FromArgb(255, r, g, b);
         }
 
-        private void TopTouchWritingButton_Click(object sender, RoutedEventArgs e)
-        {
-            touchInkingEnabled = TopTouchWritingButton.IsChecked == true;
-            RefreshRealizedInkCanvases();
-        }
-
         private void EnsurePalettesBuilt()
         {
             if (palettesBuilt)
@@ -2499,6 +2499,7 @@ namespace LitePdfViewer
             if (InkSelectButton != null) InkSelectButton.IsChecked = tool == InkTool.InkSelect;
             SetTextCursor(false);
             currentInkTool = tool;
+            if (tool == InkTool.Pen || tool == InkTool.Highlighter || tool == InkTool.Eraser) lastPenTool = tool;
             if (TopSelectButton != null) TopSelectButton.IsChecked = tool == InkTool.None;
 
             if (TopPenButton != null)
@@ -2533,7 +2534,8 @@ namespace LitePdfViewer
             {
                 var view = pageViews[realizedPages[i]];
                 ConfigureInkCanvas(view.InkLayer, attributes, view.InkLoaded && !view.IsLoadingInk);
-                pageViews[realizedPages[i]].SelectionLayer.IsHitTestVisible = currentInkTool == InkTool.None;
+                view.SelectionLayer.IsHitTestVisible = currentInkTool == InkTool.None;
+                UpdateInkSelectionInput(view);
             }
         }
 
@@ -2547,10 +2549,6 @@ namespace LitePdfViewer
             else
             {
                 var types = Windows.UI.Core.CoreInputDeviceTypes.Pen | Windows.UI.Core.CoreInputDeviceTypes.Mouse;
-                if (touchInkingEnabled && currentInkTool != InkTool.InkSelect)
-                {
-                    types |= Windows.UI.Core.CoreInputDeviceTypes.Touch;
-                }
                 inkCanvas.InkPresenter.InputDeviceTypes = types;
             }
 
@@ -2754,7 +2752,7 @@ namespace LitePdfViewer
             ZoomSlider.IsEnabled = hasDocument;
             FitButton.IsEnabled = hasDocument;
 
-            TopTouchWritingButton.IsEnabled = hasDocument;
+            InkSelectButton.IsEnabled = hasDocument;
             TopSelectButton.IsEnabled = hasDocument;
             AnnotationToolsButton.IsEnabled = hasDocument;
             ShareButton.IsEnabled = hasDocument;
@@ -2810,6 +2808,11 @@ namespace LitePdfViewer
             public int Revision { get; set; }
             public Canvas HighlightLayer { get; set; }
             public Canvas SelectionLayer { get; set; }
+            public List<Windows.UI.Xaml.Shapes.Polygon> SelectionPolygons;
+            public List<TextQuad> SelectionQuadsBuffer;
+            public Grid SelectionStartHandle, SelectionEndHandle;
+            public int PaintedSelectionFirst=-2, PaintedSelectionLast=-2;
+            public double PaintedSelectionWidth, PaintedSelectionHeight;
             public List<TextGlyph> Glyphs { get; set; }
             public Task TextTask { get; set; }
             public bool TextFailed { get; set; }

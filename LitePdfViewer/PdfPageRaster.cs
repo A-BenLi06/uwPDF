@@ -47,9 +47,11 @@ namespace LitePdfViewer
         private int deviceGeneration;
         private bool nativeUnavailable;
         public event Action DeviceLost;
+        internal long RenderRequestCount { get; private set; }
         public void ResetDevice() { renderer = null; nativeUnavailable = false; deviceGeneration++; }
         public async Task<PdfPageRaster> RenderAsync(PdfPage page, uint width, uint height, Rect sourceRect)
         {
+            RenderRequestCount++;
             SurfaceImageSource surface = null;
             var timer = Stopwatch.StartNew();
             var generation = deviceGeneration;

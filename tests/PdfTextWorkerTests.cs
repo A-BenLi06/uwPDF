@@ -67,7 +67,8 @@ namespace LitePdfViewer
         private bool searchBusy;
         private ulong activeRenderToken=1;
         private uint pageIndex;
-        private PageView selectedTextPage;
+        private PageView selectedTextPage,selectionEndPage;
+        private PageView SelectionEndpoint { get { return selectionEndPage ?? selectedTextPage; } }
         private int selectionAnchor, selectionEnd;
         private CancellationTokenSource searchCancellation=new CancellationTokenSource();
         private TextBox SearchTextBox=new TextBox();
@@ -75,7 +76,7 @@ namespace LitePdfViewer
         private List<PageView> pageViews=new List<PageView>();
         internal string SelectionText(List<TextGlyph> glyphs)
         {
-            selectedTextPage=new PageView { Glyphs=glyphs }; selectionAnchor=0; selectionEnd=glyphs.Count-1;
+            selectedTextPage=new PageView { Glyphs=glyphs }; pageViews.Clear(); pageViews.Add(selectedTextPage); selectionAnchor=0; selectionEnd=glyphs.Count-1;
             return SelectedText();
         }
         public int Shows, LastFirst, LastEnd;
@@ -197,6 +198,9 @@ internal static class Tests
     }
     private static void CancellationAndDisposal()
     {
+        var cancellations=0;
+        EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> thrown=(sender,args)=> { if(args.Exception is OperationCanceledException) Interlocked.Increment(ref cancellations); };
+        AppDomain.CurrentDomain.FirstChanceException+=thrown;
         // Odd UTF-16 offsets followed by surrogate pairs must still check cancellation.
         var builder=new System.Text.StringBuilder("A");
         for (var i=0;i<10000;i++) builder.Append("\ud83d\ude00");
@@ -205,7 +209,7 @@ internal static class Tests
         var source=new PdfTextSource(new Windows.Storage.StorageFile());
         Probe.FirstPoint=() => cancel.Cancel();
         var pending=source.ReadPageAsync(0,cancel.Token); ui.Pump(pending);
-        Assert(pending.IsCanceled && Probe.PointCount<=1024,"Cancellation continued expanding a whole page");
+        Assert(pending.Status==TaskStatus.RanToCompletion && pending.Result==null && Probe.PointCount<=1024,"Cancellation continued expanding a whole page");
         // The semaphore must be released after cancellation, allowing retry.
         SetPage("retry");
         var retry=source.ReadPageAsync(0); ui.Pump(retry);
@@ -222,9 +226,10 @@ internal static class Tests
         Assert(pending.IsFaulted && pending.Exception.InnerException is ObjectDisposedException,"Disposed source published queued geometry");
         cancel=new CancellationTokenSource();
         var segments=new CancelingGlyphs(cancel); PdfSearchMatch wrapped;
-        try { PdfTextSearch.Find(segments,"missing",0,true,out wrapped,cancel.Token); throw new Exception("Search mapping ignored cancellation"); }
-        catch (OperationCanceledException) { }
+        Assert(!PdfTextSearch.Find(segments,"missing",0,true,out wrapped,cancel.Token).Found,"Search mapping ignored cancellation");
         Assert(segments.LastRead<1024,"Canceled search mapped the entire page");
+        AppDomain.CurrentDomain.FirstChanceException-=thrown;
+        Assert(cancellations==0,"Normal glyph/search cancellation raised a first-chance exception");
     }
     private static void OcrFallback()
     {
@@ -255,7 +260,7 @@ internal static class Tests
         var cancellation=new CancellationTokenSource(); completion=new TaskCompletionSource<List<TextGlyph>>();
         source=new PdfTextSource(new Windows.Storage.StorageFile(),(index,cancel)=>completion.Task,index=>true);
         pending=source.ReadPageAsync(0,cancellation.Token); cancellation.Cancel(); completion.SetResult(recognized); ui.Pump(pending);
-        Assert(pending.IsCanceled,"Canceled recognition was published");
+        Assert(pending.Status==TaskStatus.RanToCompletion && pending.Result==null,"Canceled recognition was published");
         pending=source.ReadPageAsync(0); ui.Pump(pending);
         Assert(pending.GetAwaiter().GetResult()==recognized,"Canceled OCR retained the text gate");
         source.Dispose();

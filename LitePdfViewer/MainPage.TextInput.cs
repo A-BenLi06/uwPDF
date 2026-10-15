@@ -1,4 +1,4 @@
-﻿using Windows.Foundation;
+using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -10,25 +10,37 @@ namespace LitePdfViewer
 {
     public sealed partial class MainPage
     {
-        private void AddTextHandle(PageView view, Point position, int endpoint, int opposite)
+        private static readonly SolidColorBrush SelectionHandleFill=new SolidColorBrush(Colors.White);
+        private static readonly SolidColorBrush SelectionHandleHit=new SolidColorBrush(Colors.Transparent);
+        private void UpdateTextHandle(PageView view,Point position,bool anchor)
         {
-            var zoom = DocumentScroller.ZoomFactor;
-            var handle = new Grid { Width = 32 / zoom, Height = 32 / zoom, ManipulationMode = ManipulationModes.None, Background = new SolidColorBrush(Colors.Transparent) };
-            handle.Children.Add(new Ellipse { Width = 12 / zoom, Height = 12 / zoom,
-                Fill = new SolidColorBrush(Colors.White), Stroke = new SolidColorBrush(Color.FromArgb(255, 0, 120, 215)), StrokeThickness = 2 / zoom });
-            Canvas.SetLeft(handle, position.X * view.LayoutWidth - 16 / zoom);
-            Canvas.SetTop(handle, position.Y * view.LayoutHeight - 6 / zoom);
-            Windows.UI.Xaml.Automation.AutomationProperties.SetName(handle, L.Get("TextSelectionHandle"));
-            handle.PointerPressed += (s, e) =>
+            var handle=anchor ? view.SelectionStartHandle : view.SelectionEndHandle;
+            if(handle==null)
             {
-                if (!view.SelectionLayer.CapturePointer(e.Pointer)) return;
-                selectionAnchor = opposite; selectionEnd = endpoint;
-                selectionPointer = e.Pointer.PointerId;
-                selectionIsPen = e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Pen;
-                selectionLastPoint = e.GetCurrentPoint(view.SelectionLayer).Position;
-                e.Handled = true;
-            };
-            view.SelectionLayer.Children.Add(handle);
+                handle=new Grid { ManipulationMode=ManipulationModes.None, Background=SelectionHandleHit };
+                handle.Children.Add(new Ellipse { Fill=SelectionHandleFill, Stroke=SelectionBrush });
+                Windows.UI.Xaml.Automation.AutomationProperties.SetName(handle,L.Get("TextSelectionHandle"));
+                handle.PointerPressed+=(s,e)=>
+                {
+                    if(e.Pointer.PointerDeviceType==Windows.Devices.Input.PointerDeviceType.Pen) { ActivatePenInput(); return; }
+                    if(currentInkTool!=InkTool.None || !CaptureTextPointer(e)) return;
+                    if(anchor)
+                    {
+                        var page=selectedTextPage; var glyph=selectionAnchor;
+                        selectedTextPage=SelectionEndpoint; selectionAnchor=selectionEnd;
+                        selectionEndPage=page; selectionEnd=glyph; textSelectionVersion++;
+                    }
+                    RedrawSelectionPages(); e.Handled=true;
+                };
+                view.SelectionLayer.Children.Add(handle);
+                if(anchor) view.SelectionStartHandle=handle; else view.SelectionEndHandle=handle;
+            }
+            var zoom=DocumentScroller.ZoomFactor;
+            handle.Width=handle.Height=32/zoom;
+            var dot=(Ellipse)handle.Children[0]; dot.Width=dot.Height=12/zoom; dot.StrokeThickness=2/zoom;
+            Canvas.SetLeft(handle,position.X*view.LayoutWidth-16/zoom);
+            Canvas.SetTop(handle,position.Y*view.LayoutHeight-6/zoom);
+            handle.Visibility=Visibility.Visible;
         }
     }
 }

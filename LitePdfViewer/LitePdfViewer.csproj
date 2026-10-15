@@ -94,7 +94,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(PdfRendererBridge)' == 'CppWinRT'">
     <DefineConstants>$(DefineConstants);CPPWINRT_RENDERER</DefineConstants>
-    <CppWinRTRendererOutput>$(MSBuildProjectDirectory)\..\artifacts\cppwinrt\$(Platform)\$(Configuration)</CppWinRTRendererOutput>
+    <CppWinRTRendererPlatform>$(Platform)</CppWinRTRendererPlatform>
+    <CppWinRTRendererPlatform Condition="'$(Platform)' == 'AnyCPU' or '$(Platform)' == 'Any CPU'">x86</CppWinRTRendererPlatform>
+    <CppWinRTRendererOutput>$(MSBuildProjectDirectory)\..\artifacts\cppwinrt\$(CppWinRTRendererPlatform)\$(Configuration)</CppWinRTRendererOutput>
     <OutputPath>bin\$(Platform)\$(Configuration)-CppWinRT\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)-CppWinRT\</IntermediateOutputPath>
     <AppxPackageDir>$(MSBuildProjectDirectory)\AppPackages\CppWinRT\</AppxPackageDir>
@@ -116,6 +118,22 @@
       <Name>PdfNative</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="MainPage.xaml.cs">
+      <DependentUpon>MainPage.xaml</DependentUpon>
+    </Compile>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="MainPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
   <Import Project="LitePdfViewer.Shared.projitems" />
   <Import Project="PackageIdentity.props" />
 
@@ -135,7 +153,7 @@
   <Target Name="ValidatePdfRendererBridge" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(PdfRendererBridge)' != 'CppWinRT' and '$(PdfRendererBridge)' != 'Legacy'" Text="PdfRendererBridge must be CppWinRT (default) or Legacy." />
   </Target>
-  <Target Name="BuildCppWinRTRenderer" BeforeTargets="ResolveAssemblyReferences" Condition="'$(PdfRendererBridge)' == 'CppWinRT'"
+  <Target Name="BuildCppWinRTRenderer" BeforeTargets="ResolveAssemblyReferences" Condition="'$(PdfRendererBridge)' == 'CppWinRT' and '$(DesignTimeBuild)' != 'true'"
 >
     <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\scripts\Build-CppWinRT.ps1&quot; -Platform &quot;$(Platform)&quot; -Configuration &quot;$(Configuration)&quot; -Incremental" />
   </Target>

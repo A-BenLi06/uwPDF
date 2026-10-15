@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -50,21 +50,28 @@ namespace LitePdfViewer
         private async Task EnsurePageGeometryAsync(PageView view, ulong token,
             CancellationToken cancellation = default(CancellationToken))
         {
-            if (token != activeRenderToken) throw new OperationCanceledException();
-            if (view.AspectKnown) return;
-            await renderGate.WaitAsync(cancellation);
+            if(!await TryEnsurePageGeometryAsync(view,token,cancellation)) throw new OperationCanceledException();
+        }
+
+        private async Task<bool> TryEnsurePageGeometryAsync(PageView view, ulong token,
+            CancellationToken cancellation = default(CancellationToken))
+        {
+            if(token!=activeRenderToken || cancellation.IsCancellationRequested) return false;
+            if(view.AspectKnown) return true;
+            // Search cancellation is a normal result, including while waiting
+            // for the native renderer. Do not throw from its async continuation.
+            await renderGate.WaitAsync();
             try
             {
-                cancellation.ThrowIfCancellationRequested();
-                if (token != activeRenderToken || document == null) throw new OperationCanceledException();
-                if (view.AspectKnown) return;
-                using (var page = document.GetPage(view.Index))
+                if(token!=activeRenderToken || cancellation.IsCancellationRequested || document==null) return false;
+                if(view.AspectKnown) return true;
+                using(var page=document.GetPage(view.Index))
                 {
-                    var size = page.Size;
-                    if (ConfirmPageAspect(view, size.Width > 0 ? size.Height / size.Width : double.NaN))
-                        RefreshPageGeometry(view);
-                    if (!view.AspectKnown) throw new InvalidOperationException(L.Get("PageSizeError"));
+                    var size=page.Size;
+                    if(ConfirmPageAspect(view,size.Width>0 ? size.Height/size.Width : double.NaN)) RefreshPageGeometry(view);
+                    if(!view.AspectKnown) throw new InvalidOperationException(L.Get("PageSizeError"));
                 }
+                return true;
             }
             finally { renderGate.Release(); }
         }

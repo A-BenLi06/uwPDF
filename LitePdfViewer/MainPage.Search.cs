@@ -56,7 +56,7 @@ namespace LitePdfViewer
 
         private bool IsSearchSelection()
         {
-            return activeSearchHit != null && selectedTextPage != null && selectedTextPage.Index == activeSearchHit.Page
+            return activeSearchHit != null && selectedTextPage != null && SelectionEndpoint == selectedTextPage && selectedTextPage.Index == activeSearchHit.Page
                 && selectionAnchor == activeSearchHit.First && selectionEnd == activeSearchHit.Last;
         }
 
@@ -131,7 +131,7 @@ namespace LitePdfViewer
                     var skipped = 0;
                     for (var step = 0; step < pageViews.Count; step++)
                     {
-                        cancellation.ThrowIfCancellationRequested();
+                        if (cancellation.IsCancellationRequested) return;
                         if (version != searchVersion || token != activeRenderToken) return;
                         var index = (start + (forward ? step : -step) + pageViews.Count) % pageViews.Count;
                         var view = pageViews[index];
@@ -145,10 +145,11 @@ namespace LitePdfViewer
                             System.Diagnostics.Debug.WriteLine("Search skipped page " + (index + 1) + ": " + ex.Message);
                             continue;
                         }
-                        if (version != searchVersion || token != activeRenderToken) return;
+                        if (glyphs == null || version != searchVersion || token != activeRenderToken) return;
                         var matches = await MatchPageTextAsync(glyphs, query, view.Index, cancellation);
-                        cancellation.ThrowIfCancellationRequested();
+                        if (cancellation.IsCancellationRequested) return;
                         if (version != searchVersion || token != activeRenderToken) return;
+                        if (matches == null) return;
                         pages[index] = matches;
                         // Show the first useful match while the remaining pages
                         // are counted. Retain ranges, not every page's glyphs/quads.
@@ -174,7 +175,7 @@ namespace LitePdfViewer
                     var hit = searchHits[next];
                     var view = pageViews[(int)hit.Page];
                     var glyphs = view.Glyphs ?? await source.ReadPageAsync(hit.Page, cancellation);
-                    if (version != searchVersion || token != activeRenderToken) return;
+                    if (glyphs == null || version != searchVersion || token != activeRenderToken) return;
                     await ShowSearchMatchAsync(hit, glyphs, version, token, cancellation);
                     if (version != searchVersion || token != activeRenderToken) return;
                     searchHitIndex = next;
@@ -207,28 +208,31 @@ namespace LitePdfViewer
                 var segments = new string[glyphs.Count];
                 for (var g = 0; g < glyphs.Count; g++)
                 {
-                    if ((g & 255) == 0) cancellation.ThrowIfCancellationRequested();
+                    if ((g & 255) == 0 && cancellation.IsCancellationRequested) return null;
                     segments[g] = glyphs[g].Text;
                 }
                 var results = new List<SearchHit>();
-                foreach (var match in PdfTextSearch.FindAll(segments, query, cancellation))
+                var matches = PdfTextSearch.FindAll(segments, query, cancellation);
+                if (matches == null) return null;
+                foreach (var match in matches)
                 {
-                    cancellation.ThrowIfCancellationRequested();
+                    if (cancellation.IsCancellationRequested) return null;
                     results.Add(new SearchHit { Page = page, First = match.First, Last = match.Last });
                 }
                 return results;
-            }, cancellation);
+            });
         }
 
         private async Task ShowSearchMatchAsync(SearchHit hit, List<TextGlyph> glyphs,
             int version, ulong token, CancellationToken cancellation)
         {
             var view = pageViews[(int)hit.Page];
-            await EnsurePageGeometryAsync(view, token, cancellation);
+            if(!await TryEnsurePageGeometryAsync(view,token,cancellation)) return;
             if (version != searchVersion || token != activeRenderToken) return;
             var width = view.LayoutWidth; var height = view.LayoutHeight;
-            var quads = await Task.Run(() => BuildTextQuads(glyphs, hit.First, hit.Last, width, height, cancellation), cancellation);
+            var quads = await Task.Run(() => BuildTextQuads(glyphs, hit.First, hit.Last, width, height, cancellation));
             if (version != searchVersion || token != activeRenderToken) return;
+            if (quads == null || cancellation.IsCancellationRequested) return;
             // Prepare the result without a preliminary page-top jump/refit.
             // The final match position is the only native scrolling request.
             pendingLayoutAnchor = null;
@@ -253,7 +257,7 @@ namespace LitePdfViewer
         {
             // Community Toolkit SmoothScrollIntoView uses one animated ChangeView
             // and waits for the final ViewChanged. Equal/clamped targets must not wait.
-            cancellation.ThrowIfCancellationRequested();
+            if(cancellation.IsCancellationRequested) return;
             target = Math.Max(0, Math.Min(DocumentScroller.ScrollableHeight, target));
             if (Math.Abs(target - DocumentScroller.VerticalOffset) < 0.5) return;
             var finished = new TaskCompletionSource<bool>();
@@ -264,13 +268,13 @@ namespace LitePdfViewer
             DocumentScroller.ViewChanged += changed;
             try
             {
-                using (cancellation.Register(() => finished.TrySetCanceled()))
+                using (cancellation.Register(() => finished.TrySetResult(false)))
                 {
                     if (!DocumentScroller.ChangeView(null, target, null, false)) return;
                     // A suspended view may not deliver a final event. Do not leave
                     // search navigation permanently disabled in that case.
-                    await Task.WhenAny(finished.Task, Task.Delay(1500, cancellation));
-                    cancellation.ThrowIfCancellationRequested();
+                    await Task.WhenAny(finished.Task, Task.Delay(1500));
+                    if(cancellation.IsCancellationRequested) return;
                 }
             }
             finally { DocumentScroller.ViewChanged -= changed; }

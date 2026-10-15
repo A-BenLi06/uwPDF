@@ -43,6 +43,9 @@ namespace LitePdfViewer
         private double lastColumnWidth = 612;
         private const double PageBorderThickness = 1;
         private object pendingLayoutAnchor;
+        private object selectedTextPage;
+        private uint? selectionPointer;
+        private void RedrawSelectionPages() { }
         private bool fitPageToViewport;
         private float? programmaticZoomTarget, pendingSliderZoom;
         private ZoomTimer sliderZoomTimer = new ZoomTimer();
@@ -56,6 +59,7 @@ namespace LitePdfViewer
         private void UpdateZoomControls() { }
         private void UpdateSearchFocus() { }
         private void FollowCurrentThumbnail() { }
+        private void EvictFarPages() { }
         private object GetFitReferencePage() { return null; }
         private float FitZoom(object reference, bool updateLimits) { return .5f; }
         private void ScheduleRelayout() { }

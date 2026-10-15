@@ -33,14 +33,15 @@ namespace LitePdfViewer
 
         public async Task<List<TextGlyph>> ReadAsync(uint index, CancellationToken cancellation)
         {
-            await gate.WaitAsync(cancellation);
+            await gate.WaitAsync();
             try
             {
+                if (cancellation.IsCancellationRequested) return null;
                 List<TextGlyph> saved;
                 if (cache.TryGetValue(index, out saved)) return saved;
                 var glyphs = await Task.Run(async () =>
                 {
-                    cancellation.ThrowIfCancellationRequested();
+                    if (cancellation.IsCancellationRequested) return null;
                     var engine = CreateEngine(language);
                     if (engine == null) return new List<TextGlyph>();
                     var pdf = await PdfDocument.LoadFromFileAsync(file);
@@ -51,18 +52,19 @@ namespace LitePdfViewer
                         var width = Math.Max(1, (uint)Math.Floor(page.Size.Width * scale));
                         var height = Math.Max(1, (uint)Math.Floor(page.Size.Height * scale));
                         await page.RenderToStreamAsync(stream, new PdfPageRenderOptions { DestinationWidth = width, DestinationHeight = height });
-                        cancellation.ThrowIfCancellationRequested();
+                        if (cancellation.IsCancellationRequested) return null;
                         stream.Seek(0);
                         var decoder = await BitmapDecoder.CreateAsync(stream);
                         using (var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore))
                         {
                             var result = await engine.RecognizeAsync(bitmap);
-                            cancellation.ThrowIfCancellationRequested();
+                            if (cancellation.IsCancellationRequested) return null;
                             return Convert(result, bitmap.PixelWidth, bitmap.PixelHeight);
                         }
                     }
-                }, cancellation);
-                cancellation.ThrowIfCancellationRequested();
+                });
+                if (cancellation.IsCancellationRequested) return null;
+                if (glyphs == null) return null;
                 while (cache.Count >= 8) cache.Remove(order.Dequeue());
                 cache.Add(index, glyphs); order.Enqueue(index);
                 return glyphs;
