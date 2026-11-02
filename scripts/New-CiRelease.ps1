@@ -89,7 +89,7 @@ try {
     })
     [IO.File]::WriteAllLines((Join-Path $output 'SHA256SUMS.txt'), $sums, [Text.UTF8Encoding]::new($false))
     & (Join-Path $PSScriptRoot 'Test-ReleaseAssets.ps1') -Directory $output
-    $notes = (Get-Content (Join-Path $repoRoot "docs/releases/$Tag.md") -Raw).TrimEnd()
+    $notes = (Get-Content (Join-Path $repoRoot "docs/releases/$Tag.md") -Raw -Encoding UTF8).TrimEnd()
     $notes += "`n`n## Developer information`n`n- Source commit: $commit`n- Source ref: refs/tags/$Tag (on main)`n- Toolchain: $($info.toolchain)`n- Validation: $($info.validation); 17 C# regression suites; application CMS signatures and authenticated block-map payload hashes; SignTool dependency signatures; SHA-256 checked before and after upload. The application certificate is self-signed and requires installation-time trust.`n"
     [IO.File]::WriteAllText((Join-Path $repoRoot 'artifacts/ci/release-notes.md'), $notes, [Text.UTF8Encoding]::new($false))
 } finally {
