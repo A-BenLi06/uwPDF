@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 if (!$CatalogPath) {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
-    $instances = @((& $vswhere -all -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json) -join "`n" | ConvertFrom-Json)
+    $instances = ((& $vswhere -all -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json) -join "`n" | ConvertFrom-Json)
     $instance = $instances | Where-Object { $_.productId -eq 'Microsoft.VisualStudio.Product.BuildTools' } | Select-Object -First 1
     if (!$instance) { $instance = $instances | Select-Object -First 1 }
     if (!$instance) { throw 'Install Visual Studio C++ tools before preparing the local ARM32 toolchain.' }

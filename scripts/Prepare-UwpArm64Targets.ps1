@@ -2,7 +2,7 @@ param([string]$VsInstallPath)
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
-$instances = @((& $vswhere -all -products '*' -format json) -join "`n" | ConvertFrom-Json)
+$instances = ((& $vswhere -all -products '*' -format json) -join "`n" | ConvertFrom-Json)
 $instance = $instances | Where-Object {
     (!$VsInstallPath -or $_.installationPath -eq $VsInstallPath) -and
     (Test-Path -LiteralPath (Join-Path $_.installationPath 'MSBuild/Microsoft/WindowsXaml/v18.0'))
