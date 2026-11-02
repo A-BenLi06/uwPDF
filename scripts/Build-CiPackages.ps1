@@ -16,9 +16,10 @@ try {
     if ($LASTEXITCODE) { throw 'Localization validation failed.' }
     & ./.tools/nuget-3.5.0.exe restore LitePdfViewer.sln -ConfigFile NuGet.Config -NonInteractive
     if ($LASTEXITCODE) { throw 'Legacy UWP NuGet restore failed.' }
-    $expectedPackages = (([Text.Encoding]::UTF8.GetString($originalLock) | ConvertFrom-Json).libraries.PSObject.Properties.Name | Sort-Object)
-    $resolvedPackages = ((Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json).libraries.PSObject.Properties.Name | Sort-Object)
-    if (Compare-Object $expectedPackages $resolvedPackages) { throw 'NuGet restore changed the committed dependency versions.' }
+    # Python accepts legacy JSON empty property names which PowerShell 5 rejects.
+    $resolvedPackagesJson = & python (Join-Path $PSScriptRoot 'Get-RestoredNuGetPackages.py')
+    if ($LASTEXITCODE) { throw 'NuGet restore changed the committed dependency versions or targets.' }
+    $resolvedPackages = $resolvedPackagesJson | ConvertFrom-Json
     $restoredLockHash = (Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash
     & ./scripts/Prepare-NativeDependencies.ps1
     & ./scripts/Prepare-CppWinRTArm32.ps1
