@@ -33,7 +33,6 @@ $temporaryRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [IO.Path]::Ge
 $pfxPath = Join-Path $temporaryRoot ("uwpdf-signing-$([guid]::NewGuid().ToString('N')).pfx")
 $certificate = $null
 $certificateImported = $false
-$rootAdded = $false
 try {
     if ($CertificateThumbprint) {
         if ($CertificateThumbprint -notmatch '^[a-fA-F0-9]{40}$') { throw 'Invalid signing certificate thumbprint.' }
@@ -51,11 +50,6 @@ try {
     }
     $publicCertificate = Join-Path $output 'uwPDF.cer'
     Export-Certificate -Cert $certificate -FilePath $publicCertificate | Out-Null
-    # Add temporary public-certificate trust for SignTool verification, then remove it.
-    if (!(Test-Path "Cert:/CurrentUser/Root/$($certificate.Thumbprint)")) {
-        Import-Certificate -FilePath $publicCertificate -CertStoreLocation Cert:/CurrentUser/Root | Out-Null
-        $rootAdded = $true
-    }
     $signedHashes = [ordered]@{}
     foreach ($platform in @('x86', 'x64', 'ARM', 'ARM64')) {
         $stage = Join-Path $unsigned $platform
@@ -73,8 +67,7 @@ try {
         } finally { $archive.Dispose() }
         & $signTool sign /fd SHA256 /sha1 $certificate.Thumbprint /s My /tr http://timestamp.digicert.com /td SHA256 $package.FullName
         if ($LASTEXITCODE) { throw "$platform package signing failed." }
-        & $signTool verify /pa /all /v $package.FullName
-        if ($LASTEXITCODE) { throw "$platform signature verification failed." }
+        & (Join-Path $PSScriptRoot 'Test-AppxCryptographicSignature.ps1') -PackagePath $package.FullName -CertificateThumbprint $certificate.Thumbprint
         $dependencies = @(Get-ChildItem -LiteralPath (Join-Path $stage 'Dependencies') -File)
         if (!$dependencies.Count) { throw "Missing $platform dependencies." }
         foreach ($dependency in $dependencies) {
@@ -97,10 +90,9 @@ try {
     [IO.File]::WriteAllLines((Join-Path $output 'SHA256SUMS.txt'), $sums, [Text.UTF8Encoding]::new($false))
     & (Join-Path $PSScriptRoot 'Test-ReleaseAssets.ps1') -Directory $output
     $notes = (Get-Content (Join-Path $repoRoot "docs/releases/$Tag.md") -Raw).TrimEnd()
-    $notes += "`n`n## Developer information`n`n- Source commit: $commit`n- Source ref: refs/tags/$Tag (on main)`n- Toolchain: $($info.toolchain)`n- Validation: $($info.validation); 17 C# regression suites; SignTool verification of application and dependency signatures; SHA-256 checked before and after upload.`n"
+    $notes += "`n`n## Developer information`n`n- Source commit: $commit`n- Source ref: refs/tags/$Tag (on main)`n- Toolchain: $($info.toolchain)`n- Validation: $($info.validation); 17 C# regression suites; application CMS signatures and authenticated block-map payload hashes; SignTool dependency signatures; SHA-256 checked before and after upload. The application certificate is self-signed and requires installation-time trust.`n"
     [IO.File]::WriteAllText((Join-Path $repoRoot 'artifacts/ci/release-notes.md'), $notes, [Text.UTF8Encoding]::new($false))
 } finally {
     if (Test-Path -LiteralPath $pfxPath) { Remove-Item -LiteralPath $pfxPath -Force }
-    if ($rootAdded) { Remove-Item -LiteralPath "Cert:/CurrentUser/Root/$($certificate.Thumbprint)" -Force }
     if ($certificateImported -and $certificate) { $certificate | ForEach-Object { Remove-Item -LiteralPath "Cert:/CurrentUser/My/$($_.Thumbprint)" -DeleteKey -Force } }
 }

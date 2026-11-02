@@ -107,6 +107,10 @@ then uses `Add-AppxPackage` with the included dependencies. `.pfx`, private keys
 `.appxupload` and `.msixupload` are rejected by the asset allowlist. Store containers
 stay local for Partner Center.
 
+Self-signed application signatures are checked cryptographically, including their
+authenticated block maps and every packaged file block, without changing Windows
+root-certificate trust. Dependencies are verified with SignTool's trust policy.
+
 Release creation starts as a draft. The workflow downloads every uploaded asset,
 checks every hash against the original bytes and checks package/certificate bytes
 inside installer ZIPs before making the release public. Existing releases are never
