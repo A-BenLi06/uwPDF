@@ -1,0 +1,54 @@
+{
+  "ja-jp": {
+    "description": "uwPDF は、Windows 向けの軽量な PDF ビューアーと注釈アプリです。ローカルの PDF を開き、連続スクロール、ページのサムネイル、ズームで閲覧できます。文字の選択とコピー、検索、ハイライトに対応しています。\n\nペンやマウスで手書きの注釈を追加し、色や太さを調整できます。注釈は保存操作で PDF に書き込まれます。ローカルの保存履歴から以前の状態を確認して復元でき、Windows の共有機能と印刷機能も利用できます。\n\nスキャンしたページでは、Windows のオフライン OCR で文字を認識して選択や検索ができます。対応する認識言語のインストールが必要です。OCR の結果は、保存した PDF の検索可能な文字レイヤーには追加されません。\n\nPDF の描画、文字の抽出、OCR、注釈の処理は端末上で行われ、アプリのアカウント登録は不要です。共有や印刷は、ユーザーが選択したアプリや Windows のサービスを通じて処理されます。PDF 本文の編集、ファイルの分割や結合には対応していません。",
+    "keywords": [
+      "PDFビューアー",
+      "PDF閲覧",
+      "PDF注釈",
+      "手書き注釈",
+      "文字検索",
+      "OCR",
+      "ハイライト"
+    ],
+    "productName": "uwPDF - Lite PDF Viewer"
+  },
+  "zh-cn": {
+    "description": "uwPDF 是一款轻巧的 Windows PDF 阅读与批注应用，适合阅读文档、查找文字和记录笔记。\n\n打开本地 PDF，通过连续滚动、页面缩略图和缩放浏览文档。选择并复制文字，搜索文档内容，或高亮选中的文字。你还可以使用触控笔或鼠标添加手写笔迹，调整笔迹颜色和粗细，并使用橡皮擦与撤销工具修改批注。\n\n对于扫描件和图片页面，uwPDF 可使用 Windows 离线 OCR 识别文字，供选择和搜索。此功能需要设备安装相应的 Windows OCR 识别语言，识别结果不会作为可搜索文字层写入保存的 PDF。\n\n保存时，手写笔迹与文字高亮会写入 PDF，便于在其他支持相应批注的阅读器中查看。应用还提供本地保存历史的预览与恢复，以及 Windows 系统分享和打印功能。\n\nPDF 渲染、文字提取、OCR 和批注处理均在设备上完成，无需注册应用账户。文件位于云端同步文件夹时，同步由相应服务处理；主动分享和打印时，文件会交给你选择的应用或系统服务。\n\n界面支持简体中文、繁体中文、英语和日语。uwPDF 专注于阅读和批注，不提供 PDF 正文编辑、文档拆分或合并功能。",
+    "keywords": [
+      "PDF阅读器",
+      "PDF批注",
+      "手写批注",
+      "文字搜索",
+      "OCR",
+      "高亮",
+      "PDF打印"
+    ],
+    "productName": "uwPDF - Lite PDF Viewer"
+  },
+  "zh-tw": {
+    "description": "uwPDF 是一款輕巧的 Windows PDF 閱讀與註記應用程式，適合閱讀文件、尋找文字和記錄筆記。\n\n開啟本機 PDF，透過連續捲動、頁面縮圖和縮放瀏覽文件。選取並複製文字，搜尋文件內容，或醒目提示選取的文字。你也可以使用觸控筆或滑鼠加入手寫筆跡，調整筆跡顏色與粗細，並使用橡皮擦與復原工具修改註記。\n\n針對掃描文件和圖片頁面，uwPDF 可使用 Windows 離線 OCR 辨識文字，供選取與搜尋。此功能需要裝置安裝對應的 Windows OCR 辨識語言，辨識結果不會作為可搜尋的文字層寫入儲存的 PDF。\n\n儲存時，手寫筆跡與文字醒目提示會寫入 PDF，方便在其他支援對應註記的閱讀器中檢視。應用程式也提供本機儲存歷程的預覽與還原，以及 Windows 系統分享和列印功能。\n\nPDF 繪製、文字擷取、OCR 和註記處理均在裝置上完成，無需註冊應用程式帳號。檔案位於雲端同步資料夾時，同步由對應服務處理；主動分享和列印時，檔案會交給你選擇的應用程式或系統服務。\n\n介面支援繁體中文、簡體中文、英語和日語。uwPDF 專注於閱讀和註記，不提供 PDF 本文編輯、文件分割或合併功能。",
+    "keywords": [
+      "PDF閱讀器",
+      "PDF註記",
+      "手寫註記",
+      "文字搜尋",
+      "OCR",
+      "醒目提示",
+      "PDF列印"
+    ],
+    "productName": "uwPDF - Lite PDF Viewer"
+  },
+  "en-us": {
+    "description": "uwPDF is a lightweight PDF reader and annotation app for Windows. Open local PDFs and browse with continuous scrolling, page thumbnails and zoom. Select and copy text, search documents and highlight passages.\n\nAdd handwritten annotations using a pen or mouse, adjust colors and stroke sizes, erase ink and undo edits. Save writes ink and text highlights into the PDF. Preview and restore local save-history snapshots, share PDFs through Windows, and use the Windows print dialog.\n\nFor scanned pages, offline Windows OCR provides text for selection and search. An installed Windows recognition language is required. OCR does not add a searchable text layer to the saved PDF.\n\nPDF rendering, text extraction, OCR and annotation processing run on your device. No app account is required. Files in synced folders follow the selected sync service; sharing and printing pass files to the app or system service you choose. uwPDF focuses on reading and annotations and does not provide PDF body-text editing, splitting or merging.",
+    "keywords": [
+      "PDF reader",
+      "PDF annotations",
+      "handwriting",
+      "text search",
+      "OCR",
+      "highlight",
+      "PDF printing"
+    ],
+    "productName": "uwPDF - Lite PDF Viewer"
+  }
+}

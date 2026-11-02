@@ -41,16 +41,16 @@ namespace LitePdfViewer
             public readonly SemaphoreSlim RenderGate=new SemaphoreSlim(1,1);
             public readonly Dictionary<int,PdfPrintVisual> Previews=new Dictionary<int,PdfPrintVisual>();
             public readonly Queue<int> PreviewOrder=new Queue<int>();
+            public readonly List<PdfPrintVisual> PrintPages=new List<PdfPrintVisual>();
         }
         private sealed class PdfPrintVisual : IDisposable
         {
             public Canvas Page;
             public Image Image;
-            public SoftwareBitmapSource Source;
+            public BitmapImage Source;
             public void Dispose()
             {
                 if(Image!=null) Image.Source=null;
-                if(Source!=null) Source.Dispose();
                 Source=null; Image=null; Page=null;
             }
         }
@@ -243,13 +243,14 @@ namespace LitePdfViewer
             {
                 foreach(var index in pages)
                 {
-                    using(var visual=await CreatePrintVisualAsync(session,index,e.PrintTaskOptions.GetPageDescription(0),300))
-                    {
-                        if(visual==null || session.Closed) return;
-                        AttachPrintVisual(visual);
-                        try { ((PrintDocument)sender).AddPage(visual.Page); }
-                        finally { PrintCanvas.Children.Remove(visual.Page); }
-                    }
+                    var visual=await CreatePrintVisualAsync(session,index,e.PrintTaskOptions.GetPageDescription(0),300);
+                    if(visual==null) return;
+                    if(session.Closed) { visual.Dispose(); return; }
+                    // AddPage retains the visual; it does not synchronously copy
+                    // its pixels. Keep the tree and image alive until Completed.
+                    session.PrintPages.Add(visual);
+                    AttachPrintVisual(visual);
+                    ((PrintDocument)sender).AddPage(visual.Page);
                 }
                 ((PrintDocument)sender).AddPagesComplete();
             }
@@ -272,7 +273,6 @@ namespace LitePdfViewer
         private async Task<PdfPrintVisual> CreatePrintVisualAsync(PdfPrintSession session,int index,PrintPageDescription description,double dpi)
         {
             await session.RenderGate.WaitAsync();
-            SoftwareBitmapSource source=null;
             try
             {
                 if(session.Closed || session.Pdf==null) return null;
@@ -284,26 +284,27 @@ namespace LitePdfViewer
                         area.X,area.Y,area.Width,area.Height,dpi);
                     await page.RenderToStreamAsync(stream,new PdfPageRenderOptions { DestinationWidth=layout.PixelWidth,DestinationHeight=layout.PixelHeight,BitmapEncoderId=BitmapEncoder.BmpEncoderId });
                     if(session.Closed) return null;
-                    stream.Seek(0); var decoder=await BitmapDecoder.CreateAsync(stream);
-                    using(var pixels=await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8,BitmapAlphaMode.Premultiplied,
-                        new BitmapTransform { ScaledWidth=layout.PixelWidth,ScaledHeight=layout.PixelHeight },ExifOrientationMode.IgnoreExifOrientation,ColorManagementMode.DoNotColorManage))
-                    {
-                        source=new SoftwareBitmapSource(); await source.SetBitmapAsync(pixels);
-                    }
+                    // SoftwareBitmapSource displays on screen but produces blank
+                    // XAML print pages. Use the encoded bitmap printing path.
+                    stream.Seek(0); var source=new BitmapImage();
+                    await source.SetSourceAsync(stream);
                     if(session.Closed) return null;
                     var image=new Image { Source=source,Width=layout.Width,Height=layout.Height,Stretch=Stretch.Fill };
                     var root=new Canvas { Width=description.PageSize.Width,Height=description.PageSize.Height,Background=new SolidColorBrush(Colors.White) };
                     Canvas.SetLeft(image,layout.X); Canvas.SetTop(image,layout.Y); root.Children.Add(image);
-                    var visual=new PdfPrintVisual { Page=root,Image=image,Source=source }; source=null;
+                    var visual=new PdfPrintVisual { Page=root,Image=image,Source=source };
                     return visual;
                 }
             }
-            finally { if(source!=null) source.Dispose(); session.RenderGate.Release(); }
+            finally { session.RenderGate.Release(); }
         }
         private async Task ClosePrintSessionAsync(PdfPrintSession session)
         {
             if(session==null || session.Closed) return;
             session.Closed=true; session.Version++; ClearPrintPreviews(session);
+            foreach(var visual in session.PrintPages)
+            { PrintCanvas.Children.Remove(visual.Page); visual.Dispose(); }
+            session.PrintPages.Clear();
             await session.RenderGate.WaitAsync();
             try { session.Pdf=null; session.Options=null; }
             finally { session.RenderGate.Release(); }

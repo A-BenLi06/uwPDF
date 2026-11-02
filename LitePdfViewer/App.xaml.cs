@@ -84,13 +84,19 @@ namespace LitePdfViewer
             }
         }
 
-        private void OnSuspending(object sender, Windows.ApplicationModel.SuspendingEventArgs e)
+        private async void OnSuspending(object sender, Windows.ApplicationModel.SuspendingEventArgs e)
         {
             var deferral = e.SuspendingOperation.GetDeferral();
-            var page = Window.Current.Content as MainPage;
-            if (page != null) page.ReleaseRetiredRenderSurfaces();
-            // Ink is only written upon explicit manual save, not automatically on suspend.
-            deferral.Complete();
+            try
+            {
+                var page = Window.Current.Content as MainPage;
+                if (page != null)
+                {
+                    page.ReleaseRetiredRenderSurfaces();
+                    await page.FlushDraftAsync();
+                }
+            }
+            finally { deferral.Complete(); }
         }
     }
 }

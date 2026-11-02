@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -641,4 +641,91 @@
   </data>
   <data name="TileRecentReading" xml:space="preserve"><value>Recently read</value></data>
   <data name="TileReadingProgress" xml:space="preserve"><value>Page {0} / {1}</value></data>
+  <data name="DraftSaving" xml:space="preserve">
+    <value>Saving local draft…</value>
+  </data>
+  <data name="DraftSaved" xml:space="preserve">
+    <value>Draft saved locally. Save to update the PDF.</value>
+  </data>
+  <data name="DraftRestored" xml:space="preserve">
+    <value>Local draft restored. Save to update the PDF.</value>
+  </data>
+  <data name="DraftPartialRecovery" xml:space="preserve">
+    <value>An earlier draft was restored; the newest draft could not be read. Save to update the PDF.</value>
+  </data>
+  <data name="DraftConflict" xml:space="preserve">
+    <value>A draft could not be restored safely and was kept. The PDF may have changed.</value>
+  </data>
+  <data name="DraftFailed" xml:space="preserve">
+    <value>Local draft could not be saved. Save the PDF before closing.</value>
+  </data>
+  <data name="DraftCleanupFailed" xml:space="preserve">
+    <value>The PDF was saved, but local draft cleanup failed: {0}</value>
+  </data>
+  <data name="PrivacyCommand.Text" xml:space="preserve">
+    <value>Privacy policy</value>
+  </data>
+  <data name="PrivacyTitle" xml:space="preserve">
+    <value>Privacy policy</value>
+  </data>
+  <data name="PrivacyBody" xml:space="preserve">
+    <value>Last updated: October 27, 2026
+
+This policy covers the uwPDF Windows app developed by BenLi06 and its official website, uwpdf.benli06.site. It describes data handling in the current version.
+
+Document processing stays on your device
+
+uwPDF does not require an account. PDF rendering, text extraction, Windows offline OCR and annotation saving run on your device. The current app does not integrate advertising, third-party behavioral analytics, or features that automatically send documents or usage telemetry to the developer.
+
+The app reads files you choose to open and writes annotations to the corresponding PDF when you save. If a file is on OneDrive, a network drive or another synchronized location, the relevant system or service may synchronize or remotely access it. This is not an upload performed by uwPDF itself.
+
+Data stored locally
+
+To support editing and recovery, the app stores editable ink, text highlights, document state and save history in Windows-managed app data folders. History snapshots may include full PDF copies, annotations, save times and page numbers. These copies may contain sensitive information from your documents.
+
+Local settings include your selected OCR language. Saving and printing may create temporary files. On Windows 10, live tiles may display the most recently opened document’s thumbnail, filename, page number and reading progress in the Start menu. History snapshots are pruned under the app’s retention rules and should not be treated as permanent backups.
+
+Unsaved annotations are also written as local drafts in the app data area, separately from the original PDF. Reopening the same unchanged PDF attempts to restore a completely saved draft as pending changes. Drafts may contain sensitive ink and highlights. Abrupt process termination or a storage-write failure can leave the latest changes unsaved. Drafts that cannot be restored safely because the PDF changed or the draft is damaged are retained.
+
+Copying, sharing and printing
+
+Only when you use the corresponding features does selected text go to the system clipboard, or a PDF go to the Windows share interface or print system. The app saves pending annotations before sharing. A receiving app or service may transmit or retain the file further.
+
+Local save history is not included when sharing a PDF, but annotations already written into the PDF are included in the file. Clipboard synchronization, print queues and the recipient’s data handling are managed by Windows or your chosen service.
+
+Retention and removal
+
+You can delete or move your original PDFs yourself. Deleting an original file does not automatically delete annotations or history copies in the app data folder. Save any annotations you need into the PDF and separately back up important files before clearing app data.
+
+You can clear the installation’s local app data using Windows’ app reset option, where available, or by uninstalling the app. This does not automatically delete PDFs stored outside app data, previously shared copies, or system and cloud backups. Windows may also reclaim temporary files. Manage system backups, synchronization and clipboard history through the relevant system or service settings.
+
+Website requests and cookies
+
+The website serves static pages. Its current code does not set cookies or use localStorage, advertising trackers, analytics scripts or third-party embeds. Language switching uses separate page URLs. Browsing does not require uploading a PDF or registering an account.
+
+Requests needed to deliver the website convey technical information such as IP address, requested URL, browser information and time to hosting, CDN or network providers. Those services may retain logs for delivery, security and operations. Their retention practices and periods depend on the deployed service and its configuration; clearing the app’s local data does not remove those logs.
+
+External services
+
+Download, source-code and issue-report links take you to GitHub. When you visit GitHub, use Windows services or share a file with another app, that service’s own privacy rules apply. uwPDF does not control those services’ logs, account data or retention periods.
+
+Questions and feedback
+
+For privacy questions, contact BenLi06 through the project’s GitHub Issues. Issues are generally public. Do not post private PDFs, personal information, signatures, passwords or other sensitive material. Use a sample with sensitive content removed when reporting a problem.
+
+Policy updates
+
+If app features or the website’s data handling change, this page will be updated with a new date. The language versions describe the same data handling. Please report any translation discrepancies to the project.
+
+https://github.com/A-BenLi06/uwPDF/issues</value>
+  </data>
+  <data name="PrivacySupport" xml:space="preserve">
+    <value>Contact support</value>
+  </data>
+  <data name="DraftDiscardFailed" xml:space="preserve">
+    <value>The draft could not be discarded: {0}</value>
+  </data>
+  <data name="AnnotationSourceChanged" xml:space="preserve">
+    <value>This PDF changed outside uwPDF. Earlier local annotations and drafts were retained separately.</value>
+  </data>
 </root>

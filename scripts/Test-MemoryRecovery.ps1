@@ -19,7 +19,7 @@ $methods = @(
 $generatedPath = Join-Path $outputRoot 'MainPage.MemoryRecovery.production.cs'
 ('using System; using System.Collections.Generic; using Windows.UI.Xaml.Media.Imaging; namespace LitePdfViewer { public sealed partial class MainPage { ' + ($methods -join "`n") + ' } }') | Set-Content -LiteralPath $generatedPath -Encoding UTF8
 $executable = Join-Path $outputRoot 'PdfMemoryRecoveryTests.exe'
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$executable" $generatedPath `
+& (& (Join-Path $PSScriptRoot 'Get-TestCSharpCompiler.ps1')) /nologo /target:exe "/out:$executable" $generatedPath `
     (Join-Path $repoRoot 'LitePdfViewer/MainPage.Memory.cs') `
     (Join-Path $repoRoot 'LitePdfViewer/PdfMemoryBudget.cs') `
     (Join-Path $repoRoot 'LitePdfViewer/PdfRenderScheduler.cs') `

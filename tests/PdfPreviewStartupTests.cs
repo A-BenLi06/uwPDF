@@ -10,6 +10,15 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.ViewManagement;
 
+namespace Windows.UI.Popups
+{
+    public sealed class MessageDialog
+    {
+        public MessageDialog(string text, string title) { }
+        public Task ShowAsync() { return Task.FromResult(true); }
+    }
+}
+
 namespace Windows.Foundation
 {
     public struct Size { public double Width, Height; public Size(double width, double height) { Width = width; Height = height; } }
@@ -157,6 +166,16 @@ namespace LitePdfViewer
         public Task SizeFor(ulong token) { activeRenderToken = token; firstPageSize = new Size(600, 800); return ApplyPreviewWindowSizeAsync(token, true); }
         public void CustomZoom(double zoom) { Zoom = zoom; fitPageToViewport = false; }
         private Task saveInProgress;
+        private bool draftReady, draftRequested, annotationSourceChanged;
+        private string draftSource, draftRecoveryNotice;
+        private long draftRevision, persistedDraftRevision;
+        private Exception draftError;
+        private bool HasUnsavedChanges() { return false; }
+        private Task FlushDraftAsync() { return Task.FromResult(true); }
+        private Task PauseDraftWritesAsync() { return Task.FromResult(true); }
+        private Task RecoverDraftAsync(ulong token) { return Task.FromResult(true); }
+        private void ResumeDraftWrites() { }
+        private void SetDraftStatus(string key) { }
         private StorageFile readingCopy;
         private Task<StorageFile> PrepareReadingFileAsync(StorageFile file, ulong token) { return Task.FromResult(file); }
         private Task DeleteTemporaryPdfAsync(StorageFile file) { return Task.FromResult(true); }

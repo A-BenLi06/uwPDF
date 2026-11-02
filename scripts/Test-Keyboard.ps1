@@ -18,7 +18,7 @@ $generated=Join-Path $outputRoot "Keyboard.$tag.production.cs"
 ('using System; using System.Threading.Tasks; using Windows.UI.Xaml; using Windows.UI.Xaml.Controls; using Windows.UI.Xaml.Input; namespace LitePdfViewer { public sealed partial class MainPage { '+$method+' } }') |
     Set-Content -LiteralPath $generated -Encoding UTF8
 $exe=Join-Path $outputRoot "PdfKeyboardTests.$tag.exe"
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$exe" $generated (Join-Path $repoRoot 'tests/PdfKeyboardTests.cs')
+& (& (Join-Path $PSScriptRoot 'Get-TestCSharpCompiler.ps1')) /nologo /target:exe "/out:$exe" $generated (Join-Path $repoRoot 'tests/PdfKeyboardTests.cs')
 if ($LASTEXITCODE) { throw 'Keyboard test compilation failed' }
 & $exe
 if ($LASTEXITCODE) { throw "Keyboard regression test failed ($tag)" }

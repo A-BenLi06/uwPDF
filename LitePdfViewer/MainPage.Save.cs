@@ -222,6 +222,8 @@ namespace LitePdfViewer
             var token = activeRenderToken;
             try
             {
+                await FlushDraftAsync();
+                await PauseDraftWritesAsync();
                 folder = await GetAnnotationFolderAsync();
                 var hasSidecars = false;
                 foreach (var file in await folder.GetFilesAsync())
@@ -285,6 +287,8 @@ namespace LitePdfViewer
                 committed = true;
                 foreach (var saved in savedRevisions) if (saved.Key.Revision == saved.Value) ClearPageDirty(saved.Key);
                 UpdateDirtyState();
+                try { await FinishDraftSaveAsync(); }
+                catch (Exception ex) { historyWarning = L.Format("DraftCleanupFailed", ex.Message); }
                 try { await PdfSnapshotStore.PublishAsync(preparedSnapshot); if (!historyOpen) await PdfSnapshotStore.PruneAsync(folder); }
                 catch (Exception ex) { historyWarning = L.Format("HistoryCaptureFailed", ex.Message); }
             }
@@ -319,6 +323,7 @@ namespace LitePdfViewer
                 AnnotationToolbar.IsHitTestVisible = true;
                 DocumentScroller.IsEnabled = true;
                 UpdateDirtyState();
+                ResumeDraftWrites();
                 WakeRenderer();
             }
         }

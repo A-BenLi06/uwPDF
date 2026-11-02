@@ -1,6 +1,8 @@
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Release',
-    [switch]$SkipRestore
+    [switch]$SkipRestore,
+    [switch]$StoreUpload,
+    [string]$PackageOutputDirectory
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -20,6 +22,8 @@ $arguments = @($project, '/m:2', '/nologo', '/v:minimal', '/nr:false',
     "/p:VCToolsInstallDir=$($tools.toolchain_root)\", "/p:VCTargetsPath=$($targets.vc_targets_path)\",
     '/p:RestoreRecursive=false', '/fl', "/flp:logfile=$logPath;verbosity=minimal")
 if (!$SkipRestore) { $arguments += '/restore' }
+if ($StoreUpload) { $arguments += @('/p:UseStoreIdentity=true', '/p:UapAppxPackageBuildMode=StoreUpload', '/p:AppxPackageSigningEnabled=false') }
+if ($PackageOutputDirectory) { $arguments += "/p:AppxPackageDir=$([IO.Path]::GetFullPath($PackageOutputDirectory))\" }
 & $targets.msbuild_path @arguments
 if ($LASTEXITCODE) { throw "ARM64 UWP $Configuration build failed. See $logPath" }
 Write-Output "Built ARM64 UWP $Configuration application; device runtime remains unverified."

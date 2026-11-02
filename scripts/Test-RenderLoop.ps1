@@ -11,7 +11,7 @@ $method = $source.Substring($start, $end - $start)
 $generatedPath = Join-Path $outputRoot 'MainPage.RenderLoop.production.cs'
 ('using System; using System.Threading.Tasks; using Windows.UI.Xaml; namespace LitePdfViewer { public sealed partial class MainPage { ' + $method + ' } }') | Set-Content -LiteralPath $generatedPath -Encoding UTF8
 $executable = Join-Path $outputRoot 'PdfRenderLoopTests.exe'
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$executable" $generatedPath (Join-Path $repoRoot 'tests/PdfRenderLoopTests.cs')
+& (& (Join-Path $PSScriptRoot 'Get-TestCSharpCompiler.ps1')) /nologo /target:exe "/out:$executable" $generatedPath (Join-Path $repoRoot 'tests/PdfRenderLoopTests.cs')
 if ($LASTEXITCODE) { throw 'Render-loop test compilation failed.' }
 & $executable
 if ($LASTEXITCODE) { throw 'Production render-loop regression test failed.' }

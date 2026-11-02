@@ -25,7 +25,7 @@ namespace LitePdfViewer
             var result=new PdfPrintPageLayout { Width=pdfWidth*scale, Height=pdfHeight*scale };
             result.X=left+(width-result.Width)/2; result.Y=top+(height-result.Height)/2;
             var pixelsX=Math.Ceiling(result.Width*dpi/96); var pixelsY=Math.Ceiling(result.Height*dpi/96);
-            // One page at a time, including very large paper sizes. Preview uses
+            // Bound each raster, including very large paper sizes. Preview uses
             // 96 dpi; output aims for 300 dpi within this single-page limit.
             var limit=Math.Min(1,Math.Sqrt(12000000/(pixelsX*pixelsY)));
             result.PixelWidth=(uint)Math.Max(1,Math.Floor(pixelsX*limit));

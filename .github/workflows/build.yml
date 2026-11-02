@@ -1,0 +1,39 @@
+name: Windows packages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  packages:
+    # Fork PRs never execute on the machine holding the legacy UWP toolchains.
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.ref_type == 'tag' || github.ref == 'refs/heads/main') &&
+      (github.event_name != 'push' || github.ref_type == 'tag' || vars.UWPDF_ENABLE_PACKAGE_BUILDS == 'true')
+    runs-on: [self-hosted, Windows, X64, uwpdf-build]
+    concurrency:
+      group: uwpdf-legacy-toolchain
+      cancel-in-progress: false
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          clean: true
+      - name: Build and validate four Release packages
+        run: ./scripts/Build-CiPackages.ps1
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: unsigned-packages
+          path: artifacts/ci/unsigned/
+          if-no-files-found: error
+          retention-days: 7

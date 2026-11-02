@@ -123,7 +123,7 @@ namespace LitePdfViewer
         private bool exportBusy;
         private ulong activeRenderToken=1;
         private string ClearEmbeddedAnnotations() { return "[]"; }
-        private Task AppendExportAnnotationsAsync(PdfAnnotationWriter writer, ulong token)
+        private Task AppendExportAnnotationsAsync(PdfAnnotationWriter writer, ulong token, StorageFolder sourceFolder = null)
         {
             if (Tests.Mode=="append-failure") throw new InvalidOperationException("append failure");
             if (Tests.Mode=="canceled") throw new OperationCanceledException();

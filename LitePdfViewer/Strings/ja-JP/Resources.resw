@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -641,4 +641,91 @@
   </data>
   <data name="TileRecentReading" xml:space="preserve"><value>最近読んだ文書</value></data>
   <data name="TileReadingProgress" xml:space="preserve"><value>{0} / {1} ページ</value></data>
+  <data name="DraftSaving" xml:space="preserve">
+    <value>ローカルの下書きを保存中…</value>
+  </data>
+  <data name="DraftSaved" xml:space="preserve">
+    <value>下書きを端末に保存しました。PDF を更新するには保存してください。</value>
+  </data>
+  <data name="DraftRestored" xml:space="preserve">
+    <value>ローカルの下書きを復元しました。PDF を更新するには保存してください。</value>
+  </data>
+  <data name="DraftPartialRecovery" xml:space="preserve">
+    <value>最新の下書きを読み取れなかったため、以前の下書きを復元しました。確認して保存してください。</value>
+  </data>
+  <data name="DraftConflict" xml:space="preserve">
+    <value>下書きを安全に復元できなかったため保持しました。PDF が変更された可能性があります。</value>
+  </data>
+  <data name="DraftFailed" xml:space="preserve">
+    <value>下書きを保存できませんでした。閉じる前に PDF を保存してください。</value>
+  </data>
+  <data name="DraftCleanupFailed" xml:space="preserve">
+    <value>PDF は保存されましたが、下書きの削除に失敗しました：{0}</value>
+  </data>
+  <data name="PrivacyCommand.Text" xml:space="preserve">
+    <value>プライバシーポリシー</value>
+  </data>
+  <data name="PrivacyTitle" xml:space="preserve">
+    <value>プライバシーポリシー</value>
+  </data>
+  <data name="PrivacyBody" xml:space="preserve">
+    <value>最終更新：2026 年 10 月 27 日
+
+本ポリシーは、BenLi06 が開発する Windows アプリ uwPDF と公式サイト uwpdf.benli06.site に適用され、現在のバージョンにおけるデータの取り扱いを説明します。
+
+文書の処理はデバイス上で
+
+uwPDF はアカウント登録を必要としません。PDF の描画、テキスト抽出、Windows のオフライン OCR、注釈の保存はデバイス上で行われます。現在のアプリには、広告、第三者の行動分析、文書や利用テレメトリを開発者へ自動送信する機能は組み込まれていません。
+
+アプリはユーザーが開いたファイルを読み取り、保存操作で対応する PDF に注釈を書き込みます。OneDrive、ネットワークドライブなどの同期先にあるファイルは、各システムやサービスによって同期・リモートアクセスされる場合があります。これは uwPDF 自体によるアップロードではありません。
+
+ローカルに保存されるデータ
+
+編集と復元のため、Windows が管理するアプリデータフォルダーに、編集可能なインク、ハイライト、文書の状態、保存履歴を保存します。履歴のスナップショットには、PDF 全体のコピー、注釈、保存日時、ページ番号が含まれる場合があり、文書内の機密情報も含まれ得ます。
+
+選択した OCR 言語などの設定もローカルに保存されます。保存・印刷時には一時ファイルを作成する場合があります。Windows 10 のライブタイルは、最近開いた文書のサムネイル、ファイル名、ページ番号、読書の進捗をスタートメニューに表示する場合があります。履歴はアプリの保持ルールに従って整理されるため、永続的なバックアップとして使用しないでください。
+
+手動で保存していない注釈も、元の PDF とは別に、アプリのローカルデータ領域へ下書きとして書き込まれます。同じ未変更の PDF を開き直すと、完全に保存された下書きの復元を試み、未保存の変更として表示します。下書きには手書きの筆跡やハイライトなどの機密情報が含まれる場合があります。プロセスの突然の終了や書き込みエラーにより、最新の変更が保存されていない場合があります。PDF のバージョンが一致しない場合や下書きが壊れている場合、安全に復元できなかった下書きは保持されます。
+
+コピー・共有・印刷
+
+対応する操作を行ったときに限り、選択したテキストをシステムのクリップボードにコピーし、PDF を Windows の共有画面や印刷システムに渡します。共有前に未保存の注釈を保存します。受信先のアプリやサービスが、ファイルをさらに送信・保存する場合があります。
+
+ローカルの保存履歴は PDF と一緒には共有されませんが、PDF に書き込まれた注釈はファイルに含まれます。クリップボードの同期、印刷キュー、受信先のデータ処理は、Windows や選択したサービスによって管理されます。
+
+保持と削除
+
+元の PDF は自分で削除・移動できます。元のファイルを削除しても、アプリデータ内の注釈や履歴のコピーは自動的に削除されません。データの消去前に必要な注釈を PDF に保存し、重要なファイルを別途バックアップしてください。
+
+Windows のアプリのリセット機能（利用可能な場合）やアンインストールにより、そのインストールのローカルアプリデータを消去できます。アプリデータ外の PDF、共有済みのコピー、システムやクラウドのバックアップは自動削除されません。Windows が一時ファイルを削除する場合もあります。システムのバックアップ、同期、クリップボード履歴は、各システムやサービスの設定で管理してください。
+
+公式サイトと Cookie
+
+公式サイトは静的ページで構成されています。現在のサイトのコードは Cookie を設定せず、localStorage、広告トラッキング、アクセス解析スクリプト、第三者コンテンツの埋め込みを使用しません。言語の切り替えには別のページ URL を使用します。閲覧のために PDF の送信やアカウント登録をする必要はありません。
+
+サイトの配信に必要なリクエストにより、IP アドレス、リクエスト URL、ブラウザー情報、時刻などの技術情報がホスティング、CDN、ネットワークの事業者に伝わります。これらの事業者は、配信、安全対策、運用のためにログを保持する場合があります。保持方法と期間は実際の配信サービスと設定によって異なり、アプリ内のローカルデータの削除操作では消去されません。
+
+外部サービス
+
+ダウンロード、ソースコード、問題報告のリンク先は GitHub です。GitHub や Windows のサービスの利用、他のアプリへのファイル共有には、各サービスのプライバシールールが適用されます。uwPDF はこれらのサービスのログ、アカウント情報、保持期間を管理しません。
+
+お問い合わせ
+
+プライバシーに関するご質問は、プロジェクトの GitHub Issues から BenLi06 にお問い合わせください。Issue は通常公開されます。個人の PDF、個人情報、署名、パスワードなどの機密情報を投稿せず、問題の報告には機密情報を除いたサンプルを使用してください。
+
+ポリシーの更新
+
+アプリの機能やサイトのデータ処理に変更がある場合、このページを更新して日付を示します。各言語版は同じデータ処理を説明するものです。翻訳の相違を見つけた場合は、プロジェクトにお知らせください。
+
+https://github.com/A-BenLi06/uwPDF/issues</value>
+  </data>
+  <data name="PrivacySupport" xml:space="preserve">
+    <value>サポート</value>
+  </data>
+  <data name="DraftDiscardFailed" xml:space="preserve">
+    <value>下書きを破棄できませんでした：{0}</value>
+  </data>
+  <data name="AnnotationSourceChanged" xml:space="preserve">
+    <value>PDF が他のアプリで変更されました。以前のローカル注釈と下書きは別に保持されています。</value>
+  </data>
 </root>

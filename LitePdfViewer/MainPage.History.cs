@@ -154,6 +154,7 @@ namespace LitePdfViewer
                 await Task.Run(() => { GC.Collect(); GC.WaitForPendingFinalizers(); });
                 await PdfSnapshotStore.ApplyEditableAsync(await snapshot.Folder.GetFolderAsync("annotations"), folder);
                 await (await snapshot.Folder.GetFileAsync("document.pdf")).CopyAndReplaceAsync(original);
+                await WriteAnnotationSourceAsync(folder, original);
                 succeeded = true;
                 try { await PdfSnapshotStore.PruneAsync(folder); }
                 catch (Exception ex) { System.Diagnostics.Debug.WriteLine("History retention: " + ex.Message); }

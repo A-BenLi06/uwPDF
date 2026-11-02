@@ -1,0 +1,211 @@
+# uwPDF Privacy Policy / 隐私政策 / 隱私權政策 / プライバシーポリシー
+
+Publisher: BenLi06 · Product ID: 9PP3QW43QJ77
+
+## Privacy policy (en)
+
+Last updated: October 27, 2026
+
+This policy covers the uwPDF Windows app developed by BenLi06 and its official website, uwpdf.benli06.site. It describes data handling in the current version.
+
+### Document processing stays on your device
+
+uwPDF does not require an account. PDF rendering, text extraction, Windows offline OCR and annotation saving run on your device. The current app does not integrate advertising, third-party behavioral analytics, or features that automatically send documents or usage telemetry to the developer.
+
+The app reads files you choose to open and writes annotations to the corresponding PDF when you save. If a file is on OneDrive, a network drive or another synchronized location, the relevant system or service may synchronize or remotely access it. This is not an upload performed by uwPDF itself.
+
+### Data stored locally
+
+To support editing and recovery, the app stores editable ink, text highlights, document state and save history in Windows-managed app data folders. History snapshots may include full PDF copies, annotations, save times and page numbers. These copies may contain sensitive information from your documents.
+
+Local settings include your selected OCR language. Saving and printing may create temporary files. On Windows 10, live tiles may display the most recently opened document’s thumbnail, filename, page number and reading progress in the Start menu. History snapshots are pruned under the app’s retention rules and should not be treated as permanent backups.
+
+Unsaved annotations are also written as local drafts in the app data area, separately from the original PDF. Reopening the same unchanged PDF attempts to restore a completely saved draft as pending changes. Drafts may contain sensitive ink and highlights. Abrupt process termination or a storage-write failure can leave the latest changes unsaved. Drafts that cannot be restored safely because the PDF changed or the draft is damaged are retained.
+
+### Copying, sharing and printing
+
+Only when you use the corresponding features does selected text go to the system clipboard, or a PDF go to the Windows share interface or print system. The app saves pending annotations before sharing. A receiving app or service may transmit or retain the file further.
+
+Local save history is not included when sharing a PDF, but annotations already written into the PDF are included in the file. Clipboard synchronization, print queues and the recipient’s data handling are managed by Windows or your chosen service.
+
+### Retention and removal
+
+You can delete or move your original PDFs yourself. Deleting an original file does not automatically delete annotations or history copies in the app data folder. Save any annotations you need into the PDF and separately back up important files before clearing app data.
+
+You can clear the installation’s local app data using Windows’ app reset option, where available, or by uninstalling the app. This does not automatically delete PDFs stored outside app data, previously shared copies, or system and cloud backups. Windows may also reclaim temporary files. Manage system backups, synchronization and clipboard history through the relevant system or service settings.
+
+### Website requests and cookies
+
+The website serves static pages. Its current code does not set cookies or use localStorage, advertising trackers, analytics scripts or third-party embeds. Language switching uses separate page URLs. Browsing does not require uploading a PDF or registering an account.
+
+Requests needed to deliver the website convey technical information such as IP address, requested URL, browser information and time to hosting, CDN or network providers. Those services may retain logs for delivery, security and operations. Their retention practices and periods depend on the deployed service and its configuration; clearing the app’s local data does not remove those logs.
+
+### External services
+
+Download, source-code and issue-report links take you to GitHub. When you visit GitHub, use Windows services or share a file with another app, that service’s own privacy rules apply. uwPDF does not control those services’ logs, account data or retention periods.
+
+### Questions and feedback
+
+For privacy questions, contact BenLi06 through the project’s GitHub Issues. Issues are generally public. Do not post private PDFs, personal information, signatures, passwords or other sensitive material. Use a sample with sensitive content removed when reporting a problem.
+
+### Policy updates
+
+If app features or the website’s data handling change, this page will be updated with a new date. The language versions describe the same data handling. Please report any translation discrepancies to the project.
+
+Contact: https://github.com/A-BenLi06/uwPDF/issues
+
+## 隐私政策 (zh-cn)
+
+最后更新：2026 年 10 月 27 日
+
+本政策适用于 BenLi06 开发的 uwPDF Windows 应用及官网 uwpdf.benli06.site，说明当前版本的数据处理方式。
+
+### 文档处理留在设备上
+
+uwPDF 无需注册账户。PDF 渲染、文字提取、Windows 离线 OCR 和批注保存均在设备上完成。当前应用未集成广告、第三方行为分析或自动向开发者上传文档与使用遥测的功能。
+
+应用读取你主动打开的文件；保存操作会将批注写入相应 PDF。若文件位于 OneDrive、网络磁盘或其他同步位置，文件的同步与远程访问由相应系统或服务处理，并非 uwPDF 自行上传。
+
+### 本地保存的数据
+
+为了提供编辑与恢复功能，应用会在 Windows 管理的应用数据目录中保存可编辑笔迹、文字高亮、文档状态和保存历史。历史快照可能包含完整 PDF 副本、批注、保存时间与页码；这些数据也可能包含文档中的敏感内容。
+
+应用会保存所选 OCR 语言等本地设置，保存或打印时可能生成临时文件。Windows 10 动态磁贴可使用最近打开文档的缩略图、文件名、页码和阅读进度，可能在开始菜单上显示。历史快照按应用的保留规则清理，不应将其当作永久备份。
+
+未手动保存的批注还会作为本地草稿写入独立的应用数据目录，不会因此覆盖原 PDF。重新打开相同且未发生变化的 PDF 时，应用会尝试恢复完整的已保存草稿，并将其标记为待保存。草稿可能包含手写笔迹和文字高亮等敏感内容；突然结束进程或存储写入失败时，最新修改可能尚未保存。文件版本不匹配或草稿损坏时，应用会保留未能安全恢复的草稿。
+
+### 复制、分享与打印
+
+只有在你使用相应功能时，选中的文字才会复制到系统剪贴板，PDF 才会交给 Windows 分享界面或打印系统。分享前应用会保存待处理批注，接收的应用或服务可能进一步传输或保存文件。
+
+本地保存历史不会随 PDF 一起分享，但已写入 PDF 的批注会包含在文件中。剪贴板同步、打印队列及接收方的数据处理由 Windows 或你选择的服务管理。
+
+### 保留与清理
+
+你可以自行删除或移动原始 PDF。删除原始文件不会自动删除应用数据目录中的批注与历史副本。请在清理前将需要的批注保存到 PDF，并另行备份重要文件。
+
+可通过 Windows 提供的应用重设功能（如可用）或解除安装来清理该安装的本地应用数据；这不会自动删除保存在应用数据目录之外的 PDF、已分享副本或系统与云端备份。Windows 也可能回收临时文件。系统备份、同步与剪贴板历史需要通过对应的系统或服务设置管理。
+
+### 官网访问与 Cookie
+
+官网以静态页面提供内容。目前网站代码不设置 Cookie，不使用 localStorage、广告追踪、访问分析脚本或第三方嵌入；语言切换通过不同页面地址实现。访问页面无需提交 PDF 或注册账户。
+
+提供网站内容所必需的请求会将 IP 地址、请求地址、浏览器信息与时间等技术信息传递给网站托管、CDN 或网络服务提供商。这些服务可能为传输、安全与运行维护保留日志；具体保留方式与期限取决于实际部署服务及其配置，不适用应用的本地数据清理方式。
+
+### 外部服务
+
+下载、源代码与问题反馈链接会带你访问 GitHub。访问 GitHub、使用 Windows 服务或将文件分享给其他应用时，相应服务的数据处理适用其自身的隐私规则。uwPDF 不控制这些服务的日志、账户数据或保留期限。
+
+### 联系与反馈
+
+隐私相关问题可通过项目 GitHub Issues 联系 BenLi06。Issue 通常公开可见，请勿提交私人 PDF、个人资料、签名、密码或其他敏感信息；如需报告问题，请先制作已去除敏感内容的示例。
+
+### 政策更新
+
+如果应用功能或网站的数据处理方式发生变化，本页面会更新并标注日期。其他语言版本用于说明相同的数据处理方式；如发现翻译差异，请向项目反馈。
+
+Contact: https://github.com/A-BenLi06/uwPDF/issues
+
+## 隱私權政策 (zh-tw)
+
+最後更新：2026 年 10 月 27 日
+
+本政策適用於 BenLi06 開發的 uwPDF Windows 應用程式及官網 uwpdf.benli06.site，說明目前版本的資料處理方式。
+
+### 文件處理留在裝置上
+
+uwPDF 不需要註冊帳號。PDF 繪製、文字擷取、Windows 離線 OCR 與註記儲存均在裝置上完成。目前應用程式未整合廣告、第三方行為分析，或自動向開發者上傳文件與使用遙測的功能。
+
+應用程式讀取你主動開啟的檔案；儲存操作會將註記寫入對應 PDF。若檔案位於 OneDrive、網路磁碟或其他同步位置，檔案同步與遠端存取由對應系統或服務處理，並非 uwPDF 自行上傳。
+
+### 本機儲存的資料
+
+為了提供編輯與還原功能，應用程式會在 Windows 管理的應用程式資料目錄中儲存可編輯筆跡、文字醒目提示、文件狀態及儲存歷程。歷程快照可能包含完整 PDF 副本、註記、儲存時間與頁碼；這些資料也可能包含文件中的敏感內容。
+
+應用程式會儲存所選 OCR 語言等本機設定，儲存或列印時可能產生暫存檔。Windows 10 動態磚可使用最近開啟文件的縮圖、檔名、頁碼和閱讀進度，可能在開始功能表上顯示。歷程快照依應用程式的保留規則清理，不應視為永久備份。
+
+尚未手動儲存的註記也會以本機草稿寫入獨立的應用程式資料目錄，不會因此覆寫原始 PDF。重新開啟相同且未變更的 PDF 時，應用程式會嘗試還原完整的已儲存草稿，並將其標記為待儲存。草稿可能包含手寫筆跡和文字醒目提示等敏感內容；突然結束處理程序或儲存寫入失敗時，最新修改可能尚未儲存。檔案版本不符或草稿損壞時，應用程式會保留無法安全還原的草稿。
+
+### 複製、分享與列印
+
+只有在你使用對應功能時，選取的文字才會複製到系統剪貼簿，PDF 才會交給 Windows 分享介面或列印系統。分享前應用程式會儲存待處理註記，接收的應用程式或服務可能進一步傳輸或儲存檔案。
+
+本機儲存歷程不會隨 PDF 一起分享，但已寫入 PDF 的註記會包含在檔案中。剪貼簿同步、列印佇列與接收方的資料處理由 Windows 或你選擇的服務管理。
+
+### 保留與清理
+
+你可以自行刪除或移動原始 PDF。刪除原始檔案不會自動刪除應用程式資料目錄中的註記與歷程副本。請在清理前將需要的註記儲存至 PDF，並另外備份重要檔案。
+
+可透過 Windows 提供的應用程式重設功能（如可用）或解除安裝，清理該次安裝的本機應用程式資料；這不會自動刪除應用程式資料目錄以外的 PDF、已分享副本，或系統與雲端備份。Windows 也可能回收暫存檔。系統備份、同步與剪貼簿歷程必須透過對應的系統或服務設定管理。
+
+### 官網存取與 Cookie
+
+官網以靜態頁面提供內容。目前網站程式碼不設定 Cookie，不使用 localStorage、廣告追蹤、流量分析指令碼或第三方嵌入；語言切換透過不同頁面網址實現。瀏覽頁面不需要提交 PDF 或註冊帳號。
+
+提供網站內容所需的請求會將 IP 位址、請求網址、瀏覽器資訊與時間等技術資訊傳遞給網站託管、CDN 或網路服務供應商。這些服務可能為傳輸、安全與營運維護保留紀錄；具體保留方式與期限取決於實際部署服務及其設定，不適用應用程式的本機資料清理方式。
+
+### 外部服務
+
+下載、原始碼與問題回報連結會帶你前往 GitHub。造訪 GitHub、使用 Windows 服務或將檔案分享至其他應用程式時，對應服務的資料處理適用其自身的隱私權規則。uwPDF 不控制這些服務的紀錄、帳號資料或保留期限。
+
+### 聯絡與回報
+
+隱私權相關問題可透過專案 GitHub Issues 聯絡 BenLi06。Issue 通常公開可見，請勿提交私人 PDF、個人資料、簽名、密碼或其他敏感資訊；如需回報問題，請先製作已移除敏感內容的範例。
+
+### 政策更新
+
+如果應用程式功能或網站的資料處理方式發生變更，本頁面會更新並標示日期。其他語言版本用於說明相同的資料處理方式；如發現翻譯差異，請向專案回報。
+
+Contact: https://github.com/A-BenLi06/uwPDF/issues
+
+## プライバシーポリシー (ja)
+
+最終更新：2026 年 10 月 27 日
+
+本ポリシーは、BenLi06 が開発する Windows アプリ uwPDF と公式サイト uwpdf.benli06.site に適用され、現在のバージョンにおけるデータの取り扱いを説明します。
+
+### 文書の処理はデバイス上で
+
+uwPDF はアカウント登録を必要としません。PDF の描画、テキスト抽出、Windows のオフライン OCR、注釈の保存はデバイス上で行われます。現在のアプリには、広告、第三者の行動分析、文書や利用テレメトリを開発者へ自動送信する機能は組み込まれていません。
+
+アプリはユーザーが開いたファイルを読み取り、保存操作で対応する PDF に注釈を書き込みます。OneDrive、ネットワークドライブなどの同期先にあるファイルは、各システムやサービスによって同期・リモートアクセスされる場合があります。これは uwPDF 自体によるアップロードではありません。
+
+### ローカルに保存されるデータ
+
+編集と復元のため、Windows が管理するアプリデータフォルダーに、編集可能なインク、ハイライト、文書の状態、保存履歴を保存します。履歴のスナップショットには、PDF 全体のコピー、注釈、保存日時、ページ番号が含まれる場合があり、文書内の機密情報も含まれ得ます。
+
+選択した OCR 言語などの設定もローカルに保存されます。保存・印刷時には一時ファイルを作成する場合があります。Windows 10 のライブタイルは、最近開いた文書のサムネイル、ファイル名、ページ番号、読書の進捗をスタートメニューに表示する場合があります。履歴はアプリの保持ルールに従って整理されるため、永続的なバックアップとして使用しないでください。
+
+手動で保存していない注釈も、元の PDF とは別に、アプリのローカルデータ領域へ下書きとして書き込まれます。同じ未変更の PDF を開き直すと、完全に保存された下書きの復元を試み、未保存の変更として表示します。下書きには手書きの筆跡やハイライトなどの機密情報が含まれる場合があります。プロセスの突然の終了や書き込みエラーにより、最新の変更が保存されていない場合があります。PDF のバージョンが一致しない場合や下書きが壊れている場合、安全に復元できなかった下書きは保持されます。
+
+### コピー・共有・印刷
+
+対応する操作を行ったときに限り、選択したテキストをシステムのクリップボードにコピーし、PDF を Windows の共有画面や印刷システムに渡します。共有前に未保存の注釈を保存します。受信先のアプリやサービスが、ファイルをさらに送信・保存する場合があります。
+
+ローカルの保存履歴は PDF と一緒には共有されませんが、PDF に書き込まれた注釈はファイルに含まれます。クリップボードの同期、印刷キュー、受信先のデータ処理は、Windows や選択したサービスによって管理されます。
+
+### 保持と削除
+
+元の PDF は自分で削除・移動できます。元のファイルを削除しても、アプリデータ内の注釈や履歴のコピーは自動的に削除されません。データの消去前に必要な注釈を PDF に保存し、重要なファイルを別途バックアップしてください。
+
+Windows のアプリのリセット機能（利用可能な場合）やアンインストールにより、そのインストールのローカルアプリデータを消去できます。アプリデータ外の PDF、共有済みのコピー、システムやクラウドのバックアップは自動削除されません。Windows が一時ファイルを削除する場合もあります。システムのバックアップ、同期、クリップボード履歴は、各システムやサービスの設定で管理してください。
+
+### 公式サイトと Cookie
+
+公式サイトは静的ページで構成されています。現在のサイトのコードは Cookie を設定せず、localStorage、広告トラッキング、アクセス解析スクリプト、第三者コンテンツの埋め込みを使用しません。言語の切り替えには別のページ URL を使用します。閲覧のために PDF の送信やアカウント登録をする必要はありません。
+
+サイトの配信に必要なリクエストにより、IP アドレス、リクエスト URL、ブラウザー情報、時刻などの技術情報がホスティング、CDN、ネットワークの事業者に伝わります。これらの事業者は、配信、安全対策、運用のためにログを保持する場合があります。保持方法と期間は実際の配信サービスと設定によって異なり、アプリ内のローカルデータの削除操作では消去されません。
+
+### 外部サービス
+
+ダウンロード、ソースコード、問題報告のリンク先は GitHub です。GitHub や Windows のサービスの利用、他のアプリへのファイル共有には、各サービスのプライバシールールが適用されます。uwPDF はこれらのサービスのログ、アカウント情報、保持期間を管理しません。
+
+### お問い合わせ
+
+プライバシーに関するご質問は、プロジェクトの GitHub Issues から BenLi06 にお問い合わせください。Issue は通常公開されます。個人の PDF、個人情報、署名、パスワードなどの機密情報を投稿せず、問題の報告には機密情報を除いたサンプルを使用してください。
+
+### ポリシーの更新
+
+アプリの機能やサイトのデータ処理に変更がある場合、このページを更新して日付を示します。各言語版は同じデータ処理を説明するものです。翻訳の相違を見つけた場合は、プロジェクトにお知らせください。
+
+Contact: https://github.com/A-BenLi06/uwPDF/issues

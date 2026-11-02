@@ -18,7 +18,7 @@ $generated = Join-Path $outputRoot 'Zoom.production.cs'
 ('using System; using Windows.UI.Xaml.Controls; namespace LitePdfViewer { public sealed partial class MainPage { ' + $methods + ' } }') |
     Set-Content -LiteralPath $generated -Encoding UTF8
 $exe = Join-Path $outputRoot 'PdfZoomTests.exe'
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$exe" $generated (Join-Path $repoRoot 'tests/PdfZoomTests.cs') (Join-Path $repoRoot 'LitePdfViewer/PdfScrollActivity.cs')
+& (& (Join-Path $PSScriptRoot 'Get-TestCSharpCompiler.ps1')) /nologo /target:exe "/out:$exe" $generated (Join-Path $repoRoot 'tests/PdfZoomTests.cs') (Join-Path $repoRoot 'LitePdfViewer/PdfScrollActivity.cs')
 if ($LASTEXITCODE) { throw 'Zoom regression test compilation failed.' }
 & $exe
 if ($LASTEXITCODE) { throw 'Zoom regression test failed.' }

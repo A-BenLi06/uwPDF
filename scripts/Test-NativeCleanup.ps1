@@ -16,7 +16,7 @@ $production=Join-Path $outputRoot "Cleanup.$NegativeControl.production.cs"
 $textPath=Join-Path $outputRoot "Text.$NegativeControl.production.cs"
 $text | Set-Content $textPath -Encoding UTF8
 $executable=Join-Path $outputRoot "PdfNativeCleanupTests.$NegativeControl.exe"
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe "/out:$executable" $production $textPath (Join-Path $repoRoot 'tests/PdfNativeCleanupTests.cs')
+& (& (Join-Path $PSScriptRoot 'Get-TestCSharpCompiler.ps1')) /nologo /target:exe "/out:$executable" $production $textPath (Join-Path $repoRoot 'tests/PdfNativeCleanupTests.cs')
 if ($LASTEXITCODE) { throw 'Cleanup test compilation failed' }
 & $executable
 if ($LASTEXITCODE) { throw "Cleanup tests failed ($NegativeControl)." }

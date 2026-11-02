@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Data.Pdf;
@@ -175,8 +174,6 @@ namespace LitePdfViewer
                 };
             };
 
-            RegisterCloseRequestedHandler();
-
             SetInkTool(InkTool.None);
             UpdateUi();
         }
@@ -247,6 +244,14 @@ namespace LitePdfViewer
 
         private async Task OpenViaPickerAsync()
         {
+            var picker = new FileOpenPicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                ViewMode = PickerViewMode.List
+            };
+            picker.FileTypeFilter.Add(".pdf");
+            var file = await picker.PickSingleFileAsync();
+            if (file == null) return;
             if (HasUnsavedChanges())
             {
                 var promptResult = await PromptSaveUnsavedChangesAsync();
@@ -260,6 +265,12 @@ namespace LitePdfViewer
                 }
                 else
                 {
+                    try { await DiscardDraftAsync(); }
+                    catch (Exception ex)
+                    {
+                        await new Windows.UI.Popups.MessageDialog(L.Format("DraftDiscardFailed", ex.Message), L.Get("ErrorTitle")).ShowAsync();
+                        return;
+                    }
                     // User chose "Don't Save": discard pending unsaved changes
                     for (var i = 0; i < pageViews.Count; i++)
                     {
@@ -267,26 +278,26 @@ namespace LitePdfViewer
                     }
                     dirtyCount = 0;
                     UpdateDirtyState();
+                    ResumeDraftWrites();
                 }
             }
 
-            var picker = new FileOpenPicker
-            {
-                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-                ViewMode = PickerViewMode.List
-            };
-            picker.FileTypeFilter.Add(".pdf");
-
-            var file = await picker.PickSingleFileAsync();
-            if (file != null)
-            {
-                await LoadDocumentAsync(file);
-            }
+            await LoadDocumentAsync(file);
         }
 
         private async Task LoadDocumentAsync(StorageFile file)
         {
             if (saveInProgress != null) await saveInProgress;
+            await FlushDraftAsync();
+            if (HasUnsavedChanges() && draftError != null)
+            {
+                await new Windows.UI.Popups.MessageDialog(L.Get("DraftFailed"), L.Get("ErrorTitle")).ShowAsync();
+                return;
+            }
+            await PauseDraftWritesAsync();
+            draftReady = false; draftSource = null; draftError = null; draftRequested = false; draftRecoveryNotice = null;
+            draftRevision = persistedDraftRevision = 0;
+            SetDraftStatus(null);
             var previousCopy = readingCopy;
             readingCopy = null;
             ResetSearch();
@@ -298,6 +309,7 @@ namespace LitePdfViewer
             currentFile = file;
             forcedOcrPages.Clear();
             annotationFolder = null;
+            annotationSourceChanged = false;
             FileNameText.Text = file.Name;
             EmptyState.Visibility = Visibility.Collapsed;
 
@@ -323,6 +335,9 @@ namespace LitePdfViewer
                 thumbsRequested = thumbnailPreference ?? document.PageCount > 1;
                 ThumbsToggle.IsChecked = thumbsRequested;
                 CreatePagePlaceholders(document);
+                await RecoverDraftAsync(renderToken);
+                if (renderToken != activeRenderToken) return;
+                ResumeDraftWrites();
                 textSource = CreateTextSource(readingFile);
                 var cleanup = DeleteTemporaryPdfAsync(previousCopy);
                 // No forced UpdateLayout() here: page positions come from the cached
@@ -798,14 +813,17 @@ namespace LitePdfViewer
         private void MarkPageDirty(PageView view)
         {
             view.Revision++;
+            draftRevision++;
             if (view.Dirty)
             {
+                QueueDraftSave();
                 return;
             }
 
             view.Dirty = true;
             dirtyCount++;
             UpdateDirtyState();
+            QueueDraftSave();
         }
 
         private void ClearPageDirty(PageView view)
@@ -2082,117 +2100,6 @@ namespace LitePdfViewer
             }
         }
 
-        private async Task<bool> ConfirmCloseAsync()
-        {
-            if (!HasUnsavedChanges())
-            {
-                return true;
-            }
-
-            var promptResult = await PromptSaveUnsavedChangesAsync();
-            if (promptResult == SavePromptResult.Save)
-            {
-                return await SaveCurrentAnnotationsWithFeedbackAsync();
-            }
-            else if (promptResult == SavePromptResult.DontSave)
-            {
-                for (var i = 0; i < pageViews.Count; i++)
-                {
-                    pageViews[i].Dirty = false;
-                }
-                dirtyCount = 0;
-                UpdateDirtyState();
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        private void RegisterCloseRequestedHandler()
-        {
-            try
-            {
-                var previewType = Type.GetType("Windows.UI.Core.Preview.SystemNavigationManagerPreview, Windows, ContentType=WindowsRuntime");
-                if (previewType != null)
-                {
-                    var getMethod = previewType.GetTypeInfo().GetDeclaredMethod("GetForCurrentView");
-                    if (getMethod != null)
-                    {
-                        var manager = getMethod.Invoke(null, null);
-                        if (manager != null)
-                        {
-                            var closeEvent = previewType.GetTypeInfo().GetDeclaredEvent("CloseRequested");
-                            if (closeEvent != null && closeEvent.EventHandlerType != null)
-                            {
-                                var genericArg = closeEvent.EventHandlerType.GenericTypeArguments[0];
-                                var helperMethod = typeof(MainPage).GetTypeInfo()
-                                    .GetDeclaredMethod(nameof(CreateCloseRequestedHandler))
-                                    .MakeGenericMethod(genericArg);
-
-                                var handler = (Delegate)helperMethod.Invoke(this, null);
-                                var addMethod = closeEvent.AddMethod;
-                                if (addMethod == null)
-                                {
-                                    addMethod = previewType.GetTypeInfo().GetDeclaredMethod("add_CloseRequested");
-                                }
-                                if (addMethod != null)
-                                {
-                                    addMethod.Invoke(manager, new object[] { handler });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("CloseRequested registration failed: " + ex.Message);
-            }
-        }
-
-        private EventHandler<T> CreateCloseRequestedHandler<T>()
-        {
-            return async (sender, args) =>
-            {
-                if (args == null)
-                {
-                    return;
-                }
-
-                var typeInfo = typeof(T).GetTypeInfo();
-                var getDeferralMethod = typeInfo.GetDeclaredMethod("GetDeferral");
-                var handledProp = typeInfo.GetDeclaredProperty("Handled");
-
-                object deferral = null;
-                if (getDeferralMethod != null)
-                {
-                    deferral = getDeferralMethod.Invoke(args, null);
-                }
-
-                try
-                {
-                    var canClose = await ConfirmCloseAsync();
-                    if (!canClose && handledProp != null)
-                    {
-                        handledProp.SetValue(args, true);
-                    }
-                }
-                finally
-                {
-                    if (deferral != null)
-                    {
-                        var completeMethod = deferral.GetType().GetTypeInfo().GetDeclaredMethod("Complete");
-                        if (completeMethod != null)
-                        {
-                            completeMethod.Invoke(deferral, null);
-                        }
-                    }
-                }
-            };
-        }
-
         // Loads into the PageView's own stroke container rather than a live
         // InkCanvas, so it works whether or not the page is currently realized.
         private async Task LoadInkAsync(PageView view)
@@ -2234,6 +2141,7 @@ namespace LitePdfViewer
                 if (view.InkLayer != null)
                     ConfigureInkCanvas(view.InkLayer, CreateInkAttributes(), view.InkLoaded);
                 ReleaseCleanAnnotations(view);
+                if (view.Dirty) QueueDraftSave();
             }
         }
 
@@ -2289,8 +2197,31 @@ namespace LitePdfViewer
 
             var root = ApplicationData.Current.LocalFolder;
             var file = currentFile;
-            var folderName = "ink-" + StableId(file.Path + file.DateCreated.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture));
-            var folder = await root.CreateFolderAsync(folderName, CreationCollisionOption.OpenIfExists);
+            // CopyAndReplace can change the StorageFile creation timestamp.
+            // A path hash keeps editable data attached to a PDF across our saves.
+            var provider = Windows.Security.Cryptography.Core.HashAlgorithmProvider.OpenAlgorithm("SHA256");
+            var path = string.IsNullOrEmpty(file.Path) ? file.FolderRelativeId : file.Path;
+            var buffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(path.ToUpperInvariant(), Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
+            var folderName = "ink-v2-" + Windows.Security.Cryptography.CryptographicBuffer.EncodeToHexString(provider.HashData(buffer));
+            var folder = await root.TryGetItemAsync(folderName) as StorageFolder;
+            if (folder == null)
+            {
+                var legacy = await root.TryGetItemAsync("ink-" + StableId(file.Path + file.DateCreated.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture))) as StorageFolder;
+                if (legacy != null) { await legacy.RenameAsync(folderName); folder = legacy; }
+                else folder = await root.CreateFolderAsync(folderName, CreationCollisionOption.OpenIfExists);
+            }
+            var source = await DraftSourceAsync(file);
+            var marker = await folder.TryGetItemAsync("document-source.txt") as StorageFile;
+            if (marker != null && await FileIO.ReadTextAsync(marker) != source)
+            {
+                // Never overlay data from a different version of a PDF. Preserve
+                // it in an archive rather than deleting the user's older work.
+                await folder.RenameAsync("ink-archived-" + Guid.NewGuid().ToString("N"));
+                folder = await root.CreateFolderAsync(folderName);
+                if (file == currentFile) annotationSourceChanged = true;
+                marker = null;
+            }
+            if (marker == null) await WriteAnnotationSourceAsync(folder, file);
             if (file == currentFile) annotationFolder = folder;
             return folder;
         }

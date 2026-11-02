@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source:
+    name: Check release source
+    if: vars.UWPDF_ENABLE_RELEASES == 'true'
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check tag, versions, release notes and main ancestry
+        shell: powershell
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/Test-ReleaseSource.ps1 -Tag $env:RELEASE_TAG
+  tests:
+    needs: source
+    uses: ./.github/workflows/ci.yml
+  build:
+    needs: [source, tests]
+    uses: ./.github/workflows/build.yml
+  publish:
+    needs: [source, tests, build]
+    runs-on: windows-2022
+    environment: release
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: unsigned-packages
+          path: artifacts/ci/unsigned
+      - name: Sign, verify and assemble installers
+        env:
+          UWPDF_SIGNING_PFX_BASE64: ${{ secrets.UWPDF_SIGNING_PFX_BASE64 }}
+          UWPDF_SIGNING_PFX_PASSWORD: ${{ secrets.UWPDF_SIGNING_PFX_PASSWORD }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/New-CiRelease.ps1 -Tag $env:RELEASE_TAG
+      - name: Publish and verify release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/Publish-CiRelease.ps1 -Tag $env:RELEASE_TAG

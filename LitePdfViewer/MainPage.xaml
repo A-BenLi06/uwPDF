@@ -382,10 +382,12 @@
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90D;" />
                     </primitives:ToggleButton>
                 </StackPanel>
-                <Grid x:Name="FileTitleRegion" Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+                <StackPanel x:Name="FileTitleRegion" Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
                     <TextBlock x:Name="FileNameText" HorizontalAlignment="Stretch" TextAlignment="Left"
                         FontSize="13" Foreground="#32363C" Text="uwPDF" TextTrimming="CharacterEllipsis" />
-                </Grid>
+                    <TextBlock x:Name="DraftStatusText" FontSize="10" Foreground="#62626A"
+                        TextTrimming="CharacterEllipsis" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite" />
+                </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
                     <Button x:Uid="ReaderMoreButton" x:Name="ReaderMoreButton" Style="{StaticResource ReaderButtonStyle}">
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE712;" />
@@ -394,6 +396,8 @@
                                 <MenuFlyoutItem x:Uid="PrintCommand" x:Name="PrintCommand" Click="PrintCommand_Click" />
                                 <MenuFlyoutItem x:Uid="HistoryCommand" Click="HistoryButton_Click" />
                                 <MenuFlyoutItem x:Uid="OcrCommand" Click="OcrButton_Click" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Uid="PrivacyCommand" Click="PrivacyCommand_Click" />
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>

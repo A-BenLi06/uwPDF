@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -641,4 +641,91 @@
   </data>
   <data name="TileRecentReading" xml:space="preserve"><value>最近阅读</value></data>
   <data name="TileReadingProgress" xml:space="preserve"><value>第 {0} / {1} 页</value></data>
+  <data name="DraftSaving" xml:space="preserve">
+    <value>正在保存本地草稿…</value>
+  </data>
+  <data name="DraftSaved" xml:space="preserve">
+    <value>草稿已保存在本地；点击保存以更新 PDF。</value>
+  </data>
+  <data name="DraftRestored" xml:space="preserve">
+    <value>已恢复本地草稿；点击保存以更新 PDF。</value>
+  </data>
+  <data name="DraftPartialRecovery" xml:space="preserve">
+    <value>最新草稿无法读取，已恢复较早的草稿；请检查后保存。</value>
+  </data>
+  <data name="DraftConflict" xml:space="preserve">
+    <value>草稿无法安全恢复，已保留；PDF 可能已被修改。</value>
+  </data>
+  <data name="DraftFailed" xml:space="preserve">
+    <value>本地草稿保存失败；关闭前请先保存 PDF。</value>
+  </data>
+  <data name="DraftCleanupFailed" xml:space="preserve">
+    <value>PDF 已保存，但本地草稿清理失败：{0}</value>
+  </data>
+  <data name="PrivacyCommand.Text" xml:space="preserve">
+    <value>隐私政策</value>
+  </data>
+  <data name="PrivacyTitle" xml:space="preserve">
+    <value>隐私政策</value>
+  </data>
+  <data name="PrivacyBody" xml:space="preserve">
+    <value>最后更新：2026 年 10 月 27 日
+
+本政策适用于 BenLi06 开发的 uwPDF Windows 应用及官网 uwpdf.benli06.site，说明当前版本的数据处理方式。
+
+文档处理留在设备上
+
+uwPDF 无需注册账户。PDF 渲染、文字提取、Windows 离线 OCR 和批注保存均在设备上完成。当前应用未集成广告、第三方行为分析或自动向开发者上传文档与使用遥测的功能。
+
+应用读取你主动打开的文件；保存操作会将批注写入相应 PDF。若文件位于 OneDrive、网络磁盘或其他同步位置，文件的同步与远程访问由相应系统或服务处理，并非 uwPDF 自行上传。
+
+本地保存的数据
+
+为了提供编辑与恢复功能，应用会在 Windows 管理的应用数据目录中保存可编辑笔迹、文字高亮、文档状态和保存历史。历史快照可能包含完整 PDF 副本、批注、保存时间与页码；这些数据也可能包含文档中的敏感内容。
+
+应用会保存所选 OCR 语言等本地设置，保存或打印时可能生成临时文件。Windows 10 动态磁贴可使用最近打开文档的缩略图、文件名、页码和阅读进度，可能在开始菜单上显示。历史快照按应用的保留规则清理，不应将其当作永久备份。
+
+未手动保存的批注还会作为本地草稿写入独立的应用数据目录，不会因此覆盖原 PDF。重新打开相同且未发生变化的 PDF 时，应用会尝试恢复完整的已保存草稿，并将其标记为待保存。草稿可能包含手写笔迹和文字高亮等敏感内容；突然结束进程或存储写入失败时，最新修改可能尚未保存。文件版本不匹配或草稿损坏时，应用会保留未能安全恢复的草稿。
+
+复制、分享与打印
+
+只有在你使用相应功能时，选中的文字才会复制到系统剪贴板，PDF 才会交给 Windows 分享界面或打印系统。分享前应用会保存待处理批注，接收的应用或服务可能进一步传输或保存文件。
+
+本地保存历史不会随 PDF 一起分享，但已写入 PDF 的批注会包含在文件中。剪贴板同步、打印队列及接收方的数据处理由 Windows 或你选择的服务管理。
+
+保留与清理
+
+你可以自行删除或移动原始 PDF。删除原始文件不会自动删除应用数据目录中的批注与历史副本。请在清理前将需要的批注保存到 PDF，并另行备份重要文件。
+
+可通过 Windows 提供的应用重设功能（如可用）或解除安装来清理该安装的本地应用数据；这不会自动删除保存在应用数据目录之外的 PDF、已分享副本或系统与云端备份。Windows 也可能回收临时文件。系统备份、同步与剪贴板历史需要通过对应的系统或服务设置管理。
+
+官网访问与 Cookie
+
+官网以静态页面提供内容。目前网站代码不设置 Cookie，不使用 localStorage、广告追踪、访问分析脚本或第三方嵌入；语言切换通过不同页面地址实现。访问页面无需提交 PDF 或注册账户。
+
+提供网站内容所必需的请求会将 IP 地址、请求地址、浏览器信息与时间等技术信息传递给网站托管、CDN 或网络服务提供商。这些服务可能为传输、安全与运行维护保留日志；具体保留方式与期限取决于实际部署服务及其配置，不适用应用的本地数据清理方式。
+
+外部服务
+
+下载、源代码与问题反馈链接会带你访问 GitHub。访问 GitHub、使用 Windows 服务或将文件分享给其他应用时，相应服务的数据处理适用其自身的隐私规则。uwPDF 不控制这些服务的日志、账户数据或保留期限。
+
+联系与反馈
+
+隐私相关问题可通过项目 GitHub Issues 联系 BenLi06。Issue 通常公开可见，请勿提交私人 PDF、个人资料、签名、密码或其他敏感信息；如需报告问题，请先制作已去除敏感内容的示例。
+
+政策更新
+
+如果应用功能或网站的数据处理方式发生变化，本页面会更新并标注日期。其他语言版本用于说明相同的数据处理方式；如发现翻译差异，请向项目反馈。
+
+https://github.com/A-BenLi06/uwPDF/issues</value>
+  </data>
+  <data name="PrivacySupport" xml:space="preserve">
+    <value>联系支持</value>
+  </data>
+  <data name="DraftDiscardFailed" xml:space="preserve">
+    <value>无法丢弃草稿：{0}</value>
+  </data>
+  <data name="AnnotationSourceChanged" xml:space="preserve">
+    <value>PDF 已在其他应用中修改；先前的本地批注和草稿已另外保留。</value>
+  </data>
 </root>

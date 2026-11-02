@@ -9,19 +9,24 @@ try {
     try { [xml]$manifest=$reader.ReadToEnd() } finally { $reader.Dispose() }
     $package=$manifest.SelectSingleNode("/*[local-name()='Package']")
     $actual=$package.SelectSingleNode("*[local-name()='Identity']")
+    [xml]$sourceManifest=Get-Content (Join-Path $repoRoot 'LitePdfViewer/Package.appxmanifest')
+    if ($actual.Version -cne $sourceManifest.Package.Identity.Version) { throw 'Package version differs from source manifest.' }
+    $capabilities=@($package.SelectNodes("*[local-name()='Capabilities']/*"))
+    if ($capabilities.Count) { throw 'The Store viewer must not declare capabilities; local files use the picker and file association.' }
     if ($actual.Name -cne $identity.name -or $actual.Publisher -cne $identity.publisher) { throw 'Package does not use the supplied Store identity.' }
     if ($package.SelectSingleNode("*[local-name()='Properties']/*[local-name()='PublisherDisplayName']").InnerText -cne $identity.publisherDisplayName) { throw 'Store publisher display name differs.' }
     $languages=@($package.SelectNodes("*[local-name()='Resources']/*[local-name()='Resource']") | ForEach-Object { $_.Language.ToLowerInvariant() })
     $difference=Compare-Object @('en-us','ja-jp','zh-hans','zh-hant') $languages
     if ($difference) { throw "Package languages differ: $languages" }
     if (!$archive.GetEntry('resources.pri')) { throw 'Compiled language resources missing.' }
+    if (@($archive.Entries | Where-Object { $_.FullName -match '\.(pfx|key)$' }).Count) { throw 'Package contains private signing material.' }
     if ($archive.GetEntry('AppxSignature.p7x')) { throw 'Store package unexpectedly used a local signing certificate.' }
     foreach ($element in $package.SelectNodes(".//*[@DisplayName or @Description]")) {
         foreach ($name in @('DisplayName','Description')) {
             if ($element.HasAttribute($name) -and !$element.GetAttribute($name).StartsWith('ms-resource:')) { throw "Unlocalized manifest $name" }
         }
     }
-    Write-Output "PASS: Store identity/publisher, all four language declarations, localized manifest, compiled PRI and unsigned upload package ($($actual.ProcessorArchitecture))."
+    Write-Output "PASS: Store identity/publisher, no capabilities, all four language declarations, localized manifest, compiled PRI and unsigned upload package ($($actual.ProcessorArchitecture))."
 } finally { $archive.Dispose() }
 
 # PFN and SID are derived identifiers, not extra AppxManifest identity fields.

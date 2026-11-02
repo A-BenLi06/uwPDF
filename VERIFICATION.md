@@ -1,5 +1,67 @@
 # uwPDF acceptance status
 
+## Blank print output fix — 2026-10-29
+
+- Reproduced a blank native Ctrl+P preview with Microsoft Print to PDF on
+  the installed x64 development app. Print visuals now use an encoded
+  `BitmapImage` instead of `SoftwareBitmapSource`. Final pages remain attached
+  with their image sources intact until the print task completes or is closed;
+  preview eviction cannot dispose the submitted pages.
+- Built and deployed the x64 Debug app. Actual Microsoft Print to PDF jobs
+  produced `artifacts/print-fix-all-pages.pdf` (three pages) and
+  `artifacts/print-fix-pages-2-3.pdf` (two pages, from a second Ctrl+P session).
+  Poppler confirmed the producer/page counts and rendered every output page.
+  All three pages contain the expected text and colored rules. Raster samples
+  for range output match pages two and three of the full job exactly.
+- Print layout, keyboard and native reader regression tests pass. The native
+  reader QA checks 300-dpi bitmap retention across preview cleanup and resource release
+  when closing a print session. Physical printers and other device architectures
+  were not exercised in this verification.
+- The existing local Store submission containers predate this printing fix;
+  they have not been rebuilt or published as part of this change.
+
+## Store remediation and local drafts 1.0.13.0 — 2026-10-27–28
+
+- Both source manifests remove `confirmAppClose` and declare no capabilities.
+  Window-close reflection/event interception is removed; the application remains
+  on its existing 14393 and separate ARM64 17763 baselines.
+- `Test-DraftRecovery.ps1` passes using real x64 Debug UWP storage and Windows
+  Ink across two separate processes. It covers legacy-directory migration,
+  original-PDF preservation, edits arriving during I/O, incomplete publication,
+  recovered ink/highlights, explicit save/reopen, recovered deletions, damaged
+  generation fallback, visible storage failure/retry, exclusive-file-lock save
+  failure, explicit discard, source mismatch and actual external PDF changes.
+  Reports: `artifacts/draft-recovery-qa/write-report.txt` and `read-report.txt`.
+- `Test-ReaderEditing.ps1` passes native annotation editing/save/history, OCR,
+  selection/search, touch-selection routing and print-render preparation checks.
+  This is in-process QA, not physical pen/touch input or a printer job. The test
+  scripts restore production sources and rebuild the development layout.
+- `Test-PreviewStartup.ps1`, `Test-MemoryRecovery.ps1`, localization validation
+  (224 keys per language), and Store metadata/policy synchronization checks pass.
+  The metadata check covers all four descriptions/keyword sets, version agreement
+  and absence of restricted capability declarations.
+- Four-language policy text is synchronized between the app, `PRIVACY.md` and
+  available website sources. Website type checking, static build and SEO checks
+  pass. No public policy deployment, repository push, Partner Center field update
+  or Store certification is implied. The configured website's public HTTPS
+  accessibility could not be confirmed from this environment.
+- Release StoreUpload builds pass for x86, x64, ARM and ARM64. Both the native
+  test package and the intermediate Store upload payload pass identity/version,
+  all-four-language, no-capability, no-private-key and exact custom renderer DLL
+  checks. Native architecture/baseline checks and ARM64 .NET Native dependency
+  checks pass. These two package forms legitimately have different bytes; each
+  has a separate SHA-256. Evidence, application source hashes and upload paths:
+  `artifacts/store-submission/1.0.13.0/validation.json`. The final working-tree
+  application hashes were compared with this record and match.
+- Four upload containers and a checked `SHA256SUMS.txt` are collected under
+  `artifacts/store-submission/1.0.13.0/PartnerCenter/`. These are local Store
+  submission containers, not signed GitHub installers. No commit, tag, GitHub
+  release, public upload or Partner Center submission was created in this run.
+- Sudden termination before a draft write finishes can lose recent changes.
+  Metadata-mismatched/corrupt drafts and external-change archives are retained
+  rather than applied unsafely. No old-Windows, ARM, ARM64 or Windows 10 Mobile
+  device-runtime acceptance was performed in this run.
+
 ## Local x64 test package 1.0.10.0 — 2026-10-14
 
 - Both source manifests now use 1.0.10.0 so the local Release test package can

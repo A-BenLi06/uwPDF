@@ -41,7 +41,7 @@ $searchPath=Join-Path $outputRoot "Search.$NegativeControl.production.cs"
 $text | Set-Content $textPath -Encoding UTF8
 ('using System; using System.Text; using System.Collections.Generic; using System.Threading; using System.Threading.Tasks; namespace LitePdfViewer { public sealed partial class MainPage { ' + $search + ' } }') | Set-Content $searchPath -Encoding UTF8
 $exe=Join-Path $outputRoot "PdfTextWorkerTests.$NegativeControl.exe"
-& 'C:/Program Files (x86)/MSBuild/14.0/Bin/csc.exe' /nologo /target:exe /r:System.Xml.Linq.dll "/out:$exe" $textPath $searchPath (Join-Path $repoRoot 'LitePdfViewer/PdfTextSearch.cs') (Join-Path $repoRoot 'LitePdfViewer/L.cs') (Join-Path $repoRoot 'tests/ResourceLoaderStub.cs') (Join-Path $repoRoot 'tests/PdfTextWorkerTests.cs')
+& (& (Join-Path $PSScriptRoot 'Get-TestCSharpCompiler.ps1')) /nologo /target:exe /r:System.Xml.Linq.dll "/out:$exe" $textPath $searchPath (Join-Path $repoRoot 'LitePdfViewer/PdfTextSearch.cs') (Join-Path $repoRoot 'LitePdfViewer/L.cs') (Join-Path $repoRoot 'tests/ResourceLoaderStub.cs') (Join-Path $repoRoot 'tests/PdfTextWorkerTests.cs')
 if ($LASTEXITCODE) { throw 'Text worker test compilation failed' }
 & $exe
 if ($LASTEXITCODE) { throw "Text worker tests failed ($NegativeControl)." }

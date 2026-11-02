@@ -335,6 +335,16 @@ namespace LitePdfViewer
                     RegisterPrinting();
                     QaEditingAssert(printSource!=null && printDocument!=null && printManager!=null,"Native PrintManager/PrintDocument registration");
                 }
+                var finalVisual=await CreatePrintVisualAsync(session,0,description,300);
+                session.PrintPages.Add(finalVisual); AttachPrintVisual(finalVisual);
+                ClearPrintPreviews(session);
+                await Task.Delay(100);
+                QaEditingAssert(finalVisual.Image.Source==finalVisual.Source && finalVisual.Source.PixelWidth>2000 &&
+                    finalVisual.Source.PixelHeight>2000 && PrintCanvas.Children.Contains(finalVisual.Page),
+                    "Final print bitmap stays decoded and attached independently of preview eviction");
+                await ClosePrintSessionAsync(session);
+                QaEditingAssert(session.PrintPages.Count==0 && finalVisual.Page==null && finalVisual.Image==null && finalVisual.Source==null,
+                    "Print completion releases retained output visuals and image sources");
             }
             finally
             {
@@ -343,7 +353,7 @@ namespace LitePdfViewer
                 view.Strokes.DeleteSelected();
                 if(!dirty) ClearPageDirty(view);
             }
-            report.AppendLine("PASS: UWP print registration/source, native PDF print rendering and printable-area layout; isolated print snapshot includes unsaved ink, preserves original/workspace/history/dirty state, and releases print visuals. No printer job or system-dialog automation was performed.");
+            report.AppendLine("PASS: UWP print registration/source, native PDF print rendering and printable-area layout; isolated print snapshot includes unsaved ink, preserves original/workspace/history/dirty state; 300-dpi encoded print images survive preview cleanup and are released on completion. No printer job or system-dialog automation was performed by this in-process test.");
         }
         private void QaResizeSelectedInk(PageView view, int handle, double factor, uint pointer)
         {

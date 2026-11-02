@@ -24,6 +24,8 @@
     <Compile Include="PdfViewportAnchor.cs" />
     <Compile Include="MainPage.PageGeometry.cs" />
     <Compile Include="MainPage.Save.cs" />
+    <Compile Include="MainPage.Drafts.cs" />
+    <Compile Include="MainPage.Privacy.cs" />
     <Compile Include="MainPage.Share.cs" />
     <Compile Include="MainPage.Print.cs" />
     <Compile Include="PdfPrintLayout.cs" />
