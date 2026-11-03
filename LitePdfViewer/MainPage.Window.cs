@@ -120,6 +120,7 @@ namespace LitePdfViewer
         {
             var appView = ApplicationView.GetForCurrentView();
             appView.SetPreferredMinSize(new Size(500, 320));
+            RestoreSystemTitleBarColors();
             // Keep the system title row available for dragging at every window width.
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
             Window.Current.SetTitleBar(null);

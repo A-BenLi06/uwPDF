@@ -27,6 +27,13 @@ namespace LitePdfViewer
                 var dialog = new ContentDialog(); BindReaderTheme(dialog);
                 foreach (var dark in new[] { false, true, false, true })
                 {
+                    var previousCaption = ApplicationView.GetForCurrentView().TitleBar;
+                    previousCaption.BackgroundColor = previousCaption.ForegroundColor = Colors.Blue;
+                    previousCaption.InactiveBackgroundColor = previousCaption.InactiveForegroundColor = Colors.Blue;
+                    previousCaption.ButtonBackgroundColor = previousCaption.ButtonForegroundColor = Colors.Transparent;
+                    previousCaption.ButtonInactiveBackgroundColor = previousCaption.ButtonInactiveForegroundColor = Colors.Blue;
+                    previousCaption.ButtonHoverBackgroundColor = previousCaption.ButtonHoverForegroundColor = Colors.Blue;
+                    previousCaption.ButtonPressedBackgroundColor = previousCaption.ButtonPressedForegroundColor = Colors.Blue;
                     RequestedTheme = dark ? ElementTheme.Dark : ElementTheme.Light;
                     ApplyReaderTheme(dark, false);
                     await Task.Delay(150);
@@ -37,9 +44,15 @@ namespace LitePdfViewer
                     ThemeAssert(((SolidColorBrush)SearchPanel.Background).Color == surface,
                         "Search overlay matches toolbar");
                     var title = ApplicationView.GetForCurrentView().TitleBar;
-                    var accent = themeSettings.GetColorValue(UIColorType.Accent);
-                    ThemeAssert(title.BackgroundColor == accent && title.ForegroundColor == CaptionTextColor(accent)
-                        && title.InactiveBackgroundColor == surface, "Native titlebar uses Windows accent and themed inactive surface");
+                    ThemeAssert(!title.BackgroundColor.HasValue && !title.ForegroundColor.HasValue &&
+                        !title.InactiveBackgroundColor.HasValue && !title.InactiveForegroundColor.HasValue &&
+                        !title.ButtonBackgroundColor.HasValue && !title.ButtonForegroundColor.HasValue &&
+                        !title.ButtonInactiveBackgroundColor.HasValue && !title.ButtonInactiveForegroundColor.HasValue &&
+                        !title.ButtonHoverBackgroundColor.HasValue && !title.ButtonHoverForegroundColor.HasValue &&
+                        !title.ButtonPressedBackgroundColor.HasValue && !title.ButtonPressedForegroundColor.HasValue,
+                        "All native caption colors delegate to Windows, including accent preference and button states");
+                    ThemeAssert(!Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar,
+                        "Native draggable titlebar retained");
                     ThemeAssert(dialog.RequestedTheme == RequestedTheme, "Dialog live theme binding");
                     ThemeAssert(dark ? ThumbIdleTextBrush.Color.R > 150 : ThumbIdleTextBrush.Color.R < 150,
                         "Code-created thumbnail labels update");
@@ -75,14 +88,6 @@ namespace LitePdfViewer
                     report.AppendLine("PASS: " + (dark ? "Dark" : "Light") + " toolbar/search/titlebar/thumbnails/PDF/HUD");
                 }
                 StopThemeMonitoring(); StartThemeMonitoring();
-                foreach (var caption in new[] { Colors.Black, Colors.White, Colors.Yellow, Colors.Red,
-                    Colors.Blue, Colors.Green, Color.FromArgb(255, 128, 128, 128), Color.FromArgb(255, 0, 120, 215) })
-                {
-                    var luminance = CaptionLuminance(caption);
-                    var ink = CaptionTextColor(caption);
-                    var ratio = ink == Colors.White ? 1.05 / (luminance + 0.05) : (luminance + 0.05) / 0.05;
-                    ThemeAssert(ratio >= 4.5, "Readable title text for light, dark and saturated system accents");
-                }
                 ThemeAssert(themeSettings != null && themeAccessibility != null, "Monitoring resumes after navigation");
                 var settings = themeSettings;
                 SystemThemeChanged(settings, null);

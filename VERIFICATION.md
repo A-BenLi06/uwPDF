@@ -1,19 +1,32 @@
 # uwPDF acceptance status
 
+## System titlebar color correction — 2026-11-03
+
+- Reset all twelve native titlebar color properties to null. Windows owns the
+  accent-on-titlebars preference, active/inactive colors, high contrast and window
+  button states. The reader no longer forces the accent onto the caption.
+- Removed transparent caption button backgrounds: UWP native titlebars ignore
+  alpha, so transparent white can appear as solid white blocks.
+- Native theme QA seeds all twelve properties with incorrect colors (including
+  transparent button backgrounds), then verifies every override is cleared in
+  both light and dark modes. Native dragging, PDF colors, zoom and viewport remain
+  unchanged. Actual user toggling of Windows personalization is a manual check;
+  the test does not change system settings or automate desktop input.
+- Reference: https://learn.microsoft.com/en-us/windows/uwp/ui-input/title-bar#colors
+
 ## Windows theme support — 2026-11-03
 
 - The reader follows the Windows app theme at startup and when system colors change.
   Light/dark theme dictionaries cover the toolbar, annotation overlay, search card,
   sidebar, text, separators and thumbnail hover states. Native button checked/disabled
   states use the system resources instead of light-only overrides.
-- The native draggable titlebar uses the current Windows accent, selects black or
-  white caption text by contrast, and uses the reader surface while inactive.
-  Hover/pressed window buttons and existing code-created thumbnail brushes update without
+- The native draggable titlebar delegates all caption colors to Windows (see the
+  correction above). Existing code-created thumbnail brushes update without
   recreating PDF pages. Content dialogs bind to the reader theme while open.
   The floating HUD retains its dark appearance; its controls and zoom popup remain
   readable. Ink previews retain white paper, as do PDF pages and print output.
 - `scripts/Test-Theme.ps1` runs inside the native x64 Debug app, cycles light/dark
-  repeatedly, verifies accent titlebar/search/thumbnail/pen-popup/dialog colors and unchanged
+  repeatedly, verifies system-default titlebar/search/thumbnail/pen-popup/dialog colors and unchanged
   PDF color, zoom and viewport, then checks system notification and lifecycle paths.
   No desktop input or Windows theme preference changes are used. High-contrast
   resources use system colors; an actual system high-contrast transition remains a

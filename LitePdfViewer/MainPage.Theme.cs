@@ -117,50 +117,28 @@ namespace LitePdfViewer
             ThumbSelectedTextBrush.Color = accent;
             ThumbSelectedBorderBrush.Color = accent;
 
-            var background = ((SolidColorBrush)palette["ReaderSurfaceBrush"]).Color;
-            var text = ((SolidColorBrush)palette["ReaderTextBrush"]).Color;
-            var secondary = ((SolidColorBrush)palette["ReaderSecondaryTextBrush"]).Color;
-            var title = ApplicationView.GetForCurrentView().TitleBar;
-            var caption = highContrast ? background : themeSettings.GetColorValue(UIColorType.Accent);
-            var captionText = highContrast ? text : CaptionTextColor(caption);
-            title.BackgroundColor = caption;
-            title.InactiveBackgroundColor = background;
-            title.ForegroundColor = title.ButtonForegroundColor = captionText;
-            title.InactiveForegroundColor = title.ButtonInactiveForegroundColor = secondary;
-            title.ButtonBackgroundColor = title.ButtonInactiveBackgroundColor = Colors.Transparent;
-            title.ButtonHoverBackgroundColor = highContrast ? themeSettings.UIElementColor(UIElementType.Highlight)
-                : MixCaptionColor(caption, captionText, 0.12);
-            title.ButtonPressedBackgroundColor = highContrast ? themeSettings.UIElementColor(UIElementType.Highlight)
-                : MixCaptionColor(caption, captionText, 0.20);
-            title.ButtonHoverForegroundColor = highContrast ? themeSettings.UIElementColor(UIElementType.HighlightText)
-                : CaptionTextColor(title.ButtonHoverBackgroundColor.Value);
-            title.ButtonPressedForegroundColor = highContrast ? themeSettings.UIElementColor(UIElementType.HighlightText)
-                : CaptionTextColor(title.ButtonPressedBackgroundColor.Value);
+            RestoreSystemTitleBarColors();
             ApplyOpenPopupThemes();
         }
 
-        private static double CaptionLuminance(Color color)
+        private static void RestoreSystemTitleBarColors()
         {
-            return 0.2126 * CaptionChannel(color.R) + 0.7152 * CaptionChannel(color.G) + 0.0722 * CaptionChannel(color.B);
-        }
-
-        private static double CaptionChannel(byte value)
-        {
-            var channel = value / 255.0;
-            return channel <= 0.04045 ? channel / 12.92 : Math.Pow((channel + 0.055) / 1.055, 2.4);
-        }
-
-        private static Color CaptionTextColor(Color background)
-        {
-            var luminance = CaptionLuminance(background);
-            return (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) ? Colors.Black : Colors.White;
-        }
-
-        private static Color MixCaptionColor(Color background, Color foreground, double amount)
-        {
-            return Color.FromArgb(255, (byte)(background.R * (1 - amount) + foreground.R * amount),
-                (byte)(background.G * (1 - amount) + foreground.G * amount),
-                (byte)(background.B * (1 - amount) + foreground.B * amount));
+            // Null delegates to Windows, including its accent-on-titlebars switch,
+            // activation, high contrast and caption-button states. Transparent is
+            // not a system default: native titlebars ignore the alpha channel.
+            var title = ApplicationView.GetForCurrentView().TitleBar;
+            title.BackgroundColor = null;
+            title.ForegroundColor = null;
+            title.InactiveBackgroundColor = null;
+            title.InactiveForegroundColor = null;
+            title.ButtonBackgroundColor = null;
+            title.ButtonForegroundColor = null;
+            title.ButtonInactiveBackgroundColor = null;
+            title.ButtonInactiveForegroundColor = null;
+            title.ButtonHoverBackgroundColor = null;
+            title.ButtonHoverForegroundColor = null;
+            title.ButtonPressedBackgroundColor = null;
+            title.ButtonPressedForegroundColor = null;
         }
     }
 }
