@@ -1,5 +1,24 @@
 # uwPDF acceptance status
 
+## Windows theme support — 2026-11-03
+
+- The reader follows the Windows app theme at startup and when system colors change.
+  Light/dark theme dictionaries cover the toolbar, annotation overlay, search card,
+  sidebar, text, separators and thumbnail hover states. Native button checked/disabled
+  states use the system resources instead of light-only overrides.
+- The native draggable titlebar uses the current Windows accent, selects black or
+  white caption text by contrast, and uses the reader surface while inactive.
+  Hover/pressed window buttons and existing code-created thumbnail brushes update without
+  recreating PDF pages. Content dialogs bind to the reader theme while open.
+  The floating HUD retains its dark appearance; its controls and zoom popup remain
+  readable. Ink previews retain white paper, as do PDF pages and print output.
+- `scripts/Test-Theme.ps1` runs inside the native x64 Debug app, cycles light/dark
+  repeatedly, verifies accent titlebar/search/thumbnail/pen-popup/dialog colors and unchanged
+  PDF color, zoom and viewport, then checks system notification and lifecycle paths.
+  No desktop input or Windows theme preference changes are used. High-contrast
+  resources use system colors; an actual system high-contrast transition remains a
+  manual check. Debug builds retain the two existing sharing deprecation warnings.
+
 ## Blank print output fix — 2026-10-29
 
 - Reproduced a blank native Ctrl+P preview with Microsoft Print to PDF on

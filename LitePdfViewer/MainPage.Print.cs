@@ -110,7 +110,7 @@ namespace LitePdfViewer
         }
         private async Task ShowPrintErrorAsync(string message)
         {
-            try { await new ContentDialog { Title=L.Get("PrintErrorTitle"),Content=message,PrimaryButtonText=L.Get("Ok") }.ShowAsync(); }
+            try { await ShowReaderDialogAsync(new ContentDialog { Title=L.Get("PrintErrorTitle"),Content=message,PrimaryButtonText=L.Get("Ok") }); }
             catch(Exception ex) { System.Diagnostics.Debug.WriteLine("Print notice: "+ex.Message); }
         }
 

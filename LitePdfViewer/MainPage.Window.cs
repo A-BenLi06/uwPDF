@@ -120,14 +120,6 @@ namespace LitePdfViewer
         {
             var appView = ApplicationView.GetForCurrentView();
             appView.SetPreferredMinSize(new Size(500, 320));
-            appView.TitleBar.BackgroundColor = Color.FromArgb(255, 246, 246, 247);
-            appView.TitleBar.InactiveBackgroundColor = Color.FromArgb(255, 246, 246, 247);
-            appView.TitleBar.ForegroundColor = Colors.Black;
-            appView.TitleBar.InactiveForegroundColor = Colors.Gray;
-            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            appView.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-            appView.TitleBar.ButtonForegroundColor = Colors.Black;
-            appView.TitleBar.ButtonInactiveForegroundColor = Colors.Gray;
             // Keep the system title row available for dragging at every window width.
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
             Window.Current.SetTitleBar(null);

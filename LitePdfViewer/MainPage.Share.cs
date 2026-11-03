@@ -47,12 +47,12 @@ namespace LitePdfViewer
             catch (Exception ex)
             {
                 requestedShareFile = null;
-                await new ContentDialog
+                await ShowReaderDialogAsync(new ContentDialog
                 {
                     Title = L.Get("SharePanelError"),
                     Content = ex.Message,
                     PrimaryButtonText = L.Get("Ok")
-                }.ShowAsync();
+                });
             }
         }
 

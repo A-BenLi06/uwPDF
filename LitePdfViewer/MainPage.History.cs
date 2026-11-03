@@ -83,11 +83,11 @@ namespace LitePdfViewer
                 dialog.Closed += (s, e) => { ++revision; pdf = null; };
                 list.SelectedIndex = entries.Count > 0 ? 0 : -1;
                 historyDialog = dialog;
-                await dialog.ShowAsync();
+                await ShowReaderDialogAsync(dialog);
                 if (requested == null || token != activeRenderToken) return;
                 var confirm = new ContentDialog { RequestedTheme = RequestedTheme, Title = L.Get("HistoryRestore"), Content = L.Get("HistoryRestoreConfirm"),
                     PrimaryButtonText = L.Get("HistoryRestore"), SecondaryButtonText = L.Get("Cancel") };
-                if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+                if (await ShowReaderDialogAsync(confirm) != ContentDialogResult.Primary) return;
                 if (token != activeRenderToken) return;
                 // First commit pending edits so the rescue checkpoint remains
                 // fully editable, even when the user restores an older version.

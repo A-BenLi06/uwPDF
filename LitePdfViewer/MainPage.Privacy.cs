@@ -22,7 +22,7 @@ namespace LitePdfViewer
                     Content = new ScrollViewer { Content = text, MaxHeight = Math.Max(120, Window.Current.Bounds.Height - 160),
                         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
                     PrimaryButtonText = L.Get("Close"), SecondaryButtonText = L.Get("PrivacySupport") };
-                if (await dialog.ShowAsync() == ContentDialogResult.Secondary)
+                if (await ShowReaderDialogAsync(dialog) == ContentDialogResult.Secondary)
                     await Launcher.LaunchUriAsync(new Uri("https://github.com/A-BenLi06/uwPDF/issues"));
             }
             catch (Exception ex)

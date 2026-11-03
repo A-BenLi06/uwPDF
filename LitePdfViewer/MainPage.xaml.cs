@@ -140,8 +140,8 @@ namespace LitePdfViewer
                 QueueMemoryUpdate();
                 WakeRenderer();
             };
-            Loaded += (sender, args) => { StartMemoryMonitoring(); StartDisplayMonitoring(); };
-            Unloaded += (sender, args) => { StopDisplayMonitoring(); StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
+            Loaded += (sender, args) => { StartMemoryMonitoring(); StartDisplayMonitoring(); StartThemeMonitoring(); };
+            Unloaded += (sender, args) => { StopThemeMonitoring(); StopDisplayMonitoring(); StopMemoryMonitoring(); ReleaseRetiredRenderSurfaces(); };
             InitializePreviewWindow();
             InitializeReaderChrome();
             InitializeTextSelectionInput();
@@ -2091,7 +2091,7 @@ namespace LitePdfViewer
                     dialog.Hide();
                 };
 
-                await dialog.ShowAsync();
+                await ShowReaderDialogAsync(dialog);
                 return promptResult;
             }
             finally

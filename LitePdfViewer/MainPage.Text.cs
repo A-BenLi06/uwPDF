@@ -324,6 +324,7 @@ namespace LitePdfViewer
             int rangeFirst,rangeLast;
             var hasSelection=TryGetSelectionRange(view,out rangeFirst,out rangeLast);
             var menu = new MenuFlyout();
+            menu.Opened += (s, e) => ApplyOpenPopupThemes();
             AddTextCommand(menu, L.Get("CopyCommand"), hasSelection, CopySelectedText);
             AddTextCommand(menu, L.Get("HighlightSelection"), hasSelection && view.HighlightsLoaded, () => HighlightSelection(view));
             AddTextCommand(menu, L.Get("SelectAllPage"), view.Glyphs != null && view.Glyphs.Count > 0, () => SelectAllPageText(view));

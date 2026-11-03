@@ -2,4 +2,52 @@
     x:Class="LitePdfViewer.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="ReaderCanvasBrush" Color="#EFEFF1" />
+                    <SolidColorBrush x:Key="ReaderSurfaceBrush" Color="#F8F8F9" />
+                    <SolidColorBrush x:Key="ReaderTextBrush" Color="#32363C" />
+                    <SolidColorBrush x:Key="ReaderSecondaryTextBrush" Color="#62626A" />
+                    <SolidColorBrush x:Key="ReaderBorderBrush" Color="#DADDE1" />
+                    <SolidColorBrush x:Key="ReaderHoverBrush" Color="#0D000000" />
+                    <SolidColorBrush x:Key="ReaderPressedBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="ReaderHudBrush" Color="#F22B2B30" />
+                    <SolidColorBrush x:Key="ReaderHudTextBrush" Color="#F2FFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudHoverBrush" Color="#1FFFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudPressedBrush" Color="#33FFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudBorderBrush" Color="#30FFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="ReaderCanvasBrush" Color="#18181B" />
+                    <SolidColorBrush x:Key="ReaderSurfaceBrush" Color="#252529" />
+                    <SolidColorBrush x:Key="ReaderTextBrush" Color="#F3F3F5" />
+                    <SolidColorBrush x:Key="ReaderSecondaryTextBrush" Color="#B7B7BF" />
+                    <SolidColorBrush x:Key="ReaderBorderBrush" Color="#414148" />
+                    <SolidColorBrush x:Key="ReaderHoverBrush" Color="#14FFFFFF" />
+                    <SolidColorBrush x:Key="ReaderPressedBrush" Color="#24FFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudBrush" Color="#F22B2B30" />
+                    <SolidColorBrush x:Key="ReaderHudTextBrush" Color="#F2FFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudHoverBrush" Color="#1FFFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudPressedBrush" Color="#33FFFFFF" />
+                    <SolidColorBrush x:Key="ReaderHudBorderBrush" Color="#30FFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="ReaderCanvasBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="ReaderSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="ReaderTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="ReaderSecondaryTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="ReaderBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="ReaderHoverBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ReaderPressedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ReaderHudBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="ReaderHudTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="ReaderHudHoverBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ReaderHudPressedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ReaderHudBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>

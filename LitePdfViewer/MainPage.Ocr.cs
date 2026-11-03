@@ -83,7 +83,7 @@ namespace LitePdfViewer
             };
             dialog.Closed += (s, e) => { if (pending != null) pending.Cancel(); };
             ocrDialogOpen = true; ocrDialog = dialog;
-            try { await dialog.ShowAsync(); }
+            try { await ShowReaderDialogAsync(dialog); }
             finally { ocrDialogOpen = false; ocrDialog = null; if (pending != null) { pending.Cancel(); pending.Dispose(); pending = null; } }
         }
         private void HideReaderMore() { if (ReaderMoreButton.Flyout != null) ReaderMoreButton.Flyout.Hide(); }

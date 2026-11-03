@@ -30,6 +30,7 @@
     <Compile Include="MainPage.Print.cs" />
     <Compile Include="PdfPrintLayout.cs" />
     <Compile Include="MainPage.Window.cs" />
+    <Compile Include="MainPage.Theme.cs" />
     <Compile Include="MainPage.Rendering.cs" />
     <Compile Include="MainPage.Thumbnails.cs" />
     <Compile Include="PreviewSizing.cs" />
