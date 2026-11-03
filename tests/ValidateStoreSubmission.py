@@ -23,7 +23,7 @@ for name in ('Package.appxmanifest', 'Package.ARM64.appxmanifest'):
     manifest = ET.parse(ROOT / 'LitePdfViewer' / name)
     assert not list(manifest.findall('./{*}Capabilities/*')), name
     versions.add(manifest.find('./{*}Identity').attrib['Version'])
-assert versions == {'1.0.14.0'}
+assert versions == {'1.0.15.0'}
 source = (ROOT / 'LitePdfViewer/MainPage.xaml.cs').read_text(encoding='utf-8-sig')
 assert 'RegisterCloseRequestedHandler' not in source and 'SystemNavigationManagerPreview' not in source
 subprocess.run([sys.executable, str(ROOT / 'scripts/Sync-StorePrivacy.py'), '--check'], check=True)

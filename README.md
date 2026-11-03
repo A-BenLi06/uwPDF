@@ -28,14 +28,14 @@ uwPDF is a UWP/XAML application inspired by the original Microsoft Edge PDF expe
 
 ## Download & Install
 
-The latest published release is [uwPDF 1.0.14.0](https://github.com/A-BenLi06/uwPDF/releases/tag/v1.0.14.0). It provides signed sideload packages and complete installer ZIPs for four architectures.
+The latest published release is [uwPDF 1.0.15.0](https://github.com/A-BenLi06/uwPDF/releases/tag/v1.0.15.0). It provides signed sideload packages and complete installer ZIPs for four architectures.
 
 | Architecture | Declared minimum Windows version | Recommended download |
 | :--- | :--- | :--- |
-| x86 | Windows 10 1607 (14393) | [x86 installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.14.0/uwPDF_1.0.14.0_x86_Install.zip) |
-| x64 | Windows 10 1607 (14393) | [x64 installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.14.0/uwPDF_1.0.14.0_x64_Install.zip) |
-| ARM (32-bit) | Windows 10 1607 (14393) | [ARM installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.14.0/uwPDF_1.0.14.0_ARM_Install.zip) |
-| ARM64 | Windows 10 1809 (17763) | [ARM64 installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.14.0/uwPDF_1.0.14.0_ARM64_Install.zip) |
+| x86 | Windows 10 1607 (14393) | [x86 installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.15.0/uwPDF_1.0.15.0_x86_Install.zip) |
+| x64 | Windows 10 1607 (14393) | [x64 installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.15.0/uwPDF_1.0.15.0_x64_Install.zip) |
+| ARM (32-bit) | Windows 10 1607 (14393) | [ARM installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.15.0/uwPDF_1.0.15.0_ARM_Install.zip) |
+| ARM64 | Windows 10 1809 (17763) | [ARM64 installer ZIP](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.15.0/uwPDF_1.0.15.0_ARM64_Install.zip) |
 
 Windows 11 meets these OS version requirements. These are package minimums; build and package validation do not establish runtime compatibility on every supported device. ARM device testing and Windows 10 Start menu tile appearance remain pending according to the release notes.
 
@@ -43,10 +43,10 @@ Windows 11 meets these OS version requirements. These are package minimums; buil
 2. Right-click `Add-AppDevPackage.ps1`, choose **Run with PowerShell**, and follow the prompts to install the certificate, dependencies, and application. Windows may request administrator approval or permission to sideload apps.
 3. The packages use a self-signed development certificate. For manual installation, trust the supplied public `uwPDF.cer` in **Local Computer → Trusted People** and install the required dependencies before opening the `.appx` or `.msix` package.
 
-The release includes [SHA256SUMS.txt](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.14.0/SHA256SUMS.txt). Compare your download with its listed SHA-256, for example:
+The release includes [SHA256SUMS.txt](https://github.com/A-BenLi06/uwPDF/releases/download/v1.0.15.0/SHA256SUMS.txt). Compare your download with its listed SHA-256, for example:
 
 ```powershell
-Get-FileHash .\uwPDF_1.0.14.0_x64_Install.zip -Algorithm SHA256
+Get-FileHash .\uwPDF_1.0.15.0_x64_Install.zip -Algorithm SHA256
 ```
 
 GitHub downloads use the sideload identity `Ben.LitePdfViewerPreview`. The source also defines the separate Microsoft Store identity `BenLi06.uwPDF-LitePDFViewer`; Store identity configuration alone does not confirm public Store availability.
@@ -191,7 +191,7 @@ No PDFium, Win2D, CommunityToolkit.Mvvm, PdfSharp, or iText dependency is used b
 
 ## Verification & Known Limits
 
-The [1.0.14.0 release notes](https://github.com/A-BenLi06/uwPDF/releases/tag/v1.0.14.0) identify build source [`689f2d9`](https://github.com/A-BenLi06/uwPDF/commit/689f2d9b8324c3ba58b25dce4c43d90c6fe3c9d5). The tag resolves to that commit, which is included in `main`. All four release architectures are reported as Release/.NET Native builds with package signature, content-hash, native architecture, and component-registration checks.
+The [1.0.15.0 release notes](https://github.com/A-BenLi06/uwPDF/releases/tag/v1.0.15.0) identify build source [`689f2d9`](https://github.com/A-BenLi06/uwPDF/commit/689f2d9b8324c3ba58b25dce4c43d90c6fe3c9d5). The tag resolves to that commit, which is included in `main`. All four release architectures are reported as Release/.NET Native builds with package signature, content-hash, native architecture, and component-registration checks.
 
 [VERIFICATION.md](VERIFICATION.md) records the scope and limitations of earlier acceptance work. The repository includes native component tests, production-method tests with platform doubles, package checks, and localization checks. These do not by themselves prove physical pen/touch latency, GPU presentation quality, total memory use, or compatibility on older Windows and ARM devices. The normal raster-cache budget is up to 64 MiB; it is not a total-process memory limit.
 
